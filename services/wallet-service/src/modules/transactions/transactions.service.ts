@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Transaction, TransactionType, TransactionStatus } from './entities/transaction.entity';
@@ -6,7 +6,7 @@ import { WalletsService } from '../wallets/wallets.service';
 
 @Injectable()
 export class TransactionsService {
-  private readonly logger = new Logger(TransactionsService.name);
+  private readonly _logger = new Logger(TransactionsService.name);
 
   constructor(
     @InjectRepository(Transaction)
