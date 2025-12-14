@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -27,7 +26,7 @@ func main() {
 		port = "3010"
 	}
 
-	redisURL := os.Getenv("REDIS_URL")
+	// redisURL := os.Getenv("REDIS_URL")
 	rabbitmqURL := os.Getenv("RABBITMQ_URL")
 
 	// Initialize matching engine
