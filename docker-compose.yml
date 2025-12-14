@@ -98,8 +98,8 @@ services:
   # ==================== Core Services ====================
   user-service:
     build:
-      context: ./services/user-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/user-service/Dockerfile
     container_name: exchange-user-service
     restart: unless-stopped
     environment:
@@ -125,8 +125,8 @@ services:
 
   auth-service:
     build:
-      context: ./services/auth-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/auth-service/Dockerfile
     container_name: exchange-auth-service
     restart: unless-stopped
     environment:
@@ -151,8 +151,8 @@ services:
 
   wallet-service:
     build:
-      context: ./services/wallet-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/wallet-service/Dockerfile
     container_name: exchange-wallet-service
     restart: unless-stopped
     environment:
@@ -178,8 +178,8 @@ services:
 
   trading-service:
     build:
-      context: ./services/trading-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/trading-service/Dockerfile
     container_name: exchange-trading-service
     restart: unless-stopped
     environment:
@@ -248,8 +248,8 @@ services:
 
   notification-service:
     build:
-      context: ./services/notification-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/notification-service/Dockerfile
     container_name: exchange-notification
     restart: unless-stopped
     environment:
@@ -276,8 +276,8 @@ services:
   # ==================== API Gateway ====================
   api-gateway:
     build:
-      context: ./services/api-gateway
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/api-gateway/Dockerfile
     container_name: exchange-api-gateway
     restart: unless-stopped
     environment:
