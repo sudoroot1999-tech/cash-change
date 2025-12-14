@@ -6,7 +6,7 @@ import { WalletsService } from '../wallets/wallets.service';
 
 @Injectable()
 export class TransactionsService {
-  private readonly _logger = new Logger(TransactionsService.name);
+  // private readonly _logger = new Logger(TransactionsService.name);
 
   constructor(
     @InjectRepository(Transaction)
