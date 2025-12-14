@@ -5,7 +5,8 @@
   "description": "Next-generation cryptocurrency exchange platform",
   "workspaces": [
     "libs/*",
-    "services/*"
+    "services/*",
+    "apps/*"
   ],
   "scripts": {
     "dev": "docker-compose up -d",
