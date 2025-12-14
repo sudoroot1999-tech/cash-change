@@ -1,0 +1,7 @@
+user_access:
+  access_as:
+    agent: {}
+  projects:
+    - id: sudoroot1999-group/open-exchange
+  groups:
+    - id: sudoroot1999-group
