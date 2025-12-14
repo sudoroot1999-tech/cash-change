@@ -9,40 +9,40 @@ import {
 @Entity('trades')
 export class Trade {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Index()
   @Column({ name: 'pair_id', type: 'uuid' })
-  pairId: string;
+  pairId!: string;
 
   @Column({ name: 'buyer_order_id', type: 'uuid' })
-  buyerOrderId: string;
+  buyerOrderId!: string;
 
   @Column({ name: 'seller_order_id', type: 'uuid' })
-  sellerOrderId: string;
+  sellerOrderId!: string;
 
   @Column({ name: 'buyer_id', type: 'uuid' })
-  buyerId: string;
+  buyerId!: string;
 
   @Column({ name: 'seller_id', type: 'uuid' })
-  sellerId: string;
+  sellerId!: string;
 
   @Column({ type: 'decimal', precision: 36, scale: 18 })
-  price: string;
+  price!: string;
 
   @Column({ type: 'decimal', precision: 36, scale: 18 })
-  quantity: string;
+  quantity!: string;
 
   @Column({ name: 'buyer_fee', type: 'decimal', precision: 36, scale: 18, default: '0' })
-  buyerFee: string;
+  buyerFee!: string;
 
   @Column({ name: 'seller_fee', type: 'decimal', precision: 36, scale: 18, default: '0' })
-  sellerFee: string;
+  sellerFee!: string;
 
   @Column({ name: 'is_buyer_maker', default: false })
-  isBuyerMaker: boolean;
+  isBuyerMaker!: boolean;
 
   @Index()
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
-  createdAt: Date;
+  createdAt!: Date;
 }

@@ -41,7 +41,7 @@ export class OrdersController {
   async getUserOrders(
     @Req() req: Request,
     @Query('status') status?: OrderStatus,
-    @Query('symbol') symbol?: string,
+    @Query('symbol') _symbol?: string,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
@@ -65,7 +65,7 @@ export class OrdersController {
   @Get('open')
   @ApiOperation({ summary: 'Get open orders' })
   @ApiQuery({ name: 'symbol', required: false })
-  async getOpenOrders(@Req() req: Request, @Query('symbol') symbol?: string) {
+  async getOpenOrders(@Req() req: Request, @Query('symbol') _symbol?: string) {
     const userId = (req as any).user?.userId || 'test-user-id';
     const orders = await this.ordersService.getOpenOrders(userId, symbol);
     return { data: orders };

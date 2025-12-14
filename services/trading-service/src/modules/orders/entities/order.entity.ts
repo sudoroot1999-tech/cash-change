@@ -38,49 +38,49 @@ export enum TimeInForce {
 @Entity('orders')
 export class Order {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Index()
   @Column({ name: 'user_id', type: 'uuid' })
-  userId: string;
+  userId!: string;
 
   @Index()
   @Column({ name: 'pair_id', type: 'uuid' })
-  pairId: string;
+  pairId!: string;
 
   @Column({ type: 'enum', enum: OrderSide })
-  side: OrderSide;
+  side!: OrderSide;
 
   @Column({ type: 'enum', enum: OrderType })
-  type: OrderType;
+  type!: OrderType;
 
   @Column({ type: 'enum', enum: OrderStatus, default: OrderStatus.PENDING })
-  status: OrderStatus;
+  status!: OrderStatus;
 
   @Column({ type: 'decimal', precision: 36, scale: 18, nullable: true })
-  price: string;
+  price!: string | null;
 
   @Column({ type: 'decimal', precision: 36, scale: 18 })
-  quantity: string;
+  quantity!: string;
 
   @Column({ name: 'filled_quantity', type: 'decimal', precision: 36, scale: 18, default: '0' })
-  filledQuantity: string;
+  filledQuantity!: string;
 
   @Column({ name: 'remaining_quantity', type: 'decimal', precision: 36, scale: 18 })
-  remainingQuantity: string;
+  remainingQuantity!: string;
 
   @Column({ name: 'stop_price', type: 'decimal', precision: 36, scale: 18, nullable: true })
-  stopPrice: string | null;
+  stopPrice!: string | null;
 
   @Column({ name: 'time_in_force', type: 'enum', enum: TimeInForce, default: TimeInForce.GTC })
-  timeInForce: TimeInForce;
+  timeInForce!: TimeInForce;
 
   @Column({ name: 'client_order_id', length: 100, nullable: true })
-  clientOrderId: string | null;
+  clientOrderId!: string | null;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
-  updatedAt: Date;
+  updatedAt!: Date;
 }

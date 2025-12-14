@@ -11,15 +11,15 @@ import { OrderSide, OrderType, TimeInForce } from '../entities/order.entity';
 export class CreateOrderDto {
   @ApiProperty({ example: 'BTC/USDT' })
   @IsString()
-  symbol: string;
+  symbol!: string;
 
   @ApiProperty({ enum: OrderSide, example: 'buy' })
   @IsEnum(OrderSide)
-  side: OrderSide;
+  side!: OrderSide;
 
   @ApiProperty({ enum: OrderType, example: 'limit' })
   @IsEnum(OrderType)
-  type: OrderType;
+  type!: OrderType;
 
   @ApiPropertyOptional({ example: '45000.00' })
   @IsOptional()
@@ -28,7 +28,7 @@ export class CreateOrderDto {
 
   @ApiProperty({ example: '0.5' })
   @IsNumberString()
-  quantity: string;
+  quantity!: string;
 
   @ApiPropertyOptional({ example: '44000.00' })
   @IsOptional()
@@ -49,37 +49,37 @@ export class CreateOrderDto {
 
 export class OrderResponseDto {
   @ApiProperty()
-  id: string;
+  id!: string;
 
   @ApiProperty()
-  userId: string;
+  userId!: string;
 
   @ApiProperty()
-  symbol: string;
+  symbol!: string;
 
   @ApiProperty()
-  side: OrderSide;
+  side!: OrderSide;
 
   @ApiProperty()
-  type: OrderType;
+  type!: OrderType;
 
   @ApiProperty()
-  status: string;
+  status!: string;
 
   @ApiPropertyOptional()
   price?: string;
 
   @ApiProperty()
-  quantity: string;
+  quantity!: string;
 
   @ApiProperty()
-  filledQuantity: string;
+  filledQuantity!: string;
 
   @ApiProperty()
-  remainingQuantity: string;
+  remainingQuantity!: string;
 
   @ApiProperty()
-  createdAt: Date;
+  createdAt!: Date;
 }
 
 export class CancelOrderDto {

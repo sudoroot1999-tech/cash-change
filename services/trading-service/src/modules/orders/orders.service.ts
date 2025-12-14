@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
-import { Order, OrderStatus, OrderType } from './entities/order.entity';
+import { Order, OrderStatus, OrderType, TimeInForce } from './entities/order.entity';
 import { Trade } from './entities/trade.entity';
 import { CreateOrderDto } from './dto/order.dto';
 
@@ -35,21 +35,21 @@ export class OrdersService {
     const pairId = await this.getPairId(createOrderDto.symbol);
 
     // Create order in database
-    const order = this.orderRepository.create({
+    const order: Order = this.orderRepository.create({
       userId,
       pairId,
       side: createOrderDto.side,
       type: createOrderDto.type,
-      price: createOrderDto.price || null,
+      price: createOrderDto.price ?? null,
       quantity: createOrderDto.quantity,
       remainingQuantity: createOrderDto.quantity,
-      stopPrice: createOrderDto.stopPrice || null,
-      timeInForce: createOrderDto.timeInForce,
-      clientOrderId: createOrderDto.clientOrderId || null,
+      stopPrice: createOrderDto.stopPrice ?? null,
+      timeInForce: createOrderDto.timeInForce ?? TimeInForce.GTC,
+      clientOrderId: createOrderDto.clientOrderId ?? null,
       status: OrderStatus.PENDING,
     });
 
-    const savedOrder = await this.orderRepository.save(order);
+    const savedOrder: Order = await this.orderRepository.save(order);
 
     // Submit to matching engine
     try {
@@ -159,7 +159,7 @@ export class OrdersService {
   /**
    * Get open orders
    */
-  async getOpenOrders(userId: string, symbol?: string): Promise<Order[]> {
+  async getOpenOrders(userId: string, _symbol?: string): Promise<Order[]> {
     const query = this.orderRepository
       .createQueryBuilder('order')
       .where('order.user_id = :userId', { userId })
@@ -196,7 +196,7 @@ export class OrdersService {
   }
 
   // Helper methods
-  private async getPairId(symbol: string): Promise<string> {
+  private async getPairId(_symbol: string): Promise<string> {
     // In production, this would query the pairs table/service
     // For now, return a placeholder
     return 'placeholder-pair-id';
