@@ -7,7 +7,7 @@ export class ProxyService {
   private readonly logger = new Logger(ProxyService.name);
   private readonly services: Record<string, string>;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(configService: ConfigService) {
     this.services = {
       users: configService.get('USER_SERVICE_URL', 'http://user-service:3001'),
       auth: configService.get('AUTH_SERVICE_URL', 'http://auth-service:3002'),

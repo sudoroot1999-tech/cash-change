@@ -1,6 +1,5 @@
 import { Controller, All, Req, Res, UseGuards, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
-import { AuthGuard } from '@nestjs/passport';
+import { ApiTags } from '@nestjs/swagger';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { Request, Response } from 'express';
 import { ProxyService } from './proxy.service';
@@ -18,9 +17,6 @@ const ROUTES: Record<string, string> = {
   '/notifications': 'notifications',
 };
 
-// Public routes that don't require authentication
-const PUBLIC_ROUTES = ['/auth/login', '/auth/register', '/auth/refresh', '/users', '/pairs', '/market'];
-
 @ApiTags('Proxy')
 @Controller()
 @UseGuards(ThrottlerGuard)
@@ -37,11 +33,8 @@ export class ProxyController {
       return res.status(HttpStatus.NOT_FOUND).json({ error: 'Route not found' });
     }
 
-    const [prefix, service] = serviceEntry;
+    const [_prefix, service] = serviceEntry;
     const servicePath = path; // Keep full path for service
-
-    // Check if route requires auth
-    const isPublic = PUBLIC_ROUTES.some(r => path.startsWith(r)) && req.method === 'GET';
     
     // Forward user info if authenticated
     const headers: Record<string, string> = {};
