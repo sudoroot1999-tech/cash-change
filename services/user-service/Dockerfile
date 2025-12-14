@@ -5,6 +5,8 @@ WORKDIR /app
 COPY package*.json ./
 COPY libs/common ./libs/common
 COPY services/user-service ./services/user-service
+COPY tsconfig.base.json ./
+
 
 # Install dependencies
 RUN npm ci --workspace=@exchange/common --workspace=@exchange/user-service

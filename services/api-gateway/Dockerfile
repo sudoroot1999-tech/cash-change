@@ -3,6 +3,8 @@ WORKDIR /app
 COPY package*.json ./
 COPY libs/common ./libs/common
 COPY services/api-gateway ./services/api-gateway
+COPY tsconfig.base.json ./
+
 RUN npm ci --workspace=@exchange/common --workspace=@exchange/api-gateway
 RUN npm run build --workspace=@exchange/common
 RUN npm run build --workspace=@exchange/api-gateway

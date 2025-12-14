@@ -4,6 +4,8 @@ WORKDIR /app
 COPY package*.json ./
 COPY libs/common ./libs/common
 COPY services/trading-service ./services/trading-service
+COPY tsconfig.base.json ./
+
 
 RUN npm ci --workspace=@exchange/common --workspace=@exchange/trading-service
 RUN npm run build --workspace=@exchange/common

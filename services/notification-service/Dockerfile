@@ -3,6 +3,8 @@ WORKDIR /app
 COPY package*.json ./
 COPY libs/common ./libs/common
 COPY services/notification-service ./services/notification-service
+COPY tsconfig.base.json ./
+
 RUN npm ci --workspace=@exchange/common --workspace=@exchange/notification-service
 RUN npm run build --workspace=@exchange/common
 RUN npm run build --workspace=@exchange/notification-service
