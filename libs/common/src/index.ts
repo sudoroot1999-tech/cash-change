@@ -1,3 +1,6 @@
+import 'reflect-metadata';
+
+
 // Shared constants, utilities, and types
 export * from './constants';
 export * from './utils';
