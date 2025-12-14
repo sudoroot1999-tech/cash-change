@@ -1,0 +1,86 @@
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToOne,
+  Index,
+} from 'typeorm';
+import { Exclude } from 'class-transformer';
+
+export enum UserStatus {
+  PENDING = 'pending',
+  ACTIVE = 'active',
+  SUSPENDED = 'suspended',
+  BANNED = 'banned',
+}
+
+export enum UserTier {
+  BASIC = 'basic',
+  INTERMEDIATE = 'intermediate',
+  ADVANCED = 'advanced',
+  VIP = 'vip',
+  ULTRA_VIP = 'ultra_vip',
+  INSTITUTIONAL = 'institutional',
+}
+
+@Entity('users')
+export class User {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Index()
+  @Column({ unique: true, length: 255 })
+  email: string;
+
+  @Column({ unique: true, length: 50, nullable: true })
+  phone: string | null;
+
+  @Column({ name: 'password_hash', length: 255 })
+  @Exclude()
+  passwordHash: string;
+
+  @Column({
+    type: 'enum',
+    enum: UserStatus,
+    default: UserStatus.PENDING,
+  })
+  status: UserStatus;
+
+  @Column({
+    type: 'enum',
+    enum: UserTier,
+    default: UserTier.BASIC,
+  })
+  tier: UserTier;
+
+  @Column({ name: 'kyc_level', type: 'int', default: 0 })
+  kycLevel: number;
+
+  @Index()
+  @Column({ name: 'referral_code', unique: true, length: 20 })
+  referralCode: string;
+
+  @Column({ name: 'referred_by', type: 'uuid', nullable: true })
+  referredBy: string | null;
+
+  @Column({ name: 'two_factor_enabled', default: false })
+  twoFactorEnabled: boolean;
+
+  @Column({ name: 'two_factor_secret', length: 255, nullable: true })
+  @Exclude()
+  twoFactorSecret: string | null;
+
+  @Column({ name: 'email_verified', default: false })
+  emailVerified: boolean;
+
+  @Column({ name: 'phone_verified', default: false })
+  phoneVerified: boolean;
+
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
+  updatedAt: Date;
+}
