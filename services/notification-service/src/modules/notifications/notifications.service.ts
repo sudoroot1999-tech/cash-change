@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import * as Handlebars from 'handlebars';
@@ -129,7 +129,7 @@ export class NotificationsService {
   /**
    * Mark notification as read
    */
-  async markAsRead(userId: string, notificationId: string): Promise<Notification> {
+  async markAsRead(userId: string, notificationId: string): Promise<Notification | null> {
     const notification = await this.notificationRepository.findOne({
       where: { id: notificationId, userId },
     });
@@ -161,7 +161,7 @@ export class NotificationsService {
    */
   async getUnreadCount(userId: string): Promise<number> {
     return this.notificationRepository.count({
-      where: { userId, readAt: null },
+      where: { userId, readAt: IsNull() },
     });
   }
 
@@ -221,7 +221,7 @@ export class NotificationsService {
       await this.notificationRepository.save(notification);
 
       this.logger.log(`Notification sent: ${notificationId}`);
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error(`Failed to send notification: ${notificationId}`, error);
       notification.status = NotificationStatus.FAILED;
       notification.errorMessage = error.message;

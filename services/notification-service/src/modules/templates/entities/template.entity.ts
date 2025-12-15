@@ -3,26 +3,26 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeor
 @Entity('notification_templates')
 export class NotificationTemplate {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({ unique: true, length: 100 })
-  name: string;
+  name!: string;
 
   @Column({ length: 50 })
-  channel: string;
+  channel!: string;
 
   @Column({ length: 255, nullable: true })
-  subject: string | null;
+  subject!: string | null;
 
   @Column({ type: 'text' })
-  body: string;
+  body!: string;
 
   @Column({ type: 'jsonb', default: [] })
-  variables: string[];
+  variables!: string[];
 
   @Column({ name: 'is_active', default: true })
-  isActive: boolean;
+  isActive!: boolean;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
-  createdAt: Date;
+  createdAt!: Date;
 }

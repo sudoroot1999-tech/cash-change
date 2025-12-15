@@ -7,11 +7,11 @@ import { NotificationChannel, NotificationPriority } from '../entities/notificat
 export class SendNotificationDto {
   @ApiProperty()
   @IsUUID()
-  userId: string;
+  userId!: string;
 
   @ApiProperty({ enum: NotificationChannel })
   @IsEnum(NotificationChannel)
-  channel: NotificationChannel;
+  channel!: NotificationChannel;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -25,7 +25,7 @@ export class SendNotificationDto {
 
   @ApiProperty()
   @IsString()
-  content: string;
+  content!: string;
 
   @ApiPropertyOptional({ default: 2 })
   @IsOptional()
@@ -48,11 +48,11 @@ export class SendNotificationDto {
 export class BulkNotificationDto {
   @ApiProperty({ type: [String] })
   @IsUUID(undefined, { each: true })
-  userIds: string[];
+  userIds!: string[];
 
   @ApiProperty({ enum: NotificationChannel })
   @IsEnum(NotificationChannel)
-  channel: NotificationChannel;
+  channel!: NotificationChannel;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -66,7 +66,7 @@ export class BulkNotificationDto {
 
   @ApiProperty()
   @IsString()
-  content: string;
+  content!: string;
 
   @ApiPropertyOptional({ default: 2 })
   @IsOptional()
@@ -83,25 +83,25 @@ export class BulkNotificationDto {
 
 export class NotificationResponseDto {
   @ApiProperty()
-  id: string;
+  id!: string;
 
   @ApiProperty()
-  userId: string;
+  userId!: string;
 
   @ApiProperty({ enum: NotificationChannel })
-  channel: NotificationChannel;
+  channel!: NotificationChannel;
 
   @ApiProperty()
-  status: string;
+  status!: string;
 
   @ApiPropertyOptional()
   subject?: string;
 
   @ApiProperty()
-  content: string;
+  content!: string;
 
   @ApiProperty()
-  priority: number;
+  priority!: number;
 
   @ApiPropertyOptional()
   readAt?: Date;
@@ -110,5 +110,5 @@ export class NotificationResponseDto {
   sentAt?: Date;
 
   @ApiProperty()
-  createdAt: Date;
+  createdAt!: Date;
 }
