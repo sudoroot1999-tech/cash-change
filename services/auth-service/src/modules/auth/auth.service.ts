@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import * as otplib from 'otplib';
+import { authenticator } from 'otplib/authenticator';
 import * as qrcode from 'qrcode';
 import { Session } from '../sessions/entities/session.entity';
 
@@ -95,7 +95,7 @@ export class AuthService {
     // Rotate refresh token
     await this.sessionRepository.delete(session.id);
 
-    return this.generateTokens(user, session.deviceInfo, session.ipAddress ?? undefined);
+    return this.generateTokens(user, session.deviceInfo ?? undefined, session.ipAddress ?? undefined);
   }
 
   /**
@@ -125,8 +125,8 @@ export class AuthService {
       throw new BadRequestException('2FA is already enabled');
     }
 
-    const secret = otplib.authenticator.generateSecret();
-    const otpAuthUrl = otplib.authenticator.keyuri(user.email, 'CryptoExchange', secret);
+    const secret = authenticator.generateSecret();
+    const otpAuthUrl = authenticator.keyuri(user.email, 'CryptoExchange', secret);
     const qrCode = await qrcode.toDataURL(otpAuthUrl);
 
     return { secret, qrCode };
@@ -136,7 +136,7 @@ export class AuthService {
    * Verify 2FA code
    */
   verify2FACode(secret: string, code: string): boolean {
-    return otplib.authenticator.verify({ token: code, secret });
+    return authenticator.verify({ token: code, secret });
   }
 
   /**
