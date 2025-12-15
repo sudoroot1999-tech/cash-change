@@ -1,15 +1,10 @@
-import {
-  Injectable,
-  UnauthorizedException,
-  BadRequestException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { authenticator } from 'otplib';
+import * as otplib from 'otplib';
 import * as qrcode from 'qrcode';
 import { Session } from '../sessions/entities/session.entity';
 
@@ -27,8 +22,6 @@ interface User {
 
 @Injectable()
 export class AuthService {
-  private readonly logger = new Logger(AuthService.name);
-
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
@@ -102,7 +95,7 @@ export class AuthService {
     // Rotate refresh token
     await this.sessionRepository.delete(session.id);
 
-    return this.generateTokens(user, session.deviceInfo, session.ipAddress);
+    return this.generateTokens(user, session.deviceInfo, session.ipAddress ?? undefined);
   }
 
   /**
@@ -132,8 +125,8 @@ export class AuthService {
       throw new BadRequestException('2FA is already enabled');
     }
 
-    const secret = authenticator.generateSecret();
-    const otpAuthUrl = authenticator.keyuri(user.email, 'CryptoExchange', secret);
+    const secret = otplib.authenticator.generateSecret();
+    const otpAuthUrl = otplib.authenticator.keyuri(user.email, 'CryptoExchange', secret);
     const qrCode = await qrcode.toDataURL(otpAuthUrl);
 
     return { secret, qrCode };
@@ -143,7 +136,7 @@ export class AuthService {
    * Verify 2FA code
    */
   verify2FACode(secret: string, code: string): boolean {
-    return authenticator.verify({ token: code, secret });
+    return otplib.authenticator.verify({ token: code, secret });
   }
 
   /**

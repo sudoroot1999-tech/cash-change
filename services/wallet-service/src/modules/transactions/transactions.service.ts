@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Transaction, TransactionType, TransactionStatus } from './entities/transaction.entity';
@@ -6,8 +6,6 @@ import { WalletsService } from '../wallets/wallets.service';
 
 @Injectable()
 export class TransactionsService {
-  // private readonly _logger = new Logger(TransactionsService.name);
-
   constructor(
     @InjectRepository(Transaction)
     private readonly txRepository: Repository<Transaction>,

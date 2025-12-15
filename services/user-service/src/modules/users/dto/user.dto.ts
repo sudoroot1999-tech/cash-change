@@ -4,7 +4,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 export class CreateUserDto {
   @ApiProperty({ example: 'user@example.com' })
   @IsEmail()
-  email: string;
+  email!: string;
 
   @ApiProperty({ example: 'SecureP@ss123', minLength: 8 })
   @IsString()
@@ -13,7 +13,7 @@ export class CreateUserDto {
   @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/, {
     message: 'Password must contain uppercase, lowercase, number, and special character',
   })
-  password: string;
+  password!: string;
 
   @ApiPropertyOptional({ example: '+1234567890' })
   @IsOptional()
@@ -38,37 +38,37 @@ export class UpdateUserDto {
 
 export class UserResponseDto {
   @ApiProperty()
-  id: string;
+  id!: string;
 
   @ApiProperty()
-  email: string;
+  email!: string;
 
   @ApiPropertyOptional()
   phone?: string;
 
   @ApiProperty()
-  status: string;
+  status!: string;
 
   @ApiProperty()
-  tier: string;
+  tier!: string;
 
   @ApiProperty()
-  kycLevel: number;
+  kycLevel!: number;
 
   @ApiProperty()
-  referralCode: string;
+  referralCode!: string;
 
   @ApiProperty()
-  twoFactorEnabled: boolean;
+  twoFactorEnabled!: boolean;
 
   @ApiProperty()
-  emailVerified: boolean;
+  emailVerified!: boolean;
 
   @ApiProperty()
-  phoneVerified: boolean;
+  phoneVerified!: boolean;
 
   @ApiProperty()
-  createdAt: Date;
+  createdAt!: Date;
 }
 
 export class PaginationQueryDto {

@@ -5,7 +5,6 @@ import {
   HttpCode,
   HttpStatus,
   Req,
-  UseGuards,
   Get,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
@@ -88,7 +87,7 @@ export class AuthController {
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Enable 2FA after verification' })
-  async enable2FA(@Body() enableDto: Enable2FADto, @Req() req: Request) {
+  async enable2FA(@Body() _enableDto: Enable2FADto, @Req() _req: Request) {
     // Implementation would verify code and enable 2FA
     return { success: true, message: '2FA enabled successfully' };
   }
@@ -97,7 +96,7 @@ export class AuthController {
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Disable 2FA' })
-  async disable2FA(@Body() verifyDto: Enable2FADto, @Req() req: Request) {
+  async disable2FA(@Body() _verifyDto: Enable2FADto, @Req() _req: Request) {
     // Implementation would verify code and disable 2FA
     return { success: true, message: '2FA disabled' };
   }
