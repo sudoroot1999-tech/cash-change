@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { totp as authenticator } from 'otplib';
+import { authenticator } from '@otplib/preset-default';
 import * as qrcode from 'qrcode';
 import { Session } from '../sessions/entities/session.entity';
 
