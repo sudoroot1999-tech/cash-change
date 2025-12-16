@@ -15,13 +15,16 @@ A next-generation cryptocurrency exchange platform with microservices architectu
 # 1. Copy environment file
 cp .env.example .env
 
-# 2. Start all services
+# 2. install all dependencies and package-lock.json
+npm install --legacy-peer-deps
+
+# 3. Start all services
 docker-compose up -d
 
-# 3. View logs
+# 4. View logs
 docker-compose logs -f
 
-# 4. Stop services
+# 5. Stop services
 docker-compose down
 ```
 
