@@ -1,5 +1,11 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index, Unique,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+  Unique,
 } from 'typeorm';
 
 @Entity('wallets')
@@ -15,7 +21,7 @@ export class Wallet {
   @Column({ name: 'asset_id', type: 'uuid' })
   assetId!: string;
 
-  @Column({ nullable: true, length: 255 })
+  @Column({ type: 'varchar', nullable: true, length: 255 })
   address!: string | null;
 
   @Column({ name: 'available_balance', type: 'decimal', precision: 36, scale: 18, default: '0' })

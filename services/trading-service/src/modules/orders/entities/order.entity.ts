@@ -75,7 +75,7 @@ export class Order {
   @Column({ name: 'time_in_force', type: 'enum', enum: TimeInForce, default: TimeInForce.GTC })
   timeInForce!: TimeInForce;
 
-  @Column({ name: 'client_order_id', length: 100, nullable: true })
+  @Column({ name: 'client_order_id', type: 'varchar', length: 100, nullable: true })
   clientOrderId!: string | null;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })

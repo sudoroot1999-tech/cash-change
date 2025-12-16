@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -26,9 +28,41 @@ func main() {
 	}
 
 	// Redis connection
-	redisURL := os.Getenv("REDIS_URL")
-	redisOpts, _ := redis.ParseURL(redisURL)
+	redisURL := strings.TrimSpace(os.Getenv("REDIS_URL"))
+	var (
+		redisOpts *redis.Options
+		err       error
+	)
+	if redisURL != "" {
+		redisOpts, err = redis.ParseURL(redisURL)
+		if err != nil {
+			logger.Fatal("Invalid REDIS_URL", zap.Error(err))
+		}
+	} else {
+		host := os.Getenv("REDIS_HOST")
+		if host == "" {
+			host = "redis"
+		}
+		portStr := os.Getenv("REDIS_PORT")
+		if portStr == "" {
+			portStr = "6379"
+		}
+		password := os.Getenv("REDIS_PASSWORD")
+		if password == "" {
+			// Match docker-compose default when REDIS_PASSWORD is unset
+			password = "redis_dev_password"
+		}
+
+		redisOpts = &redis.Options{
+			Addr:     fmt.Sprintf("%s:%s", host, portStr),
+			Password: password,
+			DB:       0,
+		}
+	}
 	redisClient := redis.NewClient(redisOpts)
+	if err := redisClient.Ping(context.Background()).Err(); err != nil {
+		logger.Fatal("Redis connection failed", zap.Error(err))
+	}
 
 	// Initialize services
 	tickerService := ticker.NewTickerService(redisClient, logger)

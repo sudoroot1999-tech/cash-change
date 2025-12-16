@@ -5,22 +5,22 @@ export class Asset {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ unique: true, length: 20 })
+  @Column({ type: 'varchar', unique: true, length: 20 })
   symbol!: string;
 
-  @Column({ length: 100 })
+  @Column({ type: 'varchar', length: 100 })
   name!: string;
 
-  @Column({ length: 50 })
+  @Column({ type: 'varchar', length: 50 })
   network!: string;
 
-  @Column({ name: 'contract_address', length: 255, nullable: true })
+  @Column({ name: 'contract_address', type: 'varchar', length: 255, nullable: true })
   contractAddress!: string | null;
 
   @Column({ type: 'int', default: 18 })
   decimals!: number;
 
-  @Column({ name: 'is_active', default: true })
+  @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive!: boolean;
 
   @Column({ name: 'min_deposit', type: 'decimal', precision: 36, scale: 18, default: '0' })

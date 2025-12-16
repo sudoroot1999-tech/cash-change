@@ -5,13 +5,13 @@ export class NotificationTemplate {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ unique: true, length: 100 })
+  @Column({ type: 'varchar', unique: true, length: 100 })
   name!: string;
 
-  @Column({ length: 50 })
+  @Column({ type: 'varchar', length: 50 })
   channel!: string;
 
-  @Column({ length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   subject!: string | null;
 
   @Column({ type: 'text' })
@@ -20,7 +20,7 @@ export class NotificationTemplate {
   @Column({ type: 'jsonb', default: [] })
   variables!: string[];
 
-  @Column({ name: 'is_active', default: true })
+  @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive!: boolean;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
