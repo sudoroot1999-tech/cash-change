@@ -8,7 +8,10 @@ import { PreferencesModule } from './modules/preferences/preferences.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['.env', '../.env', '../../.env'],
+    }),
 
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
