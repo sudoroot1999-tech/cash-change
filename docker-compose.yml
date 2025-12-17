@@ -9,12 +9,13 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-exchange_dev_password}
       POSTGRES_DB: ${POSTGRES_DB:-exchange}
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-exchange_user}"]
+      test:
+        ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-exchange_user} -d ${POSTGRES_DB:-exchange}']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -29,7 +30,7 @@ services:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-root}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-mongo_dev_password}
     ports:
-      - "27017:27017"
+      - '27017:27017'
     volumes:
       - mongodb_data:/data/db
     healthcheck:
@@ -46,11 +47,11 @@ services:
     restart: unless-stopped
     command: redis-server --requirepass ${REDIS_PASSWORD:-redis_dev_password}
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis_dev_password}", "ping"]
+      test: ['CMD', 'redis-cli', '-a', '${REDIS_PASSWORD:-redis_dev_password}', 'ping']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -66,7 +67,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-exchange_dev_password}
       POSTGRES_DB: market_data
     ports:
-      - "5433:5432"
+      - '5433:5432'
     volumes:
       - timescaledb_data:/var/lib/postgresql/data
     networks:
@@ -81,8 +82,8 @@ services:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-exchange}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
     ports:
-      - "5672:5672"
-      - "15672:15672"  # Management UI
+      - '5672:5672'
+      - '15672:15672' # Management UI
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
@@ -107,7 +108,7 @@ services:
       - REDIS_URL=redis://:${REDIS_PASSWORD:-redis_dev_password}@redis:6379
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
     ports:
-      - "3001:3001"
+      - '3001:3001'
     depends_on:
       postgres:
         condition: service_healthy
@@ -115,9 +116,6 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-    volumes:
-      - ./services/user-service:/app
-      - /app/node_modules
     networks:
       - exchange-network
 
@@ -135,15 +133,12 @@ services:
       - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-15m}
     ports:
-      - "3002:3002"
+      - '3002:3002'
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - ./services/auth-service:/app
-      - /app/node_modules
     networks:
       - exchange-network
 
@@ -160,7 +155,7 @@ services:
       - REDIS_URL=redis://:${REDIS_PASSWORD:-redis_dev_password}@redis:6379
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
     ports:
-      - "3003:3003"
+      - '3003:3003'
     depends_on:
       postgres:
         condition: service_healthy
@@ -168,9 +163,6 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-    volumes:
-      - ./services/wallet-service:/app
-      - /app/node_modules
     networks:
       - exchange-network
 
@@ -189,7 +181,7 @@ services:
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
       - MATCHING_ENGINE_URL=http://matching-engine:3010
     ports:
-      - "3004:3004"
+      - '3004:3004'
     depends_on:
       postgres:
         condition: service_healthy
@@ -197,9 +189,6 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-    volumes:
-      - ./services/trading-service:/app
-      - /app/node_modules
     networks:
       - exchange-network
 
@@ -215,7 +204,7 @@ services:
       - REDIS_URL=redis://:${REDIS_PASSWORD:-redis_dev_password}@redis:6379
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
     ports:
-      - "3005:3005"
+      - '3005:3005'
     depends_on:
       redis:
         condition: service_healthy
@@ -235,7 +224,7 @@ services:
       - REDIS_URL=redis://:${REDIS_PASSWORD:-redis_dev_password}@redis:6379
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
     ports:
-      - "3010:3010"
+      - '3010:3010'
     depends_on:
       redis:
         condition: service_healthy
@@ -257,7 +246,7 @@ services:
       - REDIS_URL=redis://:${REDIS_PASSWORD:-redis_dev_password}@redis:6379
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
     ports:
-      - "3006:3006"
+      - '3006:3006'
     depends_on:
       postgres:
         condition: service_healthy
@@ -265,9 +254,6 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-    volumes:
-      - ./services/notification-service:/app
-      - /app/node_modules
     networks:
       - exchange-network
 
@@ -289,7 +275,7 @@ services:
       - NOTIFICATION_URL=http://notification-service:3006
       - REDIS_URL=redis://:${REDIS_PASSWORD:-redis_dev_password}@redis:6379
     ports:
-      - "3000:3000"
+      - '3000:3000'
     depends_on:
       - user-service
       - auth-service
@@ -297,9 +283,6 @@ services:
       - trading-service
       - market-data-service
       - notification-service
-    volumes:
-      - ./services/api-gateway:/app
-      - /app/node_modules
     networks:
       - exchange-network
 
