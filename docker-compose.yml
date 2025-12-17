@@ -341,6 +341,7 @@ services:
       - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
       - RABBITMQ_USER=${RABBITMQ_USER:-exchange}
       - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
+      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret}
     ports:
       - '3000:3000'
     depends_on:
