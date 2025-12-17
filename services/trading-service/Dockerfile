@@ -22,4 +22,4 @@ COPY --from=builder /app/services/trading-service/dist ./dist
 COPY --from=builder /app/services/trading-service/package.json ./
 
 EXPOSE 3004
-CMD ["node", "dist/main.js"]
+CMD ["npm", "run", "start"]

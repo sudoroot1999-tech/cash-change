@@ -2,16 +2,18 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/exchange/matching-engine/internal/engine"
 	"github.com/exchange/matching-engine/internal/handlers"
 	"github.com/exchange/matching-engine/internal/messaging"
+	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
@@ -27,7 +29,7 @@ func main() {
 	}
 
 	// redisURL := os.Getenv("REDIS_URL")
-	rabbitmqURL := os.Getenv("RABBITMQ_URL")
+	rabbitmqURL := rabbitmqURLFromEnv()
 
 	// Initialize matching engine
 	matchingEngine := engine.NewMatchingEngine(logger)
@@ -104,4 +106,30 @@ func main() {
 	}
 
 	logger.Info("Server exited properly")
+}
+
+func rabbitmqURLFromEnv() string {
+	// Prefer explicit URL if provided
+	if v := os.Getenv("RABBITMQ_URL"); v != "" {
+		return v
+	}
+
+	host := getenv("RABBITMQ_HOST", "rabbitmq")
+	port := getenv("RABBITMQ_PORT", "5672")
+	user := getenv("RABBITMQ_USER", "exchange")
+	pass := getenv("RABBITMQ_PASSWORD", "rabbitmq_dev_password")
+
+	u := url.URL{
+		Scheme: "amqp",
+		Host:   fmt.Sprintf("%s:%s", host, port),
+	}
+	u.User = url.UserPassword(user, pass)
+	return u.String()
+}
+
+func getenv(key, defaultValue string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return defaultValue
 }

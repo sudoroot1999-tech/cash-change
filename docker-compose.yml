@@ -104,9 +104,18 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3001
-      - DATABASE_URL=postgres://${POSTGRES_USER:-exchange_user}:${POSTGRES_PASSWORD:-exchange_dev_password}@postgres:5432/${POSTGRES_DB:-exchange}
-      - REDIS_URL=redis://:${REDIS_PASSWORD:-redis_dev_password}@redis:6379
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
+      - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_USER=${POSTGRES_USER:-exchange_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-exchange_dev_password}
+      - POSTGRES_DB=${POSTGRES_DB:-exchange}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis_dev_password}
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
+      - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - RABBITMQ_USER=${RABBITMQ_USER:-exchange}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
     ports:
       - '3001:3001'
     depends_on:
@@ -128,8 +137,14 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3002
-      - DATABASE_URL=postgres://${POSTGRES_USER:-exchange_user}:${POSTGRES_PASSWORD:-exchange_dev_password}@postgres:5432/${POSTGRES_DB:-exchange}
-      - REDIS_URL=redis://:${REDIS_PASSWORD:-redis_dev_password}@redis:6379
+      - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_USER=${POSTGRES_USER:-exchange_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-exchange_dev_password}
+      - POSTGRES_DB=${POSTGRES_DB:-exchange}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis_dev_password}
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
       - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-15m}
     ports:
@@ -151,9 +166,18 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3003
-      - DATABASE_URL=postgres://${POSTGRES_USER:-exchange_user}:${POSTGRES_PASSWORD:-exchange_dev_password}@postgres:5432/${POSTGRES_DB:-exchange}
-      - REDIS_URL=redis://:${REDIS_PASSWORD:-redis_dev_password}@redis:6379
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
+      - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_USER=${POSTGRES_USER:-exchange_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-exchange_dev_password}
+      - POSTGRES_DB=${POSTGRES_DB:-exchange}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis_dev_password}
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
+      - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - RABBITMQ_USER=${RABBITMQ_USER:-exchange}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
     ports:
       - '3003:3003'
     depends_on:
@@ -175,9 +199,23 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3004
-      - DATABASE_URL=postgres://${POSTGRES_USER:-exchange_user}:${POSTGRES_PASSWORD:-exchange_dev_password}@postgres:5432/${POSTGRES_DB:-exchange}
-      - TIMESCALE_URL=postgres://${POSTGRES_USER:-exchange_user}:${POSTGRES_PASSWORD:-exchange_dev_password}@timescaledb:5432/market_data
-      - REDIS_URL=redis://:${REDIS_PASSWORD:-redis_dev_password}@redis:6379
+      - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_USER=${POSTGRES_USER:-exchange_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-exchange_dev_password}
+      - POSTGRES_DB=${POSTGRES_DB:-exchange}
+      - TIMESCALE_HOST=${TIMESCALE_HOST:-timescaledb}
+      - TIMESCALE_PORT=${TIMESCALE_PORT:-5432}
+      - TIMESCALE_USER=${TIMESCALE_USER:-exchange_user}
+      - TIMESCALE_PASSWORD=${TIMESCALE_PASSWORD:-exchange_dev_password}
+      - TIMESCALE_DB=${TIMESCALE_DB:-market_data}
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis_dev_password}
+      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
+      - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - RABBITMQ_USER=${RABBITMQ_USER:-exchange}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
       - MATCHING_ENGINE_URL=http://matching-engine:3010
     ports:
@@ -200,9 +238,18 @@ services:
     restart: unless-stopped
     environment:
       - PORT=3005
-      - TIMESCALE_URL=postgres://${POSTGRES_USER:-exchange_user}:${POSTGRES_PASSWORD:-exchange_dev_password}@timescaledb:5432/market_data
-      - REDIS_URL=redis://:${REDIS_PASSWORD:-redis_dev_password}@redis:6379
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
+      - TIMESCALE_HOST=${TIMESCALE_HOST:-timescaledb}
+      - TIMESCALE_PORT=${TIMESCALE_PORT:-5432}
+      - TIMESCALE_USER=${TIMESCALE_USER:-exchange_user}
+      - TIMESCALE_PASSWORD=${TIMESCALE_PASSWORD:-exchange_dev_password}
+      - TIMESCALE_DB=${TIMESCALE_DB:-market_data}
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis_dev_password}
+      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
+      - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - RABBITMQ_USER=${RABBITMQ_USER:-exchange}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
     ports:
       - '3005:3005'
     depends_on:
@@ -221,8 +268,13 @@ services:
     restart: unless-stopped
     environment:
       - PORT=3010
-      - REDIS_URL=redis://:${REDIS_PASSWORD:-redis_dev_password}@redis:6379
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis_dev_password}
+      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
+      - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - RABBITMQ_USER=${RABBITMQ_USER:-exchange}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
     ports:
       - '3010:3010'
     depends_on:
@@ -242,9 +294,18 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3006
-      - DATABASE_URL=postgres://${POSTGRES_USER:-exchange_user}:${POSTGRES_PASSWORD:-exchange_dev_password}@postgres:5432/${POSTGRES_DB:-exchange}
-      - REDIS_URL=redis://:${REDIS_PASSWORD:-redis_dev_password}@redis:6379
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
+      - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_USER=${POSTGRES_USER:-exchange_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-exchange_dev_password}
+      - POSTGRES_DB=${POSTGRES_DB:-exchange}
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis_dev_password}
+      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
+      - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - RABBITMQ_USER=${RABBITMQ_USER:-exchange}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
     ports:
       - '3006:3006'
     depends_on:
@@ -273,7 +334,13 @@ services:
       - TRADING_SERVICE_URL=http://trading-service:3004
       - MARKET_DATA_URL=http://market-data-service:3005
       - NOTIFICATION_URL=http://notification-service:3006
-      - REDIS_URL=redis://:${REDIS_PASSWORD:-redis_dev_password}@redis:6379
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis_dev_password}
+      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
+      - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - RABBITMQ_USER=${RABBITMQ_USER:-exchange}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
     ports:
       - '3000:3000'
     depends_on:

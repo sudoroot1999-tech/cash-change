@@ -22,4 +22,4 @@ COPY --from=builder /app/services/auth-service/dist ./dist
 COPY --from=builder /app/services/auth-service/package.json ./
 
 EXPOSE 3002
-CMD ["node", "dist/main.js"]
+CMD ["npm", "run", "start"]

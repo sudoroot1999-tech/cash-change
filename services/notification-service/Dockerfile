@@ -18,4 +18,4 @@ COPY --from=builder /app/services/notification-service/dist ./dist
 COPY --from=builder /app/services/notification-service/package.json ./
 
 EXPOSE 3006
-CMD ["node", "dist/main.js"]
+CMD ["npm", "run", "start"]

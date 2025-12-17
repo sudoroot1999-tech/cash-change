@@ -20,4 +20,4 @@ COPY --from=builder /app/services/wallet-service/dist ./dist
 COPY --from=builder /app/services/wallet-service/package.json ./
 
 EXPOSE 3003
-CMD ["node", "dist/main.js"]
+CMD ["npm", "run", "start"]

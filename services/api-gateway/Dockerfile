@@ -18,4 +18,4 @@ COPY --from=builder /app/services/api-gateway/dist ./dist
 COPY --from=builder /app/services/api-gateway/package.json ./
 
 EXPOSE 3000
-CMD ["node", "dist/main.js"]
+CMD ["npm", "run", "start"]
