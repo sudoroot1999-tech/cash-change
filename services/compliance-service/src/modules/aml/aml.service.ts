@@ -18,7 +18,7 @@ export class AmlService {
     };
   }
 
-  async checkTransaction(txHash: string): Promise<{ riskScore: number }> {
+  async checkTransaction(_txHash: string): Promise<{ riskScore: number }> {
     return { riskScore: 5 };
   }
 }

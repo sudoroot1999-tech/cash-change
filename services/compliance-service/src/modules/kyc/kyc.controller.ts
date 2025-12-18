@@ -22,7 +22,7 @@ export class KycController {
   @UseInterceptors(FilesInterceptor('files'))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Upload KYC documents' })
-  async uploadDocuments(@Req() req: Request, @UploadedFiles() files: Array<Express.Multer.File>) {
+  async uploadDocuments(@Req() _req: Request, @UploadedFiles() files: Array<Express.Multer.File>) {
     // In a real implementation this would upload to S3/Azure Blob
     // For MVP we just return success
     return { 

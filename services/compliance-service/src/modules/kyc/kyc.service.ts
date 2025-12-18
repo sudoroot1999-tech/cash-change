@@ -70,7 +70,7 @@ export class KycService {
     }
 
     request.status = status;
-    request.rejectionReason = dto.reason;
+    request.rejectionReason = dto.reason || null;
     request.reviewedBy = adminId;
     request.reviewedAt = new Date();
 
@@ -94,7 +94,7 @@ export class KycService {
         })
       );
     } catch (error) {
-      this.logger.error(`Failed to update user KYC level: ${error.message}`);
+      this.logger.error(`Failed to update user KYC level: ${(error as any).message}`);
       // Typically we might want to transactions or retries here
     }
   }

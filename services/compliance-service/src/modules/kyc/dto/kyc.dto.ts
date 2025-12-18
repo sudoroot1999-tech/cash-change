@@ -1,7 +1,7 @@
-import { IsString, IsEnum, IsOptional, IsDateString, IsISO31661Alpha2, ValidateNested } from 'class-validator';
+import { IsString, IsEnum, IsOptional, IsDateString, IsISO31661Alpha2 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { KycLevel, DocumentType } from '../entities/kyc-request.entity';
+
+import { KycLevel } from '../entities/kyc-request.entity';
 
 export class SubmitKycDto {
   @ApiProperty({ enum: KycLevel })
