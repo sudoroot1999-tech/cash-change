@@ -19,6 +19,7 @@ const ROUTES: Record<string, string> = {
   '/aml': 'compliance',
   '/threats': 'security',
   '/mpc': 'security',
+  '/reserves': 'reserves',
 };
 
 @ApiTags('Proxy')

@@ -39,6 +39,9 @@ docker-compose down
 | Trading Service | 3004 | Order management |
 | Market Data | 3005 | Market data |
 | Notification Service | 3006 | Notification |
+| Compliance Service | 3007 | Compliance |
+| Security Service | 3008 | Security |
+| Proof Of Reserves Service | 3009 | Proof Of Reserves |
 | Matching Engine | 3010 | Order matching |
 | PostgreSQL | 5432 | Main database |
 | TimescaleDB | 5433 | Time-series data |

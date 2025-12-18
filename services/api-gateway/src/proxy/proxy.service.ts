@@ -17,6 +17,7 @@ export class ProxyService {
       notifications: configService.get('NOTIFICATION_URL', 'http://notification-service:3006'),
       compliance: configService.get('COMPLIANCE_URL', 'http://compliance-service:3007'),
       security: configService.get('SECURITY_URL', 'http://security-service:3008'),
+      reserves: configService.get('RESERVES_URL', 'http://proof-of-reserves-service:3009'),
     };
   }
 

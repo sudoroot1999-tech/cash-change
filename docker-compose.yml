@@ -369,6 +369,40 @@ services:
     networks:
       - exchange-network
 
+  proof-of-reserves-service:
+    build:
+      context: .
+      dockerfile: services/proof-of-reserves-service/Dockerfile
+    container_name: exchange-proof-of-reserves
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=development
+      - PORT=3009
+      - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_USER=${POSTGRES_USER:-exchange_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-exchange_dev_password}
+      - POSTGRES_DB=${POSTGRES_DB:-exchange}
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis_dev_password}
+      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
+      - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - RABBITMQ_USER=${RABBITMQ_USER:-exchange}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
+      - WALLET_SERVICE_URL=http://wallet-service:3003
+    ports:
+      - "3009:3009"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - exchange-network
+
 
   # ==================== API Gateway ====================
   api-gateway:
@@ -388,6 +422,7 @@ services:
       - NOTIFICATION_URL=http://notification-service:3006
       - COMPLIANCE_URL=http://compliance-service:3007
       - SECURITY_URL=http://security-service:3008
+      - RESERVES_URL=http://proof-of-reserves-service:3009
       - REDIS_HOST=${REDIS_HOST:-redis}
       - REDIS_PORT=${REDIS_PORT:-6379}
       - REDIS_PASSWORD=${REDIS_PASSWORD:-redis_dev_password}
@@ -407,6 +442,7 @@ services:
       - notification-service
       - compliance-service
       - security-service
+      - proof-of-reserves-service
     networks:
       - exchange-network
 
