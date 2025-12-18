@@ -38,6 +38,7 @@ docker-compose down
 | Wallet Service | 3003 | Wallet & balances |
 | Trading Service | 3004 | Order management |
 | Market Data | 3005 | Market data |
+| Notification Service | 3006 | Notification |
 | Matching Engine | 3010 | Order matching |
 | PostgreSQL | 5432 | Main database |
 | TimescaleDB | 5433 | Time-series data |
