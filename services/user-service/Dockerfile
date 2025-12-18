@@ -3,6 +3,7 @@ WORKDIR /app
 
 # Copy workspace files
 COPY package*.json ./
+COPY node_modules ./node_modules
 COPY libs/common ./libs/common
 COPY services/user-service ./services/user-service
 COPY tsconfig.base.json ./

@@ -2,6 +2,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 COPY package*.json ./
+COPY node_modules ./node_modules
 COPY libs/common ./libs/common
 COPY services/auth-service ./services/auth-service
 COPY tsconfig.base.json ./

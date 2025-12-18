@@ -3,6 +3,7 @@ WORKDIR /app
 
 COPY package*.json ./
 COPY libs/common ./libs/common
+COPY node_modules ./node_modules
 COPY services/trading-service ./services/trading-service
 COPY tsconfig.base.json ./
 

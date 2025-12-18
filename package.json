@@ -9,9 +9,9 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "docker-compose up -d",
-    "dev:down": "docker-compose down",
-    "dev:logs": "docker-compose logs -f",
+    "dev": "docker compose up -d",
+    "dev:down": "docker compose down",
+    "dev:logs": "docker compose logs -f",
     "build:all": "npm run build --workspaces --if-present",
     "test:all": "npm run test --workspaces --if-present",
     "lint:all": "npm run lint --workspaces --if-present",
