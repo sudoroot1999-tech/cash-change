@@ -15,6 +15,7 @@ export class ProxyService {
       trading: configService.get('TRADING_SERVICE_URL', 'http://trading-service:3004'),
       market: configService.get('MARKET_DATA_URL', 'http://market-data-service:3005'),
       notifications: configService.get('NOTIFICATION_URL', 'http://notification-service:3006'),
+      compliance: configService.get('COMPLIANCE_URL', 'http://compliance-service:3007'),
     };
   }
 

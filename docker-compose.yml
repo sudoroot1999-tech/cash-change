@@ -318,6 +318,30 @@ services:
     networks:
       - exchange-network
 
+
+  compliance-service:
+    build:
+      context: .
+      dockerfile: services/compliance-service/Dockerfile
+    container_name: exchange-compliance
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=development
+      - PORT=3007
+      - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_USER=${POSTGRES_USER:-exchange_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-exchange_dev_password}
+      - POSTGRES_DB=${POSTGRES_DB:-exchange}
+      - USER_SERVICE_URL=http://user-service:3001
+    ports:
+      - "3007:3007"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - exchange-network
+
   # ==================== API Gateway ====================
   api-gateway:
     build:
@@ -334,6 +358,7 @@ services:
       - TRADING_SERVICE_URL=http://trading-service:3004
       - MARKET_DATA_URL=http://market-data-service:3005
       - NOTIFICATION_URL=http://notification-service:3006
+      - COMPLIANCE_URL=http://compliance-service:3007
       - REDIS_HOST=${REDIS_HOST:-redis}
       - REDIS_PORT=${REDIS_PORT:-6379}
       - REDIS_PASSWORD=${REDIS_PASSWORD:-redis_dev_password}
@@ -351,6 +376,7 @@ services:
       - trading-service
       - market-data-service
       - notification-service
+      - compliance-service
     networks:
       - exchange-network
 

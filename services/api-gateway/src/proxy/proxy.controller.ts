@@ -15,6 +15,8 @@ const ROUTES: Record<string, string> = {
   '/pairs': 'trading',
   '/market': 'market',
   '/notifications': 'notifications',
+  '/kyc': 'compliance',
+  '/aml': 'compliance',
 };
 
 @ApiTags('Proxy')
