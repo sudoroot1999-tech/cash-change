@@ -36,7 +36,8 @@
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "clsx": "^2.1.0",
-    "tailwind-merge": "^2.2.0"
+    "tailwind-merge": "^2.2.0",
+    "lightweight-charts": "^4.1.0"
   },
   "devDependencies": {
     "@angular/build": "^21.0.4",
