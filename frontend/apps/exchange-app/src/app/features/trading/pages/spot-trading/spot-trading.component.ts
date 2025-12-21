@@ -1,17 +1,16 @@
-import { Component, ChangeDetectionStrategy, signal, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, inject, OnInit, OnDestroy, computed } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { CardComponent } from '../../../../shared/components/card/card.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
-import { InputComponent } from '../../../../shared/components/input/input.component';
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
-import { SkeletonComponent } from '../../../../shared/components/skeleton/skeleton.component';
 import { OrderBookComponent } from '../../components/order-book/order-book.component';
 import { TradeFormComponent } from '../../components/trade-form/trade-form.component';
 import { TradingPairSelectorComponent } from '../../components/trading-pair-selector/trading-pair-selector.component';
 import { RecentTradesComponent } from '../../components/recent-trades/recent-trades.component';
 import { TradingChartComponent } from '../../components/trading-chart/trading-chart.component';
-import { ChartService, Timeframe } from '../../services/chart.service';
+import { MarketDataService, MarketSummary } from '../../../../core/services/market-data.service';
 
 interface TradingPair {
   symbol: string;
@@ -32,9 +31,7 @@ interface TradingPair {
     DecimalPipe,
     CardComponent,
     ButtonComponent,
-    InputComponent,
     BadgeComponent,
-    SkeletonComponent,
     OrderBookComponent,
     TradeFormComponent,
     TradingPairSelectorComponent,
@@ -51,44 +48,57 @@ interface TradingPair {
         />
         
         <div class="price-stats">
+          <!-- Live Price Display -->
           <div class="stat-item primary">
             <span class="stat-label">Last Price</span>
-            <span class="stat-value" [class.positive]="selectedPair().change24h >= 0" [class.negative]="selectedPair().change24h < 0">
-              {{ selectedPair().price | number:'1.2-2' }}
-              <span class="change-badge">{{ selectedPair().change24h >= 0 ? '+' : '' }}{{ selectedPair().change24h | number:'1.2-2' }}%</span>
+            <span 
+              class="stat-value" 
+              [class.positive]="isPriceUp()" 
+              [class.negative]="!isPriceUp()"
+              [class.tick-up]="priceTickDirection() === 'up'"
+              [class.tick-down]="priceTickDirection() === 'down'"
+            >
+              {{ lastPrice() | number:'1.2-2' }}
+              <span class="change-badge">{{ priceChange() >= 0 ? '+' : '' }}{{ priceChange() | number:'1.2-2' }}%</span>
             </span>
           </div>
           
           <div class="stat-item">
             <span class="stat-label">24h High</span>
-            <span class="stat-value">{{ selectedPair().high24h | number:'1.2-2' }}</span>
+            <span class="stat-value">{{ high24h() | number:'1.2-2' }}</span>
           </div>
           
           <div class="stat-item">
             <span class="stat-label">24h Low</span>
-            <span class="stat-value">{{ selectedPair().low24h | number:'1.2-2' }}</span>
+            <span class="stat-value">{{ low24h() | number:'1.2-2' }}</span>
           </div>
           
           <div class="stat-item">
             <span class="stat-label">24h Volume</span>
-            <span class="stat-value">{{ formatVolume(selectedPair().volume24h) }}</span>
+            <span class="stat-value">{{ formatVolume(volume24h()) }}</span>
+          </div>
+          
+          <!-- Connection Status -->
+          <div class="connection-status" [class.connected]="isConnected()">
+            <span class="status-dot"></span>
+            <span class="status-text">{{ isConnected() ? 'Real-time' : 'Connecting...' }}</span>
           </div>
         </div>
       </div>
 
       <!-- Main Trading Grid -->
       <div class="trading-grid">
-        <!-- Chart Area - Now using TradingView Lightweight Charts -->
+        <!-- Chart Area - TradingView Lightweight Charts -->
         <div class="chart-area">
           <app-trading-chart 
-            [symbol]="selectedPair().symbol"
-            [data]="chartService.candleData()"
+            [symbol]="currentSymbol()"
+            [data]="candleData()"
           />
         </div>
 
-        <!-- Order Book -->
+        <!-- Order Book - Real-time updates -->
         <div class="orderbook-area">
-          <app-order-book [pair]="selectedPair().symbol" />
+          <app-order-book [pair]="currentSymbol()" />
         </div>
 
         <!-- Trade Form -->
@@ -99,9 +109,9 @@ interface TradingPair {
           />
         </div>
 
-        <!-- Recent Trades -->
+        <!-- Recent Trades - Real-time updates -->
         <div class="recent-trades-area">
-          <app-recent-trades [pair]="selectedPair().symbol" />
+          <app-recent-trades [pair]="currentSymbol()" />
         </div>
       </div>
 
@@ -150,11 +160,11 @@ interface TradingPair {
                 <tbody>
                   <tr>
                     <td>2024-01-15 14:32</td>
-                    <td>BTC/USDT</td>
+                    <td>{{ currentSymbol() }}</td>
                     <td>Limit</td>
                     <td class="text-success">Buy</td>
-                    <td>42,500.00</td>
-                    <td>0.5 BTC</td>
+                    <td>{{ lastPrice() * 0.98 | number:'1.2-2' }}</td>
+                    <td>0.5 {{ baseAsset() }}</td>
                     <td>0%</td>
                     <td><button class="cancel-btn">Cancel</button></td>
                   </tr>
@@ -187,6 +197,7 @@ interface TradingPair {
     .price-stats {
       display: flex;
       gap: var(--spacing-6);
+      align-items: center;
     }
 
     .stat-item {
@@ -212,6 +223,7 @@ interface TradingPair {
       font-weight: var(--font-weight-semibold);
       color: var(--color-text-primary);
       font-family: var(--font-family-mono);
+      transition: color 0.1s ease;
     }
 
     .stat-value.positive {
@@ -222,9 +234,61 @@ interface TradingPair {
       color: var(--color-danger);
     }
 
+    /* Price tick animation */
+    .stat-value.tick-up {
+      animation: tickUp 0.3s ease-out;
+    }
+
+    .stat-value.tick-down {
+      animation: tickDown 0.3s ease-out;
+    }
+
+    @keyframes tickUp {
+      0% { background: rgba(34, 197, 94, 0.3); }
+      100% { background: transparent; }
+    }
+
+    @keyframes tickDown {
+      0% { background: rgba(239, 68, 68, 0.3); }
+      100% { background: transparent; }
+    }
+
     .change-badge {
       font-size: var(--font-size-sm);
       margin-left: var(--spacing-2);
+    }
+
+    .connection-status {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-1);
+      padding: var(--spacing-1) var(--spacing-2);
+      background: var(--color-bg-tertiary);
+      border-radius: var(--radius-full);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--color-warning);
+      animation: pulse 1.5s infinite;
+    }
+
+    .connection-status.connected .status-dot {
+      background: var(--color-success);
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .status-text {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-text-tertiary);
     }
 
     .trading-grid {
@@ -323,8 +387,15 @@ interface TradingPair {
 })
 export class SpotTradingComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
-  readonly chartService = inject(ChartService);
-
+  private readonly router = inject(Router);
+  private readonly marketData = inject(MarketDataService);
+  
+  // Local state
+  ordersTab = signal<'open' | 'history' | 'trades'>('open');
+  private lastPriceValue = 0;
+  priceTickDirection = signal<'up' | 'down' | null>(null);
+  
+  // Selected pair for the trade form
   selectedPair = signal<TradingPair>({
     symbol: 'BTCUSDT',
     baseAsset: 'BTC',
@@ -336,31 +407,87 @@ export class SpotTradingComponent implements OnInit, OnDestroy {
     volume24h: 1234567890
   });
 
-  ordersTab = signal<'open' | 'history' | 'trades'>('open');
+  // Computed from MarketDataService
+  readonly currentSymbol = computed(() => this.marketData.currentSymbol());
+  readonly isConnected = computed(() => this.marketData.isConnected());
+  readonly candleData = computed(() => this.marketData.candleData());
+  readonly isLoading = computed(() => this.marketData.isLoading());
+  
+  // Market summary data
+  readonly lastPrice = computed(() => {
+    const price = this.marketData.lastPrice();
+    this.detectPriceTick(price);
+    return price;
+  });
+  
+  readonly priceChange = computed(() => {
+    const ticker = this.marketData.ticker();
+    return ticker?.priceChangePercent ?? 0;
+  });
+  
+  readonly isPriceUp = computed(() => this.marketData.isPriceUp());
+  
+  readonly high24h = computed(() => {
+    const ticker = this.marketData.ticker();
+    return ticker?.high24h ?? 0;
+  });
+  
+  readonly low24h = computed(() => {
+    const ticker = this.marketData.ticker();
+    return ticker?.low24h ?? 0;
+  });
+  
+  readonly volume24h = computed(() => {
+    const ticker = this.marketData.ticker();
+    return ticker?.volume24h ?? 0;
+  });
+  
+  readonly baseAsset = computed(() => {
+    const pair = this.currentSymbol();
+    if (pair.endsWith('USDT')) return pair.slice(0, -4);
+    if (pair.endsWith('BTC')) return pair.slice(0, -3);
+    return pair;
+  });
 
   ngOnInit(): void {
-    const pair = this.route.snapshot.paramMap.get('pair');
-    const symbol = pair || 'BTCUSDT';
+    // Get pair from route params
+    const pair = this.route.snapshot.paramMap.get('pair') || 'BTCUSDT';
     
-    // Initialize chart with the trading pair
-    this.chartService.initializeChart(symbol, '1H');
+    // Initialize market data with the trading pair
+    this.marketData.initializeSymbol(pair, '1H');
     
-    if (pair) {
-      console.log('Loading pair:', pair);
-    }
+    // Update the selected pair
+    const [base, quote] = this.parseSymbol(pair);
+    this.selectedPair.set({
+      symbol: pair,
+      baseAsset: base,
+      quoteAsset: quote,
+      price: 0,
+      change24h: 0,
+      high24h: 0,
+      low24h: 0,
+      volume24h: 0
+    });
   }
 
   ngOnDestroy(): void {
-    this.chartService.disconnect();
+    // Cleanup is handled by MarketDataService
   }
 
   onPairChange(pair: TradingPair): void {
+    // Update local state
     this.selectedPair.set(pair);
-    this.chartService.changeSymbol(pair.symbol);
+    
+    // Update market data
+    this.marketData.initializeSymbol(pair.symbol, '1H');
+    
+    // Update URL
+    this.router.navigate(['/trade', pair.symbol], { replaceUrl: true });
   }
 
   onOrderSubmit(order: any): void {
     console.log('Order submitted:', order);
+    // Would send to trading service API
   }
 
   formatVolume(volume: number): string {
@@ -373,6 +500,28 @@ export class SpotTradingComponent implements OnInit, OnDestroy {
     if (volume >= 1_000) {
       return `${(volume / 1_000).toFixed(2)}K`;
     }
-    return volume.toString();
+    return volume.toFixed(2);
+  }
+
+  private parseSymbol(symbol: string): [string, string] {
+    const quoteAssets = ['USDT', 'USDC', 'BTC', 'ETH', 'BNB'];
+    for (const quote of quoteAssets) {
+      if (symbol.endsWith(quote)) {
+        return [symbol.slice(0, -quote.length), quote];
+      }
+    }
+    return [symbol, 'USDT'];
+  }
+
+  private detectPriceTick(newPrice: number): void {
+    if (this.lastPriceValue !== 0 && newPrice !== this.lastPriceValue) {
+      this.priceTickDirection.set(newPrice > this.lastPriceValue ? 'up' : 'down');
+      
+      // Reset tick direction after animation
+      setTimeout(() => {
+        this.priceTickDirection.set(null);
+      }, 300);
+    }
+    this.lastPriceValue = newPrice;
   }
 }
