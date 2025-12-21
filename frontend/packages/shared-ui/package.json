@@ -1,0 +1,22 @@
+{
+  "name": "@exchange/shared-ui",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./styles": "./styles/design-system.css"
+  },
+  "files": [
+    "src",
+    "styles"
+  ],
+  "dependencies": {
+    "clsx": "^2.1.0",
+    "tailwind-merge": "^2.2.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  }
+}
