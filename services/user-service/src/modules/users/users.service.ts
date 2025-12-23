@@ -3,10 +3,13 @@ import {
   ConflictException,
   NotFoundException,
   Logger,
+  Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ClientProxy } from '@nestjs/microservices';
 import * as bcrypt from 'bcrypt';
+import { RABBITMQ } from '@exchange/common';
 import { User, UserStatus } from './entities/user.entity';
 import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
 
@@ -17,6 +20,7 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @Inject('USERS_PACKAGE') private readonly client: ClientProxy,
   ) {}
 
   /**
@@ -70,6 +74,13 @@ export class UsersService {
 
     const savedUser = await this.userRepository.save(user);
     this.logger.log(`User created: ${savedUser.id}`);
+
+    // Emit event to RabbitMQ
+    this.client.emit(RABBITMQ.QUEUES.USER_CREATED, {
+      id: savedUser.id,
+      email: savedUser.email,
+      timestamp: new Date().toISOString(),
+    });
 
     return savedUser;
   }

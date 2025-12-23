@@ -1,4 +1,5 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException, OnModuleInit, Inject } from '@nestjs/common';
+import { ClientGrpc } from '@nestjs/microservices';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -17,17 +18,30 @@ interface User {
   tier: string;
   kycLevel: number;
   twoFactorEnabled: boolean;
+  two_factor_enabled: boolean;
   twoFactorSecret: string | null;
 }
 
+interface UserGrpcService {
+  findById(data: { id: string }): any;
+  findByEmail(data: { email: string }): any;
+}
+
 @Injectable()
-export class AuthService {
+export class AuthService implements OnModuleInit {
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     @InjectRepository(Session)
     private readonly sessionRepository: Repository<Session>,
+    @Inject('USER_PACKAGE') private readonly client: ClientGrpc,
   ) {}
+
+  private userGrpcService: UserGrpcService;
+
+  onModuleInit() {
+    this.userGrpcService = this.client.getService<UserGrpcService>('UserService');
+  }
 
   /**
    * Validate user credentials
@@ -197,13 +211,35 @@ export class AuthService {
   }
 
   // Placeholder methods - in production these would call user-service
-  private async findUserByEmail(_email: string): Promise<User | null> {
-    // This would make an HTTP/gRPC call to user-service
-    return null;
+  private async findUserByEmail(email: string): Promise<User | null> {
+    try {
+      const response = await this.userGrpcService.findByEmail({ email }).toPromise();
+      return this.mapGrpcUserToInternal(response);
+    } catch (error) {
+      return null;
+    }
   }
 
-  private async findUserById(_id: string): Promise<User | null> {
-    // This would make an HTTP/gRPC call to user-service
-    return null;
+  private async findUserById(id: string): Promise<User | null> {
+    try {
+      const response = await this.userGrpcService.findById({ id }).toPromise();
+      return this.mapGrpcUserToInternal(response);
+    } catch (error) {
+      return null;
+    }
+  }
+
+  private mapGrpcUserToInternal(grpcUser: any): User {
+    return {
+      id: grpcUser.id,
+      email: grpcUser.email,
+      passwordHash: grpcUser.password_hash,
+      status: grpcUser.status,
+      tier: grpcUser.tier,
+      kycLevel: grpcUser.kyc_level,
+      twoFactorEnabled: grpcUser.two_factor_enabled,
+      two_factor_enabled: grpcUser.two_factor_enabled,
+      twoFactorSecret: null,
+    };
   }
 }

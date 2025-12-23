@@ -1,25 +1,34 @@
-import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, Logger, OnModuleInit, Inject } from '@nestjs/common';
+import { ClientGrpc, ClientProxy } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
+import { RABBITMQ } from '@exchange/common';
 import { Order, OrderStatus, OrderType, TimeInForce } from './entities/order.entity';
 import { Trade } from './entities/trade.entity';
 import { CreateOrderDto } from './dto/order.dto';
 
 @Injectable()
-export class OrdersService {
+export class OrdersService implements OnModuleInit {
   private readonly logger = new Logger(OrdersService.name);
   private readonly matchingEngineUrl: string;
+  private walletService: any;
 
   constructor(
     @InjectRepository(Order)
     private readonly orderRepository: Repository<Order>,
     @InjectRepository(Trade)
     private readonly tradeRepository: Repository<Trade>,
+    @Inject('WALLET_PACKAGE') private readonly client: ClientGrpc,
+    @Inject('TRADING_PACKAGE') private readonly rmqClient: ClientProxy,
     private readonly configService: ConfigService,
   ) {
     this.matchingEngineUrl = this.configService.get('MATCHING_ENGINE_URL', 'http://matching-engine:3010');
+  }
+
+  onModuleInit() {
+    this.walletService = this.client.getService<any>('WalletService');
   }
 
   /**
@@ -33,6 +42,19 @@ export class OrdersService {
 
     // Get pair ID from symbol (would call pairs service in production)
     const pairId = await this.getPairId(createOrderDto.symbol);
+    const assetId = createOrderDto.symbol.split('/')[0]; // Simple assumption: first part of symbol is the asset to lock
+
+    // Lock balance via gRPC
+    const amountToLock = parseFloat(createOrderDto.price || '0') * parseFloat(createOrderDto.quantity);
+    const lockResult = await this.walletService.lockBalance({
+      user_id: userId,
+      asset_id: assetId,
+      amount: amountToLock.toString(),
+    }).toPromise();
+
+    if (!lockResult.success) {
+      throw new BadRequestException(`Failed to lock balance: ${lockResult.message}`);
+    }
 
     // Create order in database
     const order: Order = this.orderRepository.create({
@@ -216,6 +238,17 @@ export class OrdersService {
         isBuyerMaker: trade.isBuyerMaker,
       });
       await this.tradeRepository.save(tradeEntity);
+
+      // Emit trade executed event to RabbitMQ
+      this.rmqClient.emit(RABBITMQ.QUEUES.TRADE_EXECUTED, {
+        tradeId: trade.id,
+        pairId: pairId,
+        buyerId: trade.buyerId,
+        sellerId: trade.sellerId,
+        price: trade.price,
+        quantity: trade.quantity,
+        timestamp: new Date().toISOString(),
+      });
     }
   }
 }

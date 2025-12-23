@@ -1,24 +1,26 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger, OnModuleInit, Inject } from '@nestjs/common';
+import { ClientGrpc } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { HttpService } from '@nestjs/axios';
-import { ConfigService } from '@nestjs/config';
-import { lastValueFrom } from 'rxjs';
 import { KycRequest, KycStatus, KycLevel } from './entities/kyc-request.entity';
 import { SubmitKycDto, ReviewKycDto } from './dto/kyc.dto';
+import { ClientProxy } from '@nestjs/microservices';
+import { RABBITMQ } from '@exchange/common';
 
 @Injectable()
-export class KycService {
+export class KycService implements OnModuleInit {
   private readonly logger = new Logger(KycService.name);
-  private readonly userServiceUrl: string;
+  private userService: any;
 
   constructor(
     @InjectRepository(KycRequest)
     private readonly kycRepository: Repository<KycRequest>,
-    private readonly httpService: HttpService,
-    private readonly configService: ConfigService,
-  ) {
-    this.userServiceUrl = this.configService.get('USER_SERVICE_URL', 'http://user-service:3001');
+    @Inject('USER_PACKAGE') private readonly client: ClientGrpc,
+    @Inject('COMPLIANCE_PACKAGE') private readonly rmqClient: ClientProxy,
+  ) {}
+
+  onModuleInit() {
+    this.userService = this.client.getService<any>('UserService');
   }
 
   async submit(userId: string, dto: SubmitKycDto): Promise<KycRequest> {
@@ -80,22 +82,23 @@ export class KycService {
       await this.updateUserKycLevel(request.userId, request.level);
     }
 
+    // Emit event to RabbitMQ
+    this.rmqClient.emit(RABBITMQ.QUEUES.KYC_UPDATED, {
+      userId: request.userId,
+      level: request.level,
+      status: request.status,
+      timestamp: new Date().toISOString(),
+    });
+
     return saved;
   }
 
   private async updateUserKycLevel(userId: string, level: KycLevel): Promise<void> {
     try {
-      // Internal call to user service to update level
-      // In a real system, you might use a secure system token or similar mechanism
-      // For MVP we might skip auth or use a shared secret header
-      await lastValueFrom(
-        this.httpService.patch(`${this.userServiceUrl}/api/v1/users/${userId}/kyc-level`, {
-          level: level,
-        })
-      );
+      await this.userService.updateKycLevel({ user_id: userId, kyc_level: level }).toPromise();
+      this.logger.log(`Successfully updated user ${userId} KYC level to ${level} via gRPC`);
     } catch (error) {
       this.logger.error(`Failed to update user KYC level: ${(error as any).message}`);
-      // Typically we might want to transactions or retries here
     }
   }
 }

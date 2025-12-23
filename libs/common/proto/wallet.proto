@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package wallet;
+
+service WalletService {
+  rpc GetBalance (GetBalanceRequest) returns (BalanceResponse);
+  rpc LockBalance (LockBalanceRequest) returns (WalletActionResponse);
+  rpc UnlockBalance (UnlockBalanceRequest) returns (WalletActionResponse);
+}
+
+message GetBalanceRequest {
+  string user_id = 1;
+  string asset_id = 2;
+}
+
+message LockBalanceRequest {
+  string user_id = 1;
+  string asset_id = 2;
+  string amount = 3;
+}
+
+message UnlockBalanceRequest {
+  string user_id = 1;
+  string asset_id = 2;
+  string amount = 3;
+}
+
+message BalanceResponse {
+  string available = 1;
+  string locked = 2;
+}
+
+message WalletActionResponse {
+  bool success = 1;
+  string message = 2;
+}

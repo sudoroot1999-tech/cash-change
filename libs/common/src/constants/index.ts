@@ -142,6 +142,8 @@ export const RABBITMQ = {
     TRADES: 'trades.exchange',
     NOTIFICATIONS: 'notifications.exchange',
     WALLETS: 'wallets.exchange',
+    USERS: 'users.exchange',
+    COMPLIANCE: 'compliance.exchange',
   },
   QUEUES: {
     ORDER_CREATED: 'orders.created',
@@ -150,5 +152,7 @@ export const RABBITMQ = {
     DEPOSIT_DETECTED: 'wallets.deposit',
     WITHDRAWAL_REQUEST: 'wallets.withdrawal',
     NOTIFICATION_SEND: 'notifications.send',
+    USER_CREATED: 'users.created',
+    KYC_UPDATED: 'compliance.kyc_updated',
   },
 } as const;
