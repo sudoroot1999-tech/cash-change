@@ -37,6 +37,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/orders/pages/order-history/order-history.component').then(m => m.OrderHistoryComponent),
         canActivate: [authGuard],
         title: 'Orders - CryptoX'
+      },
+      {
+        path: 'account',
+        canActivate: [authGuard],
+        loadChildren: () => import('./features/account/account.routes').then(m => m.ACCOUNT_ROUTES),
+        title: 'Account - CryptoX'
       }
     ]
   },

@@ -19,13 +19,13 @@ cp .env.example .env
 npm install --legacy-peer-deps
 
 # 3. Start all services
-docker-compose up -d
+docker compose up -d
 
 # 4. View logs
-docker-compose logs -f
+docker compose logs -f
 
 # 5. Stop services
-docker-compose down
+docker compose down
 ```
 
 ### Service Endpoints
