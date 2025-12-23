@@ -1,15 +1,15 @@
 import {
-  Controller, Get, Post, Patch, Delete, Body, Param, Query, Req, HttpCode, HttpStatus, ParseUUIDPipe,
+  Controller, Get, Post, Patch, Delete, Body, Param, Query, HttpCode, HttpStatus, ParseUUIDPipe,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
-import { Request } from 'express';
+import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
 import { SendNotificationDto, BulkNotificationDto } from './dto/notification.dto';
 import { NotificationChannel } from './entities/notification.entity';
+import { RequireAuth, CurrentUser, AuthenticatedUser } from '@exchange/common';
 
 @ApiTags('Notifications')
 @Controller('notifications')
-@ApiBearerAuth()
+@RequireAuth()
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
@@ -34,14 +34,13 @@ export class NotificationsController {
   @ApiQuery({ name: 'page', type: Number, required: false })
   @ApiQuery({ name: 'limit', type: Number, required: false })
   async getNotifications(
-    @Req() req: Request,
+    @CurrentUser() user: AuthenticatedUser,
     @Query('channel') channel?: NotificationChannel,
     @Query('unreadOnly') unreadOnly?: boolean,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
-    const userId = (req as any).user?.userId || 'test-user-id';
-    const result = await this.notificationsService.getUserNotifications(userId, {
+    const result = await this.notificationsService.getUserNotifications(user.userId, {
       channel,
       unreadOnly: unreadOnly === true,
       page: page || 1,
@@ -52,31 +51,27 @@ export class NotificationsController {
 
   @Get('unread-count')
   @ApiOperation({ summary: 'Get unread notification count' })
-  async getUnreadCount(@Req() req: Request) {
-    const userId = (req as any).user?.userId || 'test-user-id';
-    const count = await this.notificationsService.getUnreadCount(userId);
+  async getUnreadCount(@CurrentUser() user: AuthenticatedUser) {
+    const count = await this.notificationsService.getUnreadCount(user.userId);
     return { count };
   }
 
   @Patch(':id/read')
   @ApiOperation({ summary: 'Mark notification as read' })
-  async markAsRead(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
-    const userId = (req as any).user?.userId || 'test-user-id';
-    return this.notificationsService.markAsRead(userId, id);
+  async markAsRead(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.notificationsService.markAsRead(user.userId, id);
   }
 
   @Patch('read-all')
   @ApiOperation({ summary: 'Mark all notifications as read' })
-  async markAllAsRead(@Req() req: Request) {
-    const userId = (req as any).user?.userId || 'test-user-id';
-    return this.notificationsService.markAllAsRead(userId);
+  async markAllAsRead(@CurrentUser() user: AuthenticatedUser) {
+    return this.notificationsService.markAllAsRead(user.userId);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete notification' })
-  async delete(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
-    const userId = (req as any).user?.userId || 'test-user-id';
-    await this.notificationsService.delete(userId, id);
+  async delete(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthenticatedUser) {
+    await this.notificationsService.delete(user.userId, id);
   }
 }

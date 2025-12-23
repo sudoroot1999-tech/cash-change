@@ -1,14 +1,22 @@
-// Decorators for NestJS services
-// These are placeholders that will be fully implemented in services
+import { UseGuards, applyDecorators, SetMetadata } from '@nestjs/common';
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 
 /**
- * Decorator to mark a method as requiring authentication
+ * Decorator to mark a method or controller as requiring authentication
  */
-export function RequireAuth(): MethodDecorator {
-  return (_target: unknown, _propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
-    return descriptor;
-  };
+export function RequireAuth() {
+  return applyDecorators(
+    UseGuards(JwtAuthGuard),
+    ApiBearerAuth(),
+  );
 }
+
+/**
+ * Decorator to mark a method as public (bypassing JwtAuthGuard)
+ */
+export const IS_PUBLIC_KEY = 'isPublic';
+export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
 
 /**
  * Decorator to mark a method as requiring specific KYC level

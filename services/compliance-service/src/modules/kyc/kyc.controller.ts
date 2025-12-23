@@ -1,28 +1,27 @@
-import { Controller, Post, Get, Body, Param, Patch, Req, UseInterceptors, UploadedFiles } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
+import { Controller, Post, Get, Body, Param, Patch, UseInterceptors, UploadedFiles } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiConsumes } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { Request } from 'express';
+import { RequireAuth, CurrentUser, AuthenticatedUser } from '@exchange/common';
 import { KycService } from './kyc.service';
 import { SubmitKycDto, ReviewKycDto } from './dto/kyc.dto';
 
 @ApiTags('KYC')
 @Controller('kyc')
-@ApiBearerAuth()
+@RequireAuth()
 export class KycController {
   constructor(private readonly kycService: KycService) {}
 
   @Post('submit')
   @ApiOperation({ summary: 'Submit KYC request' })
-  async submit(@Req() req: Request, @Body() dto: SubmitKycDto) {
-    const userId = (req as any).user?.userId || 'test-user-id';
-    return this.kycService.submit(userId, dto);
+  async submit(@CurrentUser() user: AuthenticatedUser, @Body() dto: SubmitKycDto) {
+    return this.kycService.submit(user.userId, dto);
   }
 
   @Post('documents')
   @UseInterceptors(FilesInterceptor('files'))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Upload KYC documents' })
-  async uploadDocuments(@Req() _req: Request, @UploadedFiles() files: Array<Express.Multer.File>) {
+  async uploadDocuments(@CurrentUser() _user: AuthenticatedUser, @UploadedFiles() files: Array<Express.Multer.File>) {
     // In a real implementation this would upload to S3/Azure Blob
     // For MVP we just return success
     return { 
@@ -34,19 +33,17 @@ export class KycController {
 
   @Get('status')
   @ApiOperation({ summary: 'Get my KYC status' })
-  async getStatus(@Req() req: Request) {
-    const userId = (req as any).user?.userId || 'test-user-id';
-    return this.kycService.getStatus(userId);
+  async getStatus(@CurrentUser() user: AuthenticatedUser) {
+    return this.kycService.getStatus(user.userId);
   }
 
   @Patch(':id/review')
   @ApiOperation({ summary: 'Review KYC request (Admin)' })
   async review(
-    @Req() req: Request,
+    @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
     @Body() dto: ReviewKycDto,
   ) {
-    const adminId = (req as any).user?.userId || 'admin-user-id';
-    return this.kycService.review(adminId, id, dto);
+    return this.kycService.review(user.userId, id, dto);
   }
 }

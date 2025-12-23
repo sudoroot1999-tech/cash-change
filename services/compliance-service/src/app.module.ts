@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { KycModule } from './modules/kyc/kyc.module';
 import { AmlModule } from './modules/aml/aml.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { AmlModule } from './modules/aml/aml.module';
     }),
     KycModule,
     AmlModule,
+    AuthModule,
   ],
 })
 export class AppModule {}

@@ -9,17 +9,16 @@ import {
   ParseUUIDPipe,
   HttpCode,
   HttpStatus,
-  Req,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
-import { Request } from 'express';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import { RequireAuth, CurrentUser, AuthenticatedUser } from '@exchange/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto, OrderResponseDto } from './dto/order.dto';
 import { OrderStatus } from './entities/order.entity';
 
 @ApiTags('Orders')
 @Controller('orders')
-@ApiBearerAuth()
+@RequireAuth()
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
@@ -27,9 +26,11 @@ export class OrdersController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new order' })
   @ApiResponse({ status: 201, type: OrderResponseDto })
-  async createOrder(@Body() createOrderDto: CreateOrderDto, @Req() req: Request) {
-    const userId = (req as any).user?.userId || 'test-user-id';
-    return this.ordersService.createOrder(userId, createOrderDto);
+  async createOrder(
+    @Body() createOrderDto: CreateOrderDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.ordersService.createOrder(user.userId, createOrderDto);
   }
 
   @Get()
@@ -39,14 +40,13 @@ export class OrdersController {
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   async getUserOrders(
-    @Req() req: Request,
+    @CurrentUser() user: AuthenticatedUser,
     @Query('status') status?: OrderStatus,
     @Query('symbol') _symbol?: string,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
-    const userId = (req as any).user?.userId || 'test-user-id';
-    const result = await this.ordersService.getUserOrders(userId, {
+    const result = await this.ordersService.getUserOrders(user.userId, {
       status,
       page: page || 1,
       limit: limit || 20,
@@ -65,17 +65,21 @@ export class OrdersController {
   @Get('open')
   @ApiOperation({ summary: 'Get open orders' })
   @ApiQuery({ name: 'symbol', required: false })
-  async getOpenOrders(@Req() req: Request, @Query('symbol') _symbol?: string) {
-    const userId = (req as any).user?.userId || 'test-user-id';
-    const orders = await this.ordersService.getOpenOrders(userId, _symbol);
+  async getOpenOrders(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('symbol') _symbol?: string,
+  ) {
+    const orders = await this.ordersService.getOpenOrders(user.userId, _symbol);
     return { data: orders };
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get order by ID' })
-  async getOrder(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
-    const userId = (req as any).user?.userId || 'test-user-id';
-    return this.ordersService.getOrder(userId, id);
+  async getOrder(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.ordersService.getOrder(user.userId, id);
   }
 
   @Delete(':id')
@@ -85,10 +89,9 @@ export class OrdersController {
   async cancelOrder(
     @Param('id', ParseUUIDPipe) id: string,
     @Query('symbol') symbol: string,
-    @Req() req: Request,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
-    const userId = (req as any).user?.userId || 'test-user-id';
-    return this.ordersService.cancelOrder(userId, id, symbol);
+    return this.ordersService.cancelOrder(user.userId, id, symbol);
   }
 
   @Get('history/trades')
@@ -97,13 +100,12 @@ export class OrdersController {
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   async getTradeHistory(
-    @Req() req: Request,
+    @CurrentUser() user: AuthenticatedUser,
     @Query('symbol') _symbol?: string,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
-    const userId = (req as any).user?.userId || 'test-user-id';
-    const result = await this.ordersService.getUserTrades(userId, {
+    const result = await this.ordersService.getUserTrades(user.userId, {
       page: page || 1,
       limit: limit || 50,
     });

@@ -5,7 +5,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ProxyModule } from './proxy/proxy.module';
 import { HealthModule } from './health/health.module';
-import { JwtStrategy } from './auth/jwt.strategy';
+import { JwtStrategy } from '@exchange/common';
 
 @Module({
   imports: [

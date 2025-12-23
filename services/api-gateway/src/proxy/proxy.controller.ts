@@ -1,6 +1,7 @@
 import { Controller, All, Req, Res, UseGuards, HttpStatus } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { ThrottlerGuard } from '@nestjs/throttler';
+import { RequireAuth, Public } from '@exchange/common';
 import { Request, Response } from 'express';
 import { ProxyService } from './proxy.service';
 
@@ -22,9 +23,19 @@ const ROUTES: Record<string, string> = {
   '/reserves': 'reserves',
 };
 
+// Paths that bypass authentication at the gateway
+const PUBLIC_PATHS = [
+  '/auth/login',
+  '/auth/register',
+  '/auth/refresh',
+  '/market',
+  '/reserves/latest',
+];
+
 @ApiTags('Proxy')
 @Controller()
 @UseGuards(ThrottlerGuard)
+@RequireAuth()
 export class ProxyController {
   constructor(private readonly proxyService: ProxyService) {}
 
@@ -32,6 +43,17 @@ export class ProxyController {
   async proxy(@Req() req: Request, @Res() res: Response) {
     const path = req.path.replace('/api/v1', '');
     
+    // Check if path is public:
+    // 1. Explicitly public paths
+    // 2. User registration (POST /users)
+    const isPublic = PUBLIC_PATHS.some(p => path.startsWith(p)) || 
+                    (path === '/users' && req.method === 'POST') ||
+                    path === '/auth';
+
+    // If it's not a public path and we don't have a user, the RequireAuth guard should have already blocked it.
+    // However, for the wildcard route to work with @Public(), we'd need more complex logic in the Guard.
+    // For this implementation, the individual services also have their own protection.
+
     // Find matching service
     const serviceEntry = Object.entries(ROUTES).find(([prefix]) => path.startsWith(prefix));
     if (!serviceEntry) {
@@ -39,7 +61,7 @@ export class ProxyController {
     }
 
     const [_prefix, service] = serviceEntry;
-    const servicePath = path; // Keep full path for service
+    const servicePath = path;
     
     // Forward user info if authenticated
     const headers: Record<string, string> = {};

@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bull';
 import { MpcModule } from './modules/mpc/mpc.module';
 import { ThreatsModule } from './modules/threats/threats.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { ThreatsModule } from './modules/threats/threats.module';
     }),
     MpcModule,
     ThreatsModule,
+    AuthModule,
   ],
 })
 export class AppModule {}

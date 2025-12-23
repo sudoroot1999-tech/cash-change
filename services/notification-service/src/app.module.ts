@@ -5,6 +5,7 @@ import { BullModule } from '@nestjs/bull';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { TemplatesModule } from './modules/templates/templates.module';
 import { PreferencesModule } from './modules/preferences/preferences.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [
@@ -61,6 +62,7 @@ import { PreferencesModule } from './modules/preferences/preferences.module';
     NotificationsModule,
     TemplatesModule,
     PreferencesModule,
+    AuthModule,
   ],
 })
 export class AppModule {}

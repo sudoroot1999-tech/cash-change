@@ -6,7 +6,7 @@ import { join } from 'path';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
-import { JwtStrategy } from './strategies/jwt.strategy';
+import { JwtStrategy } from '@exchange/common';
 import { Session } from '../sessions/entities/session.entity';
 
 @Module({

@@ -1,11 +1,11 @@
-import { Controller, Get, Query, Req } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
-import { Request } from 'express';
+import { Controller, Get, Query } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
+import { RequireAuth, CurrentUser, AuthenticatedUser } from '@exchange/common';
 import { TransactionsService } from './transactions.service';
 
 @ApiTags('Transactions')
 @Controller('transactions')
-@ApiBearerAuth()
+@RequireAuth()
 export class TransactionsController {
   constructor(private readonly txService: TransactionsService) {}
 
@@ -13,9 +13,12 @@ export class TransactionsController {
   @ApiOperation({ summary: 'Get user transaction history' })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
-  async getTransactions(@Req() req: Request, @Query('page') page?: number, @Query('limit') limit?: number) {
-    const userId = (req as any).user?.userId || 'test-user-id';
-    const result = await this.txService.getUserTransactions(userId, page || 1, limit || 50);
+  async getTransactions(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const result = await this.txService.getUserTransactions(user.userId, page || 1, limit || 50);
     return { data: result.items, meta: { page: page || 1, limit: limit || 50, total: result.total } };
   }
 }

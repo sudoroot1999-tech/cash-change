@@ -1,10 +1,11 @@
 import { Controller, Post, Get, Body, Param } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { RequireAuth } from '@exchange/common';
 import { ThreatsService } from './threats.service';
 
 @ApiTags('Threats')
 @Controller('threats')
-@ApiBearerAuth()
+@RequireAuth()
 export class ThreatsController {
   constructor(private readonly threatsService: ThreatsService) {}
 

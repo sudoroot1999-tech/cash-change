@@ -18,16 +18,19 @@ import {
   ApiBearerAuth,
   ApiParam,
 } from '@nestjs/swagger';
+import { RequireAuth, Public } from '@exchange/common';
 import { UsersService } from './users.service';
 import { CreateUserDto, UpdateUserDto, UserResponseDto, PaginationQueryDto } from './dto/user.dto';
 import { User } from './entities/user.entity';
 
 @ApiTags('Users')
 @Controller('users')
+@RequireAuth()
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
+  @Public()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: 201, description: 'User created successfully', type: UserResponseDto })

@@ -1,10 +1,11 @@
 import { Controller, Post, Body } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { RequireAuth } from '@exchange/common';
 import { MpcService } from './mpc.service';
 
 @ApiTags('MPC')
 @Controller('mpc')
-@ApiBearerAuth()
+@RequireAuth()
 export class MpcController {
   constructor(private readonly mpcService: MpcService) {}
 

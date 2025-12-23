@@ -1,10 +1,11 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { RequireAuth } from '@exchange/common';
 import { AmlService } from './aml.service';
 
 @ApiTags('AML')
 @Controller('aml')
-@ApiBearerAuth()
+@RequireAuth()
 export class AmlController {
   constructor(private readonly amlService: AmlService) {}
 
