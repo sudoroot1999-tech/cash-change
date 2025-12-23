@@ -141,9 +141,31 @@ func (mq *RabbitMQ) ConsumeOrders(me *engine.MatchingEngine) {
 		}
 
 		// Process order
-		// Convert to engine.Order and submit
-		mq.logger.Debug("Received order", zap.String("orderId", orderMsg.ID))
+		quantity, _ := decimal.NewFromString(orderMsg.Quantity)
+		price, _ := decimal.NewFromString(orderMsg.Price)
+		stopPrice, _ := decimal.NewFromString(orderMsg.StopPrice)
 
+		order := &engine.Order{
+			ID:            orderMsg.ID,
+			UserID:        orderMsg.UserID,
+			Symbol:        orderMsg.Symbol,
+			Side:          engine.OrderSide(orderMsg.Side),
+			Type:          engine.OrderType(orderMsg.Type),
+			Price:         price,
+			Quantity:      quantity,
+			StopPrice:     stopPrice,
+			TimeInForce:   orderMsg.TimeInForce,
+			ClientOrderID: orderMsg.ClientOrderID,
+		}
+
+		_, err = me.SubmitOrder(order)
+		if err != nil {
+			mq.logger.Error("Failed to process order from queue", zap.Error(err))
+			msg.Nack(false, true) // Requeue
+			continue
+		}
+
+		mq.logger.Debug("Processed order from queue", zap.String("orderId", orderMsg.ID))
 		msg.Ack(false)
 	}
 }

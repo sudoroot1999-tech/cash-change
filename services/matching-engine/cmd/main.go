@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -11,10 +12,13 @@ import (
 	"time"
 
 	"github.com/exchange/matching-engine/internal/engine"
+	matching_grpc "github.com/exchange/matching-engine/internal/grpc"
 	"github.com/exchange/matching-engine/internal/handlers"
 	"github.com/exchange/matching-engine/internal/messaging"
+	"github.com/exchange/matching-engine/internal/pb"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 )
 
 func main() {
@@ -26,6 +30,10 @@ func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "3010"
+	}
+	grpcPort := os.Getenv("GRPC_PORT")
+	if grpcPort == "" {
+		grpcPort = "5010"
 	}
 
 	// redisURL := os.Getenv("REDIS_URL")
@@ -43,6 +51,11 @@ func main() {
 			logger.Fatal("Failed to connect to RabbitMQ", zap.Error(err))
 		}
 		defer msgBroker.Close()
+
+		// Set trade handler to publish trades
+		matchingEngine.SetTradeHandler(func(trade *engine.Trade) {
+			msgBroker.PublishTrade(trade)
+		})
 
 		// Start consuming orders
 		go msgBroker.ConsumeOrders(matchingEngine)
@@ -83,11 +96,28 @@ func main() {
 		WriteTimeout: 10 * time.Second,
 	}
 
-	// Start server in goroutine
+	// Start HTTP server in goroutine
 	go func() {
-		logger.Info("Starting Matching Engine", zap.String("port", port))
+		logger.Info("Starting HTTP Matching Engine", zap.String("port", port))
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.Fatal("Server error", zap.Error(err))
+			logger.Fatal("HTTP Server error", zap.Error(err))
+		}
+	}()
+
+	// Setup gRPC server
+	lis, err := net.Listen("tcp", ":"+grpcPort)
+	if err != nil {
+		logger.Fatal("Failed to listen for gRPC", zap.Error(err))
+	}
+
+	grpcServer := grpc.NewServer()
+	pb.RegisterMatchingServiceServer(grpcServer, matching_grpc.NewMatchingGRPCServer(matchingEngine, logger))
+
+	// Start gRPC server in goroutine
+	go func() {
+		logger.Info("Starting gRPC Matching Engine", zap.String("port", grpcPort))
+		if err := grpcServer.Serve(lis); err != nil {
+			logger.Fatal("gRPC Server error", zap.Error(err))
 		}
 	}()
 
@@ -96,16 +126,20 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	logger.Info("Shutting down server...")
+	logger.Info("Shutting down servers...")
 
+	// Graceful shutdown for gRPC
+	grpcServer.GracefulStop()
+
+	// Graceful shutdown for HTTP
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		logger.Fatal("Server forced to shutdown", zap.Error(err))
+		logger.Fatal("HTTP Server forced to shutdown", zap.Error(err))
 	}
 
-	logger.Info("Server exited properly")
+	logger.Info("Servers exited properly")
 }
 
 func rabbitmqURLFromEnv() string {

@@ -177,7 +177,17 @@ export class UsersService {
   async updateKycLevel(id: string, kycLevel: number): Promise<User> {
     const user = await this.findById(id);
     user.kycLevel = kycLevel;
-    return this.userRepository.save(user);
+    const saved = await this.userRepository.save(user);
+
+    // Emit event to RabbitMQ
+    this.client.emit(RABBITMQ.QUEUES.KYC_UPDATED, {
+      userId: saved.id,
+      level: saved.kycLevel,
+      status: 'active', // If updated via this method, we assume it's part of an approval flow
+      timestamp: new Date().toISOString(),
+    });
+
+    return saved;
   }
 
   /**

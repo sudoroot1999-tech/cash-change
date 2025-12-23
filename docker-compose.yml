@@ -104,6 +104,7 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3001
+      - GRPC_PORT=5001
       - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
       - POSTGRES_PORT=${POSTGRES_PORT:-5432}
       - POSTGRES_USER=${POSTGRES_USER:-exchange_user}
@@ -118,6 +119,7 @@ services:
       - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
     ports:
       - '3001:3001'
+      - '5001:5001'
     depends_on:
       postgres:
         condition: service_healthy
@@ -147,6 +149,7 @@ services:
       - REDIS_PORT=${REDIS_PORT:-6379}
       - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-15m}
+      - USER_SERVICE_GRPC_URL=user-service:5001
     ports:
       - '3002:3002'
     depends_on:
@@ -166,6 +169,7 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3003
+      - GRPC_PORT=5003
       - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
       - POSTGRES_PORT=${POSTGRES_PORT:-5432}
       - POSTGRES_USER=${POSTGRES_USER:-exchange_user}
@@ -180,6 +184,7 @@ services:
       - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
     ports:
       - '3003:3003'
+      - '5003:5003'
     depends_on:
       postgres:
         condition: service_healthy
@@ -217,7 +222,8 @@ services:
       - RABBITMQ_USER=${RABBITMQ_USER:-exchange}
       - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
-      - MATCHING_ENGINE_URL=http://matching-engine:3010
+      - MATCHING_ENGINE_GRPC_URL=matching-engine:5010
+      - WALLET_SERVICE_GRPC_URL=wallet-service:5003
     ports:
       - '3004:3004'
     depends_on:
@@ -268,6 +274,7 @@ services:
     restart: unless-stopped
     environment:
       - PORT=3010
+      - GRPC_PORT=5010
       - REDIS_HOST=${REDIS_HOST:-redis}
       - REDIS_PORT=${REDIS_PORT:-6379}
       - REDIS_PASSWORD=${REDIS_PASSWORD:-redis_dev_password}
@@ -277,6 +284,7 @@ services:
       - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
     ports:
       - '3010:3010'
+      - '5010:5010'
     depends_on:
       redis:
         condition: service_healthy
@@ -333,7 +341,12 @@ services:
       - POSTGRES_USER=${POSTGRES_USER:-exchange_user}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-exchange_dev_password}
       - POSTGRES_DB=${POSTGRES_DB:-exchange}
+      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
+      - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - RABBITMQ_USER=${RABBITMQ_USER:-exchange}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
       - USER_SERVICE_URL=http://user-service:3001
+      - USER_SERVICE_GRPC_URL=user-service:5001
     ports:
       - "3007:3007"
     depends_on:

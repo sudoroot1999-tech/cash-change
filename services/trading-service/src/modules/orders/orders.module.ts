@@ -33,11 +33,26 @@ import { OrdersController } from './orders.controller';
         useFactory: (configService: ConfigService) => ({
           transport: Transport.RMQ,
           options: {
-            urls: [configService.get<string>('RABBITMQ_URL', 'amqp://localhost:5672')],
+            urls: [
+              `${configService.get<string>('RABBITMQ_HOST', 'rabbitmq')}:${configService.get<string>('RABBITMQ_PORT', '5672')}${configService.get<string>('RABBITMQ_USER', 'exchange')}:${configService.get<string>('RABBITMQ_PASSWORD', 'rabbitmq_dev_password')}`,
+            ],
             queue: RABBITMQ.QUEUES.TRADE_EXECUTED,
             queueOptions: {
               durable: true,
             },
+          },
+        }),
+      },
+      {
+        name: 'MATCHING_PACKAGE',
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.GRPC,
+          options: {
+            package: 'matching',
+            protoPath: join(__dirname, '../../../../libs/common/proto/matching.proto'),
+            url: configService.get('MATCHING_ENGINE_GRPC_URL', 'matching-engine:5010'),
           },
         }),
       },

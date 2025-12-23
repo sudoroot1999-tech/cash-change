@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { HttpModule } from '@nestjs/axios';
 import { RABBITMQ } from '@exchange/common';
 import { join } from 'path';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -12,7 +11,6 @@ import { KycController } from './kyc.controller';
 @Module({
   imports: [
     TypeOrmModule.forFeature([KycRequest]),
-    HttpModule,
     ClientsModule.registerAsync([
       {
         name: 'USER_PACKAGE',
@@ -34,7 +32,9 @@ import { KycController } from './kyc.controller';
         useFactory: (configService: ConfigService) => ({
           transport: Transport.RMQ,
           options: {
-            urls: [configService.get<string>('RABBITMQ_URL', 'amqp://localhost:5672')],
+            urls: [
+              `${configService.get<string>('RABBITMQ_HOST', 'rabbitmq')}:${configService.get<string>('RABBITMQ_PORT', '5672')}${configService.get<string>('RABBITMQ_USER', 'exchange')}:${configService.get<string>('RABBITMQ_PASSWORD', 'rabbitmq_dev_password')}`,
+            ],
             queue: RABBITMQ.QUEUES.KYC_UPDATED,
             queueOptions: {
               durable: true,

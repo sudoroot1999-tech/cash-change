@@ -9,7 +9,9 @@
     "test": "jest"
   },
   "dependencies": {
-   "@exchange/common": "*",
+    "@exchange/common": "*",
+    "@grpc/grpc-js": "^1.14.3",
+    "@grpc/proto-loader": "^0.8.0",
     "@nestjs/common": "^10.3.0",
     "@nestjs/config": "^3.1.1",
     "@nestjs/core": "^10.3.0",

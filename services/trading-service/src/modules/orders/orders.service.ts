@@ -2,8 +2,6 @@ import { Injectable, BadRequestException, NotFoundException, Logger, OnModuleIni
 import { ClientGrpc, ClientProxy } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ConfigService } from '@nestjs/config';
-import axios from 'axios';
 import { RABBITMQ } from '@exchange/common';
 import { Order, OrderStatus, OrderType, TimeInForce } from './entities/order.entity';
 import { Trade } from './entities/trade.entity';
@@ -12,8 +10,8 @@ import { CreateOrderDto } from './dto/order.dto';
 @Injectable()
 export class OrdersService implements OnModuleInit {
   private readonly logger = new Logger(OrdersService.name);
-  private readonly matchingEngineUrl: string;
   private walletService: any;
+  private matchingService: any;
 
   constructor(
     @InjectRepository(Order)
@@ -21,14 +19,13 @@ export class OrdersService implements OnModuleInit {
     @InjectRepository(Trade)
     private readonly tradeRepository: Repository<Trade>,
     @Inject('WALLET_PACKAGE') private readonly client: ClientGrpc,
+    @Inject('MATCHING_PACKAGE') private readonly matchingClient: ClientGrpc,
     @Inject('TRADING_PACKAGE') private readonly rmqClient: ClientProxy,
-    private readonly configService: ConfigService,
-  ) {
-    this.matchingEngineUrl = this.configService.get('MATCHING_ENGINE_URL', 'http://matching-engine:3010');
-  }
+  ) {}
 
   onModuleInit() {
     this.walletService = this.client.getService<any>('WalletService');
+    this.matchingService = this.matchingClient.getService<any>('MatchingService');
   }
 
   /**
@@ -73,27 +70,27 @@ export class OrdersService implements OnModuleInit {
 
     const savedOrder: Order = await this.orderRepository.save(order);
 
-    // Submit to matching engine
+    // Submit to matching engine via gRPC
     try {
-      const response = await axios.post(`${this.matchingEngineUrl}/api/v1/orders`, {
+      const response = await this.matchingService.submitOrder({
         id: savedOrder.id,
-        userId,
+        user_id: userId,
         symbol: createOrderDto.symbol,
         side: createOrderDto.side,
         type: createOrderDto.type,
-        price: createOrderDto.price,
-        quantity: createOrderDto.quantity,
-        stopPrice: createOrderDto.stopPrice,
-        timeInForce: createOrderDto.timeInForce,
-        clientOrderId: createOrderDto.clientOrderId,
-      });
+        price: createOrderDto.price?.toString() || '',
+        quantity: createOrderDto.quantity.toString(),
+        stop_price: createOrderDto.stopPrice?.toString() || '',
+        time_in_force: createOrderDto.timeInForce,
+        client_order_id: createOrderDto.clientOrderId,
+      }).toPromise();
 
       // Update order with result from matching engine
-      const { order: matchedOrder, trades } = response.data;
+      const { order: matchedOrder, trades } = response;
       
       savedOrder.status = matchedOrder.status;
-      savedOrder.filledQuantity = matchedOrder.filledQuantity;
-      savedOrder.remainingQuantity = matchedOrder.remainingQuantity;
+      savedOrder.filledQuantity = matchedOrder.filled_quantity;
+      savedOrder.remainingQuantity = matchedOrder.remaining_quantity;
       
       await this.orderRepository.save(savedOrder);
 
@@ -104,7 +101,7 @@ export class OrdersService implements OnModuleInit {
 
       this.logger.log(`Order created: ${savedOrder.id}, status: ${savedOrder.status}`);
     } catch (error) {
-      this.logger.error('Failed to submit to matching engine', error);
+      this.logger.error('Failed to submit to matching engine via gRPC', error);
       savedOrder.status = OrderStatus.REJECTED;
       await this.orderRepository.save(savedOrder);
     }
@@ -129,9 +126,12 @@ export class OrdersService implements OnModuleInit {
     }
 
     try {
-      await axios.delete(`${this.matchingEngineUrl}/api/v1/orders/${orderId}?symbol=${symbol}`);
+      await this.matchingService.cancelOrder({
+        id: orderId,
+        symbol: symbol,
+      }).toPromise();
     } catch (error) {
-      this.logger.error('Failed to cancel at matching engine', error);
+      this.logger.error('Failed to cancel at matching engine via gRPC', error);
     }
 
     order.status = OrderStatus.CANCELLED;
@@ -243,8 +243,8 @@ export class OrdersService implements OnModuleInit {
       this.rmqClient.emit(RABBITMQ.QUEUES.TRADE_EXECUTED, {
         tradeId: trade.id,
         pairId: pairId,
-        buyerId: trade.buyerId,
-        sellerId: trade.sellerId,
+        buyerId: trade.buyer_id || trade.buyerId,
+        sellerId: trade.seller_id || trade.sellerId,
         price: trade.price,
         quantity: trade.quantity,
         timestamp: new Date().toISOString(),
