@@ -1,10 +1,10 @@
 import { Component, ChangeDetectionStrategy, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { CardComponent } from '../../../../shared/components/card/card.component';
-import { ButtonComponent } from '../../../../shared/components/button/button.component';
-import { InputComponent } from '../../../../shared/components/input/input.component';
-import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
+import { CardComponent } from '@/core-components/card/card.component';
+import { ButtonComponent } from '@/core-components/button/button.component';
+import { InputComponent } from '@/core-components/input/input.component';
+import { BadgeComponent } from '@/core-components/badge/badge.component';
 import { AuthService } from '../../../../core/services/auth.service';
 
 interface Session {

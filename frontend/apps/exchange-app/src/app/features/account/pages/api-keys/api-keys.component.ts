@@ -1,9 +1,9 @@
 import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { CardComponent } from '../../../../shared/components/card/card.component';
-import { ButtonComponent } from '../../../../shared/components/button/button.component';
-import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
-import { InputComponent } from '../../../../shared/components/input/input.component';
+import { CardComponent } from '@/core-components/card/card.component';
+import { ButtonComponent } from '@/core-components/button/button.component';
+import { BadgeComponent } from '@/core-components/badge/badge.component';
+import { InputComponent } from '@/core-components/input/input.component';
 
 interface ApiKey {
   id: string;

@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { CryptoPriceComponent } from '../../../../shared/components/crypto-price/crypto-price.component';
+import { CryptoPriceComponent } from '@/core-components/crypto-price/crypto-price.component';
 
 interface TradingPair {
   symbol: string;

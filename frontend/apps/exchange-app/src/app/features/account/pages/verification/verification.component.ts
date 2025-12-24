@@ -1,8 +1,8 @@
 import { Component, ChangeDetectionStrategy, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { CardComponent } from '../../../../shared/components/card/card.component';
-import { ButtonComponent } from '../../../../shared/components/button/button.component';
-import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
+import { CardComponent } from '@/core-components/card/card.component';
+import { ButtonComponent } from '@/core-components/button/button.component';
+import { BadgeComponent } from '@/core-components/badge/badge.component';
 import { AuthService } from '../../../../core/services/auth.service';
 
 type VerificationStep = 'personal' | 'identity' | 'address' | 'complete';

@@ -2,9 +2,9 @@ import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/cor
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { CardComponent } from '../../../../shared/components/card/card.component';
-import { ButtonComponent } from '../../../../shared/components/button/button.component';
-import { InputComponent } from '../../../../shared/components/input/input.component';
+import { CardComponent } from '@/core-components/card/card.component';
+import { ButtonComponent } from '@/core-components/button/button.component';
+import { InputComponent } from '@/core-components/input/input.component';
 import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({

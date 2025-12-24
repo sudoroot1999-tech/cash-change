@@ -2,9 +2,9 @@ import { Component, ChangeDetectionStrategy, signal, inject, OnInit, OnDestroy, 
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { CardComponent } from '../../../../shared/components/card/card.component';
-import { ButtonComponent } from '../../../../shared/components/button/button.component';
-import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
+import { CardComponent } from '@/core-components/card/card.component';
+import { ButtonComponent } from '@/core-components/button/button.component';
+import { BadgeComponent } from '@/core-components/badge/badge.component';
 import { OrderBookComponent } from '../../components/order-book/order-book.component';
 import { TradeFormComponent } from '../../components/trade-form/trade-form.component';
 import { TradingPairSelectorComponent } from '../../components/trading-pair-selector/trading-pair-selector.component';

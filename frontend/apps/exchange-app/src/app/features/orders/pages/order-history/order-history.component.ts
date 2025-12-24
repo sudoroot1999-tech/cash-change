@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
-import { CardComponent } from '../../../../shared/components/card/card.component';
-import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
+import { CardComponent } from '@/core-components/card/card.component';
+import { BadgeComponent } from '@/core-components/badge/badge.component';
 
 interface Order {
   id: string;

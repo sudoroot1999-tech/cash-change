@@ -1,10 +1,10 @@
 import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { CardComponent } from '../../../../shared/components/card/card.component';
-import { InputComponent } from '../../../../shared/components/input/input.component';
-import { CryptoPriceComponent } from '../../../../shared/components/crypto-price/crypto-price.component';
-import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
+import { CardComponent } from '@/core-components/card/card.component';
+import { InputComponent } from '@/core-components/input/input.component';
+import { CryptoPriceComponent } from '@/core-components/crypto-price/crypto-price.component';
+import { BadgeComponent } from '@/core-components/badge/badge.component';
 
 interface MarketData {
   symbol: string;

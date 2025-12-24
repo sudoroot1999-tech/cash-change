@@ -1,8 +1,8 @@
 import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { AuthService } from '../../core/services/auth.service';
-import { ButtonComponent } from '../components/button/button.component';
+import { AuthService } from '../../../core/services/auth.service';
+import { ButtonComponent } from '@/core-components/button/button.component';
 
 interface NavItem {
   label: string;
