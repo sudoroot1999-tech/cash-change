@@ -6,7 +6,7 @@
 @import 'tailwindcss';
 
 /* Import shared design system CSS variables */
-@import "@exchange/shared-ui/styles/design-system.css";
+@import '@exchange/shared-ui/styles';
 
 /* ========== EXCHANGE APP SPECIFIC STYLES ========== */
 

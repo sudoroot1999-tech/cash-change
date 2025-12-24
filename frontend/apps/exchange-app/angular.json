@@ -54,6 +54,10 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
+          "options": {
+            "poll": 2000, 
+            "watch": true 
+          },
           "configurations": {
             "production": {
               "buildTarget": "exchange-app:build:production"

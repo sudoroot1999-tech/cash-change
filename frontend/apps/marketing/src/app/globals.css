@@ -6,7 +6,7 @@
 @import 'tailwindcss';
 
 /* Import shared design system */
-@import '@exchange/shared-ui/styles/design-system.css';
+@import '@exchange/shared-ui/styles';
 
 /* Marketing-specific styles */
 
