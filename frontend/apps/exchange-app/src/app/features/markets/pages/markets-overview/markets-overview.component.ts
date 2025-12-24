@@ -5,6 +5,7 @@ import { CardComponent } from '@/core-components/card/card.component';
 import { InputComponent } from '@/core-components/input/input.component';
 import { CryptoPriceComponent } from '@/core-components/crypto-price/crypto-price.component';
 import { BadgeComponent } from '@/core-components/badge/badge.component';
+import { FormsModule } from '@angular/forms';
 
 interface MarketData {
   symbol: string;
@@ -20,7 +21,7 @@ interface MarketData {
 @Component({
   selector: 'app-markets-overview',
   standalone: true,
-  imports: [CommonModule, DecimalPipe, RouterLink, CardComponent, InputComponent, CryptoPriceComponent, BadgeComponent],
+  imports: [CommonModule, DecimalPipe, RouterLink, CardComponent, InputComponent, CryptoPriceComponent, BadgeComponent, FormsModule],
   template: `
     <div class="markets-page">
       <div class="page-header">

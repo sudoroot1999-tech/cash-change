@@ -29,9 +29,12 @@ export interface User {
   status: UserStatus;
   tier: UserTier;
   kycLevel: number;
+  kycStatus?: string;
+  feeTier?: string;
   referralCode: string;
   referredBy?: string;
   twoFactorEnabled: boolean;
+  isTwoFactorEnabled: boolean;
   emailVerified: boolean;
   phoneVerified: boolean;
   createdAt: Date;

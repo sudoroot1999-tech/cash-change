@@ -9,6 +9,9 @@ export interface User {
   email: string;
   username: string;
   kycLevel: 'NONE' | 'BASIC' | 'ADVANCED' | 'CORPORATE';
+  kycStatus?: string;
+  feeTier?: string;
+  isTwoFactorEnabled?: boolean;
   createdAt: string;
 }
 
@@ -43,7 +46,7 @@ export class AuthService {
 
   login(email: string, password: string): Observable<AuthResponse> {
     this._isLoading.set(true);
-    
+
     return this.http.post<AuthResponse>(`${this.API_URL}/login`, { email, password }).pipe(
       tap(response => {
         this.storeTokens(response.accessToken, response.refreshToken);
@@ -60,7 +63,7 @@ export class AuthService {
 
   register(data: { email: string; password: string; username: string }): Observable<AuthResponse> {
     this._isLoading.set(true);
-    
+
     return this.http.post<AuthResponse>(`${this.API_URL}/register`, data).pipe(
       tap(response => {
         this.storeTokens(response.accessToken, response.refreshToken);

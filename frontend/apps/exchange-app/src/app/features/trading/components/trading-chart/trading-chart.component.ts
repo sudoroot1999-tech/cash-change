@@ -1,18 +1,18 @@
-import { 
-  Component, 
-  ChangeDetectionStrategy, 
-  ElementRef, 
-  ViewChild, 
-  AfterViewInit, 
+import {
+  Component,
+  ChangeDetectionStrategy,
+  ElementRef,
+  ViewChild,
+  AfterViewInit,
   OnDestroy,
   input,
   effect,
   signal
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { 
-  createChart, 
-  IChartApi, 
+import {
+  createChart,
+  IChartApi,
   ISeriesApi,
   CandlestickData,
   Time,
@@ -39,8 +39,8 @@ export interface OHLCData {
       <div class="chart-toolbar">
         <div class="timeframe-selector">
           @for (tf of timeframes; track tf.value) {
-            <button 
-              class="timeframe-btn" 
+            <button
+              class="timeframe-btn"
               [class.active]="selectedTimeframe() === tf.value"
               (click)="onTimeframeChange(tf.value)"
             >
@@ -48,9 +48,9 @@ export interface OHLCData {
             </button>
           }
         </div>
-        
+
         <div class="chart-type-selector">
-          <button 
+          <button
             class="chart-type-btn"
             [class.active]="chartType() === 'candlestick'"
             (click)="setChartType('candlestick')"
@@ -61,7 +61,7 @@ export interface OHLCData {
               <line x1="12" y1="6" x2="12" y2="18"/>
             </svg>
           </button>
-          <button 
+          <button
             class="chart-type-btn"
             [class.active]="chartType() === 'line'"
             (click)="setChartType('line')"
@@ -71,7 +71,7 @@ export interface OHLCData {
               <polyline points="4,18 8,12 12,15 16,8 20,12"/>
             </svg>
           </button>
-          <button 
+          <button
             class="chart-type-btn"
             [class.active]="chartType() === 'area'"
             (click)="setChartType('area')"
@@ -328,7 +328,7 @@ export class TradingChartComponent implements AfterViewInit, OnDestroy {
   ngAfterViewInit(): void {
     this.initializeChart();
     this.setupResizeObserver();
-    
+
     // Load initial mock data
     if (this.data().length === 0) {
       this.loadMockData();
@@ -360,13 +360,13 @@ export class TradingChartComponent implements AfterViewInit, OnDestroy {
         mode: CrosshairMode.Normal,
         vertLine: {
           color: '#6366f1',
-          width: 1,
+          width: 1 as any,
           style: 2,
           labelBackgroundColor: '#6366f1',
         },
         horzLine: {
           color: '#6366f1',
-          width: 1,
+          width: 1 as any,
           style: 2,
           labelBackgroundColor: '#6366f1',
         },
@@ -511,7 +511,7 @@ export class TradingChartComponent implements AfterViewInit, OnDestroy {
     this.resizeObserver = new ResizeObserver(() => {
       const container = this.chartContainer.nativeElement;
       const volumeContainer = this.volumeContainer.nativeElement;
-      
+
       this.chart?.applyOptions({
         width: container.clientWidth,
         height: container.clientHeight,
@@ -529,7 +529,7 @@ export class TradingChartComponent implements AfterViewInit, OnDestroy {
   setChartType(type: 'candlestick' | 'line' | 'area'): void {
     this.chartType.set(type);
     this.createSeries();
-    
+
     // Re-apply data
     const currentData = this.data();
     if (currentData.length > 0) {

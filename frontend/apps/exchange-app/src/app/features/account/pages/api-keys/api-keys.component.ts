@@ -4,6 +4,7 @@ import { CardComponent } from '@/core-components/card/card.component';
 import { ButtonComponent } from '@/core-components/button/button.component';
 import { BadgeComponent } from '@/core-components/badge/badge.component';
 import { InputComponent } from '@/core-components/input/input.component';
+import { FormsModule } from '@angular/forms';
 
 interface ApiKey {
   id: string;
@@ -19,7 +20,7 @@ interface ApiKey {
 @Component({
   selector: 'app-api-keys',
   standalone: true,
-  imports: [CommonModule, CardComponent, ButtonComponent, BadgeComponent, InputComponent],
+  imports: [CommonModule, CardComponent, ButtonComponent, BadgeComponent, InputComponent, FormsModule],
   template: `
     <div class="api-keys-page">
       <div class="page-header">
@@ -50,9 +51,7 @@ interface ApiKey {
                 <h3 class="key-name">{{ key.name }}</h3>
                 <div class="key-value">
                   <code>{{ key.key }}</code>
-                  <button class="copy-btn" (click)="copyKey(key.key)" title="Copy">
-                    📋
-                  </button>
+                  <button class="copy-btn" (click)="copyKey(key.key)" title="Copy">📋</button>
                 </div>
               </div>
               <div class="key-actions">
@@ -85,12 +84,12 @@ interface ApiKey {
               <div class="detail-row">
                 <div class="detail-group">
                   <span class="detail-label">Created</span>
-                  <span class="detail-value">{{ key.createdAt | date:'medium' }}</span>
+                  <span class="detail-value">{{ key.createdAt | date: 'medium' }}</span>
                 </div>
                 <div class="detail-group">
                   <span class="detail-label">Last Used</span>
                   <span class="detail-value">
-                    {{ key.lastUsed ? (key.lastUsed | date:'medium') : 'Never' }}
+                    {{ key.lastUsed ? (key.lastUsed | date: 'medium') : 'Never' }}
                   </span>
                 </div>
               </div>
@@ -121,10 +120,10 @@ interface ApiKey {
               <div class="modal-body">
                 <div class="form-group">
                   <label class="form-label">Key Name</label>
-                  <ui-input 
+                  <ui-input
                     placeholder="e.g. Trading Bot"
-                    [value]="newKeyName()"
-                    (valueChange)="newKeyName.set($event)"
+                    [ngModel]="newKeyName()"
+                    (ngModelChange)="newKeyName.set($event)"
                   />
                   <span class="form-hint">A descriptive name to identify this key</span>
                 </div>
@@ -133,20 +132,29 @@ interface ApiKey {
                   <label class="form-label">Permissions</label>
                   <div class="permissions-grid">
                     <label class="permission-option">
-                      <input type="checkbox" [checked]="newKeyPermissions().includes('Read')"
-                             (change)="togglePermission('Read')">
+                      <input
+                        type="checkbox"
+                        [checked]="newKeyPermissions().includes('Read')"
+                        (change)="togglePermission('Read')"
+                      />
                       <span class="permission-name">Read</span>
                       <span class="permission-desc">View account and market data</span>
                     </label>
                     <label class="permission-option">
-                      <input type="checkbox" [checked]="newKeyPermissions().includes('Trade')"
-                             (change)="togglePermission('Trade')">
+                      <input
+                        type="checkbox"
+                        [checked]="newKeyPermissions().includes('Trade')"
+                        (change)="togglePermission('Trade')"
+                      />
                       <span class="permission-name">Trade</span>
                       <span class="permission-desc">Place and cancel orders</span>
                     </label>
                     <label class="permission-option">
-                      <input type="checkbox" [checked]="newKeyPermissions().includes('Withdraw')"
-                             (change)="togglePermission('Withdraw')">
+                      <input
+                        type="checkbox"
+                        [checked]="newKeyPermissions().includes('Withdraw')"
+                        (change)="togglePermission('Withdraw')"
+                      />
                       <span class="permission-name">Withdraw</span>
                       <span class="permission-desc">Withdraw funds (use with caution)</span>
                     </label>
@@ -155,17 +163,19 @@ interface ApiKey {
 
                 <div class="form-group">
                   <label class="form-label">IP Whitelist (Optional)</label>
-                  <ui-input 
+                  <ui-input
                     placeholder="e.g. 192.168.1.1, 10.0.0.1"
-                    [value]="newKeyIPs()"
-                    (valueChange)="newKeyIPs.set($event)"
+                    [ngModel]="newKeyIPs()"
+                    (ngModelChange)="newKeyIPs.set($event)"
                   />
                   <span class="form-hint">Comma-separated IP addresses that can use this key</span>
                 </div>
               </div>
 
               <div class="modal-footer">
-                <ui-button variant="secondary" (click)="showCreateModal.set(false)">Cancel</ui-button>
+                <ui-button variant="secondary" (click)="showCreateModal.set(false)"
+                  >Cancel</ui-button
+                >
                 <ui-button variant="primary" (click)="createKey()">Create API Key</ui-button>
               </div>
             } @else {
@@ -181,14 +191,18 @@ interface ApiKey {
                     <label>API Key</label>
                     <div class="key-value-large">
                       <code>{{ createdKey()?.key }}</code>
-                      <button class="copy-btn" (click)="copyKey(createdKey()?.key || '')">📋</button>
+                      <button class="copy-btn" (click)="copyKey(createdKey()?.key || '')">
+                        📋
+                      </button>
                     </div>
                   </div>
                   <div class="key-field">
                     <label>Secret Key</label>
                     <div class="key-value-large secret">
                       <code>{{ createdKey()?.secret }}</code>
-                      <button class="copy-btn" (click)="copyKey(createdKey()?.secret || '')">📋</button>
+                      <button class="copy-btn" (click)="copyKey(createdKey()?.secret || '')">
+                        📋
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -203,365 +217,367 @@ interface ApiKey {
       }
     </div>
   `,
-  styles: [`
-    .api-keys-page {
-      padding: var(--spacing-6);
-      max-width: 900px;
-      margin: 0 auto;
-    }
+  styles: [
+    `
+      .api-keys-page {
+        padding: var(--spacing-6);
+        max-width: 900px;
+        margin: 0 auto;
+      }
 
-    .page-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: var(--spacing-6);
-    }
+      .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: var(--spacing-6);
+      }
 
-    .page-title {
-      font-size: var(--font-size-2xl);
-      font-weight: var(--font-weight-bold);
-      color: var(--color-text-primary);
-      margin: 0 0 var(--spacing-2) 0;
-    }
+      .page-title {
+        font-size: var(--font-size-2xl);
+        font-weight: var(--font-weight-bold);
+        color: var(--color-text-primary);
+        margin: 0 0 var(--spacing-2) 0;
+      }
 
-    .page-subtitle {
-      font-size: var(--font-size-base);
-      color: var(--color-text-secondary);
-      margin: 0;
-    }
+      .page-subtitle {
+        font-size: var(--font-size-base);
+        color: var(--color-text-secondary);
+        margin: 0;
+      }
 
-    .warning-banner {
-      display: flex;
-      align-items: flex-start;
-      gap: var(--spacing-3);
-      padding: var(--spacing-4);
-      background: var(--color-warning)/10;
-      border: 1px solid var(--color-warning)/30;
-      border-radius: var(--radius-lg);
-      margin-bottom: var(--spacing-6);
-    }
+      .warning-banner {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--spacing-3);
+        padding: var(--spacing-4);
+        background: var(--color-warning) / 10;
+        border: 1px solid var(--color-warning) / 30;
+        border-radius: var(--radius-lg);
+        margin-bottom: var(--spacing-6);
+      }
 
-    .warning-icon {
-      font-size: var(--font-size-xl);
-    }
+      .warning-icon {
+        font-size: var(--font-size-xl);
+      }
 
-    .warning-content strong {
-      display: block;
-      color: var(--color-warning);
-      margin-bottom: var(--spacing-1);
-    }
+      .warning-content strong {
+        display: block;
+        color: var(--color-warning);
+        margin-bottom: var(--spacing-1);
+      }
 
-    .warning-content p {
-      font-size: var(--font-size-sm);
-      color: var(--color-text-secondary);
-      margin: 0;
-    }
+      .warning-content p {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        margin: 0;
+      }
 
-    .keys-list {
-      display: flex;
-      flex-direction: column;
-      gap: var(--spacing-4);
-    }
+      .keys-list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-4);
+      }
 
-    .key-card {
-      padding: var(--spacing-5);
-    }
+      .key-card {
+        padding: var(--spacing-5);
+      }
 
-    .key-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      padding-bottom: var(--spacing-4);
-      border-bottom: 1px solid var(--color-border-primary);
-      margin-bottom: var(--spacing-4);
-    }
+      .key-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding-bottom: var(--spacing-4);
+        border-bottom: 1px solid var(--color-border-primary);
+        margin-bottom: var(--spacing-4);
+      }
 
-    .key-name {
-      font-size: var(--font-size-base);
-      font-weight: var(--font-weight-semibold);
-      color: var(--color-text-primary);
-      margin: 0 0 var(--spacing-2) 0;
-    }
+      .key-name {
+        font-size: var(--font-size-base);
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-text-primary);
+        margin: 0 0 var(--spacing-2) 0;
+      }
 
-    .key-value {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-2);
-    }
+      .key-value {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-2);
+      }
 
-    .key-value code {
-      font-family: var(--font-family-mono);
-      font-size: var(--font-size-sm);
-      color: var(--color-text-secondary);
-      background: var(--color-bg-tertiary);
-      padding: var(--spacing-1) var(--spacing-2);
-      border-radius: var(--radius-md);
-    }
+      .key-value code {
+        font-family: var(--font-family-mono);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        background: var(--color-bg-tertiary);
+        padding: var(--spacing-1) var(--spacing-2);
+        border-radius: var(--radius-md);
+      }
 
-    .copy-btn {
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      font-size: var(--font-size-base);
-      opacity: 0.6;
-      transition: opacity var(--transition-fast);
-    }
+      .copy-btn {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        font-size: var(--font-size-base);
+        opacity: 0.6;
+        transition: opacity var(--transition-fast);
+      }
 
-    .copy-btn:hover {
-      opacity: 1;
-    }
+      .copy-btn:hover {
+        opacity: 1;
+      }
 
-    .key-actions {
-      display: flex;
-      gap: var(--spacing-2);
-    }
+      .key-actions {
+        display: flex;
+        gap: var(--spacing-2);
+      }
 
-    .key-details {
-      display: flex;
-      flex-direction: column;
-      gap: var(--spacing-4);
-    }
+      .key-details {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-4);
+      }
 
-    .detail-row {
-      display: flex;
-      gap: var(--spacing-8);
-    }
+      .detail-row {
+        display: flex;
+        gap: var(--spacing-8);
+      }
 
-    .detail-group {
-      display: flex;
-      flex-direction: column;
-      gap: var(--spacing-1);
-    }
+      .detail-group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-1);
+      }
 
-    .detail-label {
-      font-size: var(--font-size-xs);
-      color: var(--color-text-tertiary);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
+      .detail-label {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
 
-    .detail-value {
-      font-size: var(--font-size-sm);
-      color: var(--color-text-secondary);
-    }
+      .detail-value {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+      }
 
-    .no-restriction {
-      color: var(--color-warning);
-    }
+      .no-restriction {
+        color: var(--color-warning);
+      }
 
-    .permissions-list {
-      display: flex;
-      gap: var(--spacing-2);
-    }
+      .permissions-list {
+        display: flex;
+        gap: var(--spacing-2);
+      }
 
-    .empty-state {
-      text-align: center;
-      padding: var(--spacing-12);
-      background: var(--color-bg-card);
-      border: 1px dashed var(--color-border-primary);
-      border-radius: var(--radius-lg);
-    }
+      .empty-state {
+        text-align: center;
+        padding: var(--spacing-12);
+        background: var(--color-bg-card);
+        border: 1px dashed var(--color-border-primary);
+        border-radius: var(--radius-lg);
+      }
 
-    .empty-icon {
-      font-size: 48px;
-      margin-bottom: var(--spacing-4);
-      opacity: 0.5;
-    }
+      .empty-icon {
+        font-size: 48px;
+        margin-bottom: var(--spacing-4);
+        opacity: 0.5;
+      }
 
-    .empty-title {
-      font-size: var(--font-size-lg);
-      font-weight: var(--font-weight-semibold);
-      color: var(--color-text-primary);
-      margin: 0 0 var(--spacing-2) 0;
-    }
+      .empty-title {
+        font-size: var(--font-size-lg);
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-text-primary);
+        margin: 0 0 var(--spacing-2) 0;
+      }
 
-    .empty-desc {
-      font-size: var(--font-size-sm);
-      color: var(--color-text-tertiary);
-      margin: 0 0 var(--spacing-6) 0;
-    }
+      .empty-desc {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-tertiary);
+        margin: 0 0 var(--spacing-6) 0;
+      }
 
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.75);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      padding: var(--spacing-4);
-    }
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.75);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        padding: var(--spacing-4);
+      }
 
-    .modal {
-      width: 100%;
-      max-width: 500px;
-      background: var(--color-bg-elevated);
-      border: 1px solid var(--color-border-primary);
-      border-radius: var(--radius-xl);
-      overflow: hidden;
-    }
+      .modal {
+        width: 100%;
+        max-width: 500px;
+        background: var(--color-bg-elevated);
+        border: 1px solid var(--color-border-primary);
+        border-radius: var(--radius-xl);
+        overflow: hidden;
+      }
 
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: var(--spacing-4) var(--spacing-5);
-      border-bottom: 1px solid var(--color-border-primary);
-    }
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--spacing-4) var(--spacing-5);
+        border-bottom: 1px solid var(--color-border-primary);
+      }
 
-    .modal-title {
-      font-size: var(--font-size-lg);
-      font-weight: var(--font-weight-semibold);
-      color: var(--color-text-primary);
-      margin: 0;
-    }
+      .modal-title {
+        font-size: var(--font-size-lg);
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-text-primary);
+        margin: 0;
+      }
 
-    .modal-close {
-      width: 32px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: var(--font-size-xl);
-      color: var(--color-text-tertiary);
-      background: transparent;
-      border: none;
-      border-radius: var(--radius-md);
-      cursor: pointer;
-    }
+      .modal-close {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: var(--font-size-xl);
+        color: var(--color-text-tertiary);
+        background: transparent;
+        border: none;
+        border-radius: var(--radius-md);
+        cursor: pointer;
+      }
 
-    .modal-close:hover {
-      background: var(--color-bg-tertiary);
-      color: var(--color-text-primary);
-    }
+      .modal-close:hover {
+        background: var(--color-bg-tertiary);
+        color: var(--color-text-primary);
+      }
 
-    .modal-body {
-      padding: var(--spacing-5);
-    }
+      .modal-body {
+        padding: var(--spacing-5);
+      }
 
-    .modal-footer {
-      display: flex;
-      justify-content: flex-end;
-      gap: var(--spacing-3);
-      padding: var(--spacing-4) var(--spacing-5);
-      border-top: 1px solid var(--color-border-primary);
-    }
+      .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: var(--spacing-3);
+        padding: var(--spacing-4) var(--spacing-5);
+        border-top: 1px solid var(--color-border-primary);
+      }
 
-    .form-group {
-      margin-bottom: var(--spacing-5);
-    }
+      .form-group {
+        margin-bottom: var(--spacing-5);
+      }
 
-    .form-group:last-child {
-      margin-bottom: 0;
-    }
+      .form-group:last-child {
+        margin-bottom: 0;
+      }
 
-    .form-label {
-      display: block;
-      font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-medium);
-      color: var(--color-text-secondary);
-      margin-bottom: var(--spacing-2);
-    }
+      .form-label {
+        display: block;
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-medium);
+        color: var(--color-text-secondary);
+        margin-bottom: var(--spacing-2);
+      }
 
-    .form-hint {
-      display: block;
-      font-size: var(--font-size-xs);
-      color: var(--color-text-tertiary);
-      margin-top: var(--spacing-1);
-    }
+      .form-hint {
+        display: block;
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+        margin-top: var(--spacing-1);
+      }
 
-    .permissions-grid {
-      display: flex;
-      flex-direction: column;
-      gap: var(--spacing-2);
-    }
+      .permissions-grid {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-2);
+      }
 
-    .permission-option {
-      display: flex;
-      align-items: flex-start;
-      gap: var(--spacing-3);
-      padding: var(--spacing-3);
-      background: var(--color-bg-tertiary);
-      border-radius: var(--radius-lg);
-      cursor: pointer;
-    }
+      .permission-option {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--spacing-3);
+        padding: var(--spacing-3);
+        background: var(--color-bg-tertiary);
+        border-radius: var(--radius-lg);
+        cursor: pointer;
+      }
 
-    .permission-option input {
-      margin-top: 2px;
-      accent-color: var(--color-accent-500);
-    }
+      .permission-option input {
+        margin-top: 2px;
+        accent-color: var(--color-accent-500);
+      }
 
-    .permission-name {
-      display: block;
-      font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-medium);
-      color: var(--color-text-primary);
-    }
+      .permission-name {
+        display: block;
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-medium);
+        color: var(--color-text-primary);
+      }
 
-    .permission-desc {
-      display: block;
-      font-size: var(--font-size-xs);
-      color: var(--color-text-tertiary);
-    }
+      .permission-desc {
+        display: block;
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+      }
 
-    .success-message {
-      text-align: center;
-      margin-bottom: var(--spacing-6);
-    }
+      .success-message {
+        text-align: center;
+        margin-bottom: var(--spacing-6);
+      }
 
-    .success-icon {
-      font-size: 48px;
-      margin-bottom: var(--spacing-3);
-    }
+      .success-icon {
+        font-size: 48px;
+        margin-bottom: var(--spacing-3);
+      }
 
-    .success-message h3 {
-      font-size: var(--font-size-lg);
-      color: var(--color-text-primary);
-      margin: 0 0 var(--spacing-2) 0;
-    }
+      .success-message h3 {
+        font-size: var(--font-size-lg);
+        color: var(--color-text-primary);
+        margin: 0 0 var(--spacing-2) 0;
+      }
 
-    .success-message p {
-      font-size: var(--font-size-sm);
-      color: var(--color-text-secondary);
-      margin: 0;
-    }
+      .success-message p {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        margin: 0;
+      }
 
-    .key-display {
-      display: flex;
-      flex-direction: column;
-      gap: var(--spacing-4);
-    }
+      .key-display {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-4);
+      }
 
-    .key-field label {
-      display: block;
-      font-size: var(--font-size-xs);
-      color: var(--color-text-tertiary);
-      margin-bottom: var(--spacing-2);
-    }
+      .key-field label {
+        display: block;
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+        margin-bottom: var(--spacing-2);
+      }
 
-    .key-value-large {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-2);
-      padding: var(--spacing-3);
-      background: var(--color-bg-tertiary);
-      border-radius: var(--radius-lg);
-    }
+      .key-value-large {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-2);
+        padding: var(--spacing-3);
+        background: var(--color-bg-tertiary);
+        border-radius: var(--radius-lg);
+      }
 
-    .key-value-large code {
-      flex: 1;
-      font-family: var(--font-family-mono);
-      font-size: var(--font-size-sm);
-      color: var(--color-text-primary);
-      word-break: break-all;
-    }
+      .key-value-large code {
+        flex: 1;
+        font-family: var(--font-family-mono);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-primary);
+        word-break: break-all;
+      }
 
-    .key-value-large.secret {
-      background: var(--color-warning)/10;
-      border: 1px solid var(--color-warning)/30;
-    }
-  `],
-  changeDetection: ChangeDetectionStrategy.OnPush
+      .key-value-large.secret {
+        background: var(--color-warning) / 10;
+        border: 1px solid var(--color-warning) / 30;
+      }
+    `,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ApiKeysComponent {
   showCreateModal = signal(false);
@@ -580,7 +596,7 @@ export class ApiKeysComponent {
       permissions: ['Read', 'Trade'],
       ipRestrictions: ['192.168.1.1'],
       createdAt: new Date('2024-01-15'),
-      lastUsed: new Date('2024-12-20')
+      lastUsed: new Date('2024-12-20'),
     },
     {
       id: '2',
@@ -589,16 +605,20 @@ export class ApiKeysComponent {
       permissions: ['Read'],
       ipRestrictions: [],
       createdAt: new Date('2024-03-20'),
-      lastUsed: null
-    }
+      lastUsed: null,
+    },
   ]);
 
   getPermissionVariant(perm: string): 'success' | 'warning' | 'default' {
     switch (perm) {
-      case 'Read': return 'success';
-      case 'Trade': return 'warning';
-      case 'Withdraw': return 'default';
-      default: return 'default';
+      case 'Read':
+        return 'success';
+      case 'Trade':
+        return 'warning';
+      case 'Withdraw':
+        return 'default';
+      default:
+        return 'default';
     }
   }
 
@@ -614,7 +634,7 @@ export class ApiKeysComponent {
   createKey(): void {
     const newKey = {
       key: `cx_live_${this.generateRandomString(32)}`,
-      secret: `cx_secret_${this.generateRandomString(64)}`
+      secret: `cx_secret_${this.generateRandomString(64)}`,
     };
 
     this.apiKeys.update((keys: ApiKey[]) => [
@@ -623,11 +643,14 @@ export class ApiKeysComponent {
         name: this.newKeyName(),
         key: newKey.key,
         permissions: this.newKeyPermissions(),
-        ipRestrictions: this.newKeyIPs().split(',').map((ip: string) => ip.trim()).filter((ip: string) => ip),
+        ipRestrictions: this.newKeyIPs()
+          .split(',')
+          .map((ip: string) => ip.trim())
+          .filter((ip: string) => ip),
         createdAt: new Date(),
-        lastUsed: null
+        lastUsed: null,
       },
-      ...keys
+      ...keys,
     ]);
 
     this.createdKey.set(newKey);

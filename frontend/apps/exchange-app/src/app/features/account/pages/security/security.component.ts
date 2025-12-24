@@ -20,7 +20,7 @@ interface Session {
 @Component({
   selector: 'app-security',
   standalone: true,
-  imports: [CommonModule, FormsModule, CardComponent, ButtonComponent, InputComponent, BadgeComponent],
+  imports: [CommonModule, CardComponent, ButtonComponent, InputComponent, BadgeComponent, FormsModule],
   template: `
     <div class="security-page">
       <div class="security-header">
@@ -81,8 +81,8 @@ interface Session {
               <ui-input 
                 type="password"
                 placeholder="Enter current password"
-                [value]="passwordForm.current"
-                (valueChange)="passwordForm.current = $event"
+                [ngModel]="passwordForm.current"
+                (ngModelChange)="passwordForm.current = $event"
               />
             </div>
 
@@ -91,8 +91,8 @@ interface Session {
               <ui-input 
                 type="password"
                 placeholder="Enter new password"
-                [value]="passwordForm.new"
-                (valueChange)="passwordForm.new = $event"
+                [ngModel]="passwordForm.new"
+                (ngModelChange)="passwordForm.new = $event"
               />
               <div class="password-strength">
                 <div class="strength-bar">
@@ -107,8 +107,8 @@ interface Session {
               <ui-input 
                 type="password"
                 placeholder="Confirm new password"
-                [value]="passwordForm.confirm"
-                (valueChange)="passwordForm.confirm = $event"
+                [ngModel]="passwordForm.confirm"
+                (ngModelChange)="passwordForm.confirm = $event"
               />
             </div>
 

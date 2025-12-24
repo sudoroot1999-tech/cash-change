@@ -10,7 +10,7 @@ import { AuthService } from '../../../../core/services/auth.service';
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, CardComponent, ButtonComponent, InputComponent],
+  imports: [CommonModule, RouterLink, CardComponent, ButtonComponent, InputComponent, FormsModule],
   template: `
     <div class="auth-page">
       <div class="auth-container">
@@ -34,7 +34,8 @@ import { AuthService } from '../../../../core/services/auth.service';
                 type="text"
                 label="Username"
                 placeholder="Choose a username"
-                [(ngModel)]="username"
+                [ngModel]="username"
+                (ngModelChange)="username = $event"
                 name="username"
                 [error]="usernameError()"
               />
@@ -43,7 +44,8 @@ import { AuthService } from '../../../../core/services/auth.service';
                 type="email"
                 label="Email"
                 placeholder="Enter your email"
-                [(ngModel)]="email"
+                [ngModel]="email"
+                (ngModelChange)="email = $event"
                 name="email"
                 [error]="emailError()"
               />
@@ -52,7 +54,8 @@ import { AuthService } from '../../../../core/services/auth.service';
                 type="password"
                 label="Password"
                 placeholder="Create a password"
-                [(ngModel)]="password"
+                [ngModel]="password"
+                (ngModelChange)="password = $event"
                 name="password"
                 hint="Min. 8 characters with uppercase, lowercase and number"
                 [error]="passwordError()"
@@ -62,13 +65,14 @@ import { AuthService } from '../../../../core/services/auth.service';
                 type="password"
                 label="Confirm Password"
                 placeholder="Confirm your password"
-                [(ngModel)]="confirmPassword"
+                [ngModel]="confirmPassword"
+                (ngModelChange)="confirmPassword = $event"
                 name="confirmPassword"
                 [error]="confirmPasswordError()"
               />
 
               <label class="terms-checkbox">
-                <input type="checkbox" [(ngModel)]="acceptTerms" name="acceptTerms" />
+                <input type="checkbox" [ngModel]="acceptTerms" (ngModelChange)="acceptTerms = $event" name="acceptTerms" />
                 <span>I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></span>
               </label>
 

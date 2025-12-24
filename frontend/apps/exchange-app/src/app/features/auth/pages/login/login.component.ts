@@ -10,7 +10,7 @@ import { AuthService } from '../../../../core/services/auth.service';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, CardComponent, ButtonComponent, InputComponent],
+  imports: [CommonModule, RouterLink, CardComponent, ButtonComponent, InputComponent, FormsModule],
   template: `
     <div class="auth-page">
       <div class="auth-container">
@@ -51,7 +51,8 @@ import { AuthService } from '../../../../core/services/auth.service';
                 type="email"
                 label="Email"
                 placeholder="Enter your email"
-                [(ngModel)]="email"
+                [ngModel]="email"
+                (ngModelChange)="email = $event"
                 name="email"
                 [error]="emailError()"
               />
@@ -60,7 +61,8 @@ import { AuthService } from '../../../../core/services/auth.service';
                 type="password"
                 label="Password"
                 placeholder="Enter your password"
-                [(ngModel)]="password"
+                [ngModel]="password"
+                (ngModelChange)="password = $event"
                 name="password"
                 [error]="passwordError()"
               />

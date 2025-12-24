@@ -14,7 +14,7 @@ interface SettingsSection {
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, CardComponent, ButtonComponent, InputComponent],
+  imports: [CommonModule, CardComponent, ButtonComponent, InputComponent, FormsModule],
   template: `
     <div class="settings-page">
       <div class="settings-header">
@@ -46,8 +46,8 @@ interface SettingsSection {
                   <div class="form-group">
                     <label class="form-label">Username</label>
                     <ui-input 
-                      [value]="settings.username" 
-                      (valueChange)="settings.username = $event"
+                      [ngModel]="settings.username" 
+                      (ngModelChange)="settings.username = $event"
                       placeholder="Your username"
                     />
                     <span class="form-hint">This is your public display name.</span>
@@ -57,8 +57,8 @@ interface SettingsSection {
                     <label class="form-label">Email</label>
                     <ui-input 
                       type="email"
-                      [value]="settings.email" 
-                      (valueChange)="settings.email = $event"
+                      [ngModel]="settings.email" 
+                      (ngModelChange)="settings.email = $event"
                       placeholder="your@email.com"
                     />
                   </div>
