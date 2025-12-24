@@ -1,4 +1,4 @@
-FROM node:20-alpine AS builder
+FROM node:20 AS builder
 WORKDIR /app
 COPY frontend/package*.json ./frontend/
 COPY frontend/apps/marketing/package*.json ./frontend/apps/marketing/
