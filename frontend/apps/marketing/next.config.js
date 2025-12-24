@@ -1,8 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  
-  // Image optimization
+
   images: {
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [
@@ -13,33 +12,33 @@ const nextConfig = {
     ],
   },
 
-  // Experimental features for performance
-  // experimental: {
-  //   optimizeCss: true,
-  // },
+  webpack(config, { dev }) {
+    if (dev) {
+      config.watchOptions = {
+        ignored: [
+          '**/node_modules/**',
+          '**/.next/**',
+          '**/dist/**',
+          '**/.angular/**',
+          '**/packages/**',
+          '**/coverage/**',
+        ],
+      };
+    }
+    return config;
+  },
 
-  // Headers for security
+  outputFileTracingRoot: require('path').join(__dirname, '../../'),
+
   async headers() {
     return [
       {
         source: '/:path*',
         headers: [
-          {
-            key: 'X-DNS-Prefetch-Control',
-            value: 'on'
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN'
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff'
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'origin-when-cross-origin'
-          }
+          { key: 'X-DNS-Prefetch-Control', value: 'on' },
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'origin-when-cross-origin' },
         ],
       },
     ];

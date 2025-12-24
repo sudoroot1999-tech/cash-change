@@ -2,9 +2,9 @@ import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/cor
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { CardComponent } from '@/core-components/card/card.component';
-import { ButtonComponent } from '@/core-components/button/button.component';
-import { InputComponent } from '@/core-components/input/input.component';
+import { CardComponent } from '@/components/card/card.component';
+import { ButtonComponent } from '@/components/button/button.component';
+import { InputComponent } from '@/components/input/input.component';
 import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
@@ -39,7 +39,7 @@ import { AuthService } from '../../../../core/services/auth.service';
                 name="username"
                 [error]="usernameError()"
               />
-              
+
               <ui-input
                 type="email"
                 label="Email"
@@ -49,7 +49,7 @@ import { AuthService } from '../../../../core/services/auth.service';
                 name="email"
                 [error]="emailError()"
               />
-              
+
               <ui-input
                 type="password"
                 label="Password"
@@ -72,13 +72,21 @@ import { AuthService } from '../../../../core/services/auth.service';
               />
 
               <label class="terms-checkbox">
-                <input type="checkbox" [ngModel]="acceptTerms" (ngModelChange)="acceptTerms = $event" name="acceptTerms" />
-                <span>I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></span>
+                <input
+                  type="checkbox"
+                  [ngModel]="acceptTerms"
+                  (ngModelChange)="acceptTerms = $event"
+                  name="acceptTerms"
+                />
+                <span
+                  >I agree to the <a href="#">Terms of Service</a> and
+                  <a href="#">Privacy Policy</a></span
+                >
               </label>
 
-              <ui-button 
-                type="submit" 
-                variant="primary" 
+              <ui-button
+                type="submit"
+                variant="primary"
                 [fullWidth]="true"
                 [loading]="isLoading()"
                 [disabled]="!acceptTerms"
@@ -107,143 +115,145 @@ import { AuthService } from '../../../../core/services/auth.service';
       </div>
     </div>
   `,
-  styles: [`
-    .auth-page {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: var(--spacing-6);
-      background: var(--color-bg-primary);
-      background-image: var(--gradient-glow);
-    }
+  styles: [
+    `
+      .auth-page {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: var(--spacing-6);
+        background: var(--color-bg-primary);
+        background-image: var(--gradient-glow);
+      }
 
-    .auth-container {
-      width: 100%;
-      max-width: 420px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: var(--spacing-6);
-    }
+      .auth-container {
+        width: 100%;
+        max-width: 420px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--spacing-6);
+      }
 
-    .auth-logo {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-2);
-    }
+      .auth-logo {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-2);
+      }
 
-    .logo-icon {
-      width: 40px;
-      height: 40px;
-      background: var(--gradient-primary);
-      border-radius: var(--radius-md);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-bold);
-      color: white;
-    }
+      .logo-icon {
+        width: 40px;
+        height: 40px;
+        background: var(--gradient-primary);
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-bold);
+        color: white;
+      }
 
-    .logo-text {
-      font-size: var(--font-size-xl);
-      font-weight: var(--font-weight-bold);
-      color: var(--color-text-primary);
-    }
+      .logo-text {
+        font-size: var(--font-size-xl);
+        font-weight: var(--font-weight-bold);
+        color: var(--color-text-primary);
+      }
 
-    .auth-content {
-      display: flex;
-      flex-direction: column;
-      gap: var(--spacing-4);
-    }
+      .auth-content {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-4);
+      }
 
-    .auth-header {
-      text-align: center;
-    }
+      .auth-header {
+        text-align: center;
+      }
 
-    .auth-title {
-      font-size: var(--font-size-2xl);
-      font-weight: var(--font-weight-bold);
-      color: var(--color-text-primary);
-      margin: 0 0 var(--spacing-1) 0;
-    }
+      .auth-title {
+        font-size: var(--font-size-2xl);
+        font-weight: var(--font-weight-bold);
+        color: var(--color-text-primary);
+        margin: 0 0 var(--spacing-1) 0;
+      }
 
-    .auth-subtitle {
-      font-size: var(--font-size-sm);
-      color: var(--color-text-secondary);
-      margin: 0;
-    }
+      .auth-subtitle {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        margin: 0;
+      }
 
-    .auth-form {
-      display: flex;
-      flex-direction: column;
-      gap: var(--spacing-4);
-    }
+      .auth-form {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-4);
+      }
 
-    .terms-checkbox {
-      display: flex;
-      align-items: flex-start;
-      gap: var(--spacing-2);
-      font-size: var(--font-size-sm);
-      color: var(--color-text-secondary);
-      cursor: pointer;
-    }
+      .terms-checkbox {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--spacing-2);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        cursor: pointer;
+      }
 
-    .terms-checkbox a {
-      color: var(--color-accent-400);
-      text-decoration: none;
-    }
+      .terms-checkbox a {
+        color: var(--color-accent-400);
+        text-decoration: none;
+      }
 
-    .terms-checkbox a:hover {
-      text-decoration: underline;
-    }
+      .terms-checkbox a:hover {
+        text-decoration: underline;
+      }
 
-    .error-message {
-      padding: var(--spacing-3);
-      font-size: var(--font-size-sm);
-      color: var(--color-danger);
-      background: var(--color-danger-soft);
-      border-radius: var(--radius-md);
-      text-align: center;
-    }
+      .error-message {
+        padding: var(--spacing-3);
+        font-size: var(--font-size-sm);
+        color: var(--color-danger);
+        background: var(--color-danger-soft);
+        border-radius: var(--radius-md);
+        text-align: center;
+      }
 
-    .auth-footer {
-      display: flex;
-      justify-content: center;
-      gap: var(--spacing-2);
-      padding-top: var(--spacing-4);
-      border-top: 1px solid var(--color-border-primary);
-      font-size: var(--font-size-sm);
-      color: var(--color-text-secondary);
-    }
+      .auth-footer {
+        display: flex;
+        justify-content: center;
+        gap: var(--spacing-2);
+        padding-top: var(--spacing-4);
+        border-top: 1px solid var(--color-border-primary);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+      }
 
-    .auth-link {
-      color: var(--color-accent-400);
-      text-decoration: none;
-      font-weight: var(--font-weight-medium);
-    }
+      .auth-link {
+        color: var(--color-accent-400);
+        text-decoration: none;
+        font-weight: var(--font-weight-medium);
+      }
 
-    .auth-link:hover {
-      text-decoration: underline;
-    }
+      .auth-link:hover {
+        text-decoration: underline;
+      }
 
-    .page-footer {
-      display: flex;
-      gap: var(--spacing-4);
-    }
+      .page-footer {
+        display: flex;
+        gap: var(--spacing-4);
+      }
 
-    .page-footer a {
-      font-size: var(--font-size-xs);
-      color: var(--color-text-tertiary);
-      text-decoration: none;
-    }
+      .page-footer a {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+        text-decoration: none;
+      }
 
-    .page-footer a:hover {
-      color: var(--color-text-secondary);
-    }
-  `],
-  changeDetection: ChangeDetectionStrategy.OnPush
+      .page-footer a:hover {
+        color: var(--color-text-secondary);
+      }
+    `,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RegisterComponent {
   private readonly authService = inject(AuthService);
@@ -296,18 +306,20 @@ export class RegisterComponent {
 
     this.isLoading.set(true);
 
-    this.authService.register({
-      email: this.email,
-      password: this.password,
-      username: this.username
-    }).subscribe({
-      next: () => {
-        this.router.navigate(['/trade']);
-      },
-      error: (err) => {
-        this.error.set(err.error?.message || 'Registration failed. Please try again.');
-        this.isLoading.set(false);
-      }
-    });
+    this.authService
+      .register({
+        email: this.email,
+        password: this.password,
+        username: this.username,
+      })
+      .subscribe({
+        next: () => {
+          this.router.navigate(['/trade']);
+        },
+        error: (err) => {
+          this.error.set(err.error?.message || 'Registration failed. Please try again.');
+          this.isLoading.set(false);
+        },
+      });
   }
 }

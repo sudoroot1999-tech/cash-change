@@ -1,9 +1,9 @@
 import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { CardComponent } from '@/core-components/card/card.component';
-import { ButtonComponent } from '@/core-components/button/button.component';
-import { BadgeComponent } from '@/core-components/badge/badge.component';
-import { InputComponent } from '@/core-components/input/input.component';
+import { CardComponent } from '@/components/card/card.component';
+import { ButtonComponent } from '@/components/button/button.component';
+import { BadgeComponent } from '@/components/badge/badge.component';
+import { InputComponent } from '@/components/input/input.component';
 import { FormsModule } from '@angular/forms';
 
 interface ApiKey {
@@ -20,7 +20,14 @@ interface ApiKey {
 @Component({
   selector: 'app-api-keys',
   standalone: true,
-  imports: [CommonModule, CardComponent, ButtonComponent, BadgeComponent, InputComponent, FormsModule],
+  imports: [
+    CommonModule,
+    CardComponent,
+    ButtonComponent,
+    BadgeComponent,
+    InputComponent,
+    FormsModule,
+  ],
   template: `
     <div class="api-keys-page">
       <div class="page-header">

@@ -1,10 +1,10 @@
 import { Component, ChangeDetectionStrategy, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { CardComponent } from '@/core-components/card/card.component';
-import { ButtonComponent } from '@/core-components/button/button.component';
-import { InputComponent } from '@/core-components/input/input.component';
-import { BadgeComponent } from '@/core-components/badge/badge.component';
+import { CardComponent } from '@/components/card/card.component';
+import { ButtonComponent } from '@/components/button/button.component';
+import { InputComponent } from '@/components/input/input.component';
+import { BadgeComponent } from '@/components/badge/badge.component';
 import { AuthService } from '../../../../core/services/auth.service';
 
 interface Session {
@@ -20,7 +20,14 @@ interface Session {
 @Component({
   selector: 'app-security',
   standalone: true,
-  imports: [CommonModule, CardComponent, ButtonComponent, InputComponent, BadgeComponent, FormsModule],
+  imports: [
+    CommonModule,
+    CardComponent,
+    ButtonComponent,
+    InputComponent,
+    BadgeComponent,
+    FormsModule,
+  ],
   template: `
     <div class="security-page">
       <div class="security-header">
@@ -46,12 +53,10 @@ interface Session {
             @if (!twoFactorEnabled()) {
               <div class="section-content">
                 <p class="setup-text">
-                  Protect your account with TOTP-based two-factor authentication. 
-                  Use an authenticator app like Google Authenticator or Authy.
+                  Protect your account with TOTP-based two-factor authentication. Use an
+                  authenticator app like Google Authenticator or Authy.
                 </p>
-                <ui-button variant="primary" (click)="setupTwoFactor()">
-                  Enable 2FA
-                </ui-button>
+                <ui-button variant="primary" (click)="setupTwoFactor()"> Enable 2FA </ui-button>
               </div>
             } @else {
               <div class="section-content">
@@ -65,9 +70,7 @@ interface Session {
                     <ui-button variant="ghost" size="sm">Change</ui-button>
                   </div>
                 </div>
-                <ui-button variant="danger" (click)="disableTwoFactor()">
-                  Disable 2FA
-                </ui-button>
+                <ui-button variant="danger" (click)="disableTwoFactor()"> Disable 2FA </ui-button>
               </div>
             }
           </div>
@@ -78,7 +81,7 @@ interface Session {
           <form class="password-form" (ngSubmit)="changePassword()">
             <div class="form-group">
               <label class="form-label">Current Password</label>
-              <ui-input 
+              <ui-input
                 type="password"
                 placeholder="Enter current password"
                 [ngModel]="passwordForm.current"
@@ -88,7 +91,7 @@ interface Session {
 
             <div class="form-group">
               <label class="form-label">New Password</label>
-              <ui-input 
+              <ui-input
                 type="password"
                 placeholder="Enter new password"
                 [ngModel]="passwordForm.new"
@@ -104,7 +107,7 @@ interface Session {
 
             <div class="form-group">
               <label class="form-label">Confirm New Password</label>
-              <ui-input 
+              <ui-input
                 type="password"
                 placeholder="Confirm new password"
                 [ngModel]="passwordForm.confirm"
@@ -187,7 +190,8 @@ interface Session {
             <div class="danger-info">
               <h3 class="danger-title">Delete Account</h3>
               <p class="danger-desc">
-                Permanently delete your account and all associated data. This action cannot be undone.
+                Permanently delete your account and all associated data. This action cannot be
+                undone.
               </p>
             </div>
             <ui-button variant="danger" (click)="deleteAccount()">Delete Account</ui-button>
@@ -196,257 +200,259 @@ interface Session {
       </div>
     </div>
   `,
-  styles: [`
-    .security-page {
-      padding: var(--spacing-6);
-      max-width: 800px;
-      margin: 0 auto;
-    }
+  styles: [
+    `
+      .security-page {
+        padding: var(--spacing-6);
+        max-width: 800px;
+        margin: 0 auto;
+      }
 
-    .security-header {
-      margin-bottom: var(--spacing-8);
-    }
+      .security-header {
+        margin-bottom: var(--spacing-8);
+      }
 
-    .page-title {
-      font-size: var(--font-size-2xl);
-      font-weight: var(--font-weight-bold);
-      color: var(--color-text-primary);
-      margin: 0 0 var(--spacing-2) 0;
-    }
+      .page-title {
+        font-size: var(--font-size-2xl);
+        font-weight: var(--font-weight-bold);
+        color: var(--color-text-primary);
+        margin: 0 0 var(--spacing-2) 0;
+      }
 
-    .page-subtitle {
-      font-size: var(--font-size-base);
-      color: var(--color-text-secondary);
-      margin: 0;
-    }
+      .page-subtitle {
+        font-size: var(--font-size-base);
+        color: var(--color-text-secondary);
+        margin: 0;
+      }
 
-    .security-content {
-      display: flex;
-      flex-direction: column;
-      gap: var(--spacing-6);
-    }
+      .security-content {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-6);
+      }
 
-    .security-section {
-      display: flex;
-      flex-direction: column;
-      gap: var(--spacing-4);
-    }
+      .security-section {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-4);
+      }
 
-    .section-header {
-      display: flex;
-      align-items: flex-start;
-      gap: var(--spacing-4);
-    }
+      .section-header {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--spacing-4);
+      }
 
-    .section-icon {
-      font-size: var(--font-size-2xl);
-    }
+      .section-icon {
+        font-size: var(--font-size-2xl);
+      }
 
-    .section-info {
-      flex: 1;
-    }
+      .section-info {
+        flex: 1;
+      }
 
-    .section-title {
-      font-size: var(--font-size-base);
-      font-weight: var(--font-weight-semibold);
-      color: var(--color-text-primary);
-      margin: 0 0 var(--spacing-1) 0;
-    }
+      .section-title {
+        font-size: var(--font-size-base);
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-text-primary);
+        margin: 0 0 var(--spacing-1) 0;
+      }
 
-    .section-desc {
-      font-size: var(--font-size-sm);
-      color: var(--color-text-tertiary);
-      margin: 0;
-    }
+      .section-desc {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-tertiary);
+        margin: 0;
+      }
 
-    .section-content {
-      padding-left: calc(var(--font-size-2xl) + var(--spacing-4));
-    }
+      .section-content {
+        padding-left: calc(var(--font-size-2xl) + var(--spacing-4));
+      }
 
-    .setup-text {
-      font-size: var(--font-size-sm);
-      color: var(--color-text-secondary);
-      margin: 0 0 var(--spacing-4) 0;
-    }
+      .setup-text {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        margin: 0 0 var(--spacing-4) 0;
+      }
 
-    .two-fa-methods {
-      margin-bottom: var(--spacing-4);
-    }
+      .two-fa-methods {
+        margin-bottom: var(--spacing-4);
+      }
 
-    .method-item {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-3);
-      padding: var(--spacing-3);
-      background: var(--color-bg-tertiary);
-      border-radius: var(--radius-lg);
-    }
+      .method-item {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-3);
+        padding: var(--spacing-3);
+        background: var(--color-bg-tertiary);
+        border-radius: var(--radius-lg);
+      }
 
-    .method-icon {
-      font-size: var(--font-size-xl);
-    }
+      .method-icon {
+        font-size: var(--font-size-xl);
+      }
 
-    .method-info {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
+      .method-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
 
-    .method-name {
-      font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-medium);
-      color: var(--color-text-primary);
-    }
+      .method-name {
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-medium);
+        color: var(--color-text-primary);
+      }
 
-    .method-status {
-      font-size: var(--font-size-xs);
-      color: var(--color-success);
-    }
+      .method-status {
+        font-size: var(--font-size-xs);
+        color: var(--color-success);
+      }
 
-    .password-form {
-      display: flex;
-      flex-direction: column;
-      gap: var(--spacing-4);
-    }
+      .password-form {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-4);
+      }
 
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: var(--spacing-2);
-    }
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-2);
+      }
 
-    .form-label {
-      font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-medium);
-      color: var(--color-text-secondary);
-    }
+      .form-label {
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-medium);
+        color: var(--color-text-secondary);
+      }
 
-    .password-strength {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-2);
-    }
+      .password-strength {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-2);
+      }
 
-    .strength-bar {
-      flex: 1;
-      height: 4px;
-      background: var(--color-bg-tertiary);
-      border-radius: 2px;
-      overflow: hidden;
-    }
+      .strength-bar {
+        flex: 1;
+        height: 4px;
+        background: var(--color-bg-tertiary);
+        border-radius: 2px;
+        overflow: hidden;
+      }
 
-    .strength-fill {
-      height: 100%;
-      background: var(--color-accent-500);
-      transition: width var(--transition-base);
-    }
+      .strength-fill {
+        height: 100%;
+        background: var(--color-accent-500);
+        transition: width var(--transition-base);
+      }
 
-    .strength-label {
-      font-size: var(--font-size-xs);
-      color: var(--color-text-tertiary);
-    }
+      .strength-label {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+      }
 
-    .phishing-info {
-      font-size: var(--font-size-sm);
-      color: var(--color-text-secondary);
-      margin: 0 0 var(--spacing-4) 0;
-    }
+      .phishing-info {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        margin: 0 0 var(--spacing-4) 0;
+      }
 
-    .phishing-info strong {
-      color: var(--color-accent-400);
-      font-family: var(--font-family-mono);
-    }
+      .phishing-info strong {
+        color: var(--color-accent-400);
+        font-family: var(--font-family-mono);
+      }
 
-    .sessions-list {
-      display: flex;
-      flex-direction: column;
-    }
+      .sessions-list {
+        display: flex;
+        flex-direction: column;
+      }
 
-    .session-item {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-3);
-      padding: var(--spacing-4) 0;
-      border-bottom: 1px solid var(--color-border-primary);
-    }
+      .session-item {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-3);
+        padding: var(--spacing-4) 0;
+        border-bottom: 1px solid var(--color-border-primary);
+      }
 
-    .session-item:last-child {
-      border-bottom: none;
-    }
+      .session-item:last-child {
+        border-bottom: none;
+      }
 
-    .session-item.current {
-      background: var(--color-success)/5;
-      margin: 0 calc(-1 * var(--spacing-4));
-      padding-left: var(--spacing-4);
-      padding-right: var(--spacing-4);
-      border-radius: var(--radius-lg);
-    }
+      .session-item.current {
+        background: var(--color-success) / 5;
+        margin: 0 calc(-1 * var(--spacing-4));
+        padding-left: var(--spacing-4);
+        padding-right: var(--spacing-4);
+        border-radius: var(--radius-lg);
+      }
 
-    .session-icon {
-      font-size: var(--font-size-xl);
-    }
+      .session-icon {
+        font-size: var(--font-size-xl);
+      }
 
-    .session-info {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
+      .session-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
 
-    .session-device {
-      font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-medium);
-      color: var(--color-text-primary);
-    }
+      .session-device {
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-medium);
+        color: var(--color-text-primary);
+      }
 
-    .session-meta {
-      font-size: var(--font-size-xs);
-      color: var(--color-text-tertiary);
-    }
+      .session-meta {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+      }
 
-    .session-time {
-      font-size: var(--font-size-xs);
-      color: var(--color-text-muted);
-    }
+      .session-time {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-muted);
+      }
 
-    .sessions-footer {
-      margin-top: var(--spacing-4);
-      padding-top: var(--spacing-4);
-      border-top: 1px solid var(--color-border-primary);
-    }
+      .sessions-footer {
+        margin-top: var(--spacing-4);
+        padding-top: var(--spacing-4);
+        border-top: 1px solid var(--color-border-primary);
+      }
 
-    .danger-zone {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-4);
-      padding: var(--spacing-4);
-      background: var(--color-danger)/10;
-      border: 1px solid var(--color-danger)/30;
-      border-radius: var(--radius-lg);
-    }
+      .danger-zone {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-4);
+        padding: var(--spacing-4);
+        background: var(--color-danger) / 10;
+        border: 1px solid var(--color-danger) / 30;
+        border-radius: var(--radius-lg);
+      }
 
-    .danger-icon {
-      font-size: var(--font-size-2xl);
-    }
+      .danger-icon {
+        font-size: var(--font-size-2xl);
+      }
 
-    .danger-info {
-      flex: 1;
-    }
+      .danger-info {
+        flex: 1;
+      }
 
-    .danger-title {
-      font-size: var(--font-size-base);
-      font-weight: var(--font-weight-semibold);
-      color: var(--color-danger);
-      margin: 0 0 var(--spacing-1) 0;
-    }
+      .danger-title {
+        font-size: var(--font-size-base);
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-danger);
+        margin: 0 0 var(--spacing-1) 0;
+      }
 
-    .danger-desc {
-      font-size: var(--font-size-sm);
-      color: var(--color-text-secondary);
-      margin: 0;
-    }
-  `],
-  changeDetection: ChangeDetectionStrategy.OnPush
+      .danger-desc {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        margin: 0;
+      }
+    `,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SecurityComponent {
   private readonly authService = inject(AuthService);
@@ -458,7 +464,7 @@ export class SecurityComponent {
   passwordForm = {
     current: '',
     new: '',
-    confirm: ''
+    confirm: '',
   };
 
   sessions = signal<Session[]>([
@@ -469,7 +475,7 @@ export class SecurityComponent {
       location: 'New York, US',
       ip: '192.168.1.1',
       lastActive: 'Now',
-      current: true
+      current: true,
     },
     {
       id: '2',
@@ -478,7 +484,7 @@ export class SecurityComponent {
       location: 'London, UK',
       ip: '10.0.0.2',
       lastActive: '2 hours ago',
-      current: false
+      current: false,
     },
     {
       id: '3',
@@ -487,8 +493,8 @@ export class SecurityComponent {
       location: 'Tokyo, JP',
       ip: '172.16.0.3',
       lastActive: 'Yesterday',
-      current: false
-    }
+      current: false,
+    },
   ]);
 
   passwordStrength = signal(0);
@@ -517,11 +523,11 @@ export class SecurityComponent {
   }
 
   revokeSession(id: string): void {
-    this.sessions.update(sessions => sessions.filter(s => s.id !== id));
+    this.sessions.update((sessions) => sessions.filter((s) => s.id !== id));
   }
 
   revokeAllSessions(): void {
-    this.sessions.update(sessions => sessions.filter(s => s.current));
+    this.sessions.update((sessions) => sessions.filter((s) => s.current));
   }
 
   deleteAccount(): void {

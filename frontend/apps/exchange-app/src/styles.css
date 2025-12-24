@@ -3,10 +3,10 @@
  * Imports shared design system from @exchange/shared-ui
  */
 
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* Import shared design system CSS variables */
-@import url("../../../packages/shared-ui/styles/design-system.css");
+@import "@exchange/shared-ui/styles/design-system.css";
 
 /* ========== EXCHANGE APP SPECIFIC STYLES ========== */
 
@@ -89,7 +89,9 @@
   padding: var(--spacing-3) var(--spacing-4);
   color: var(--color-text-primary);
   font-size: var(--font-size-base);
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .exchange-input:focus {

@@ -5,7 +5,6 @@ WORKDIR /app
 COPY frontend/package*.json ./frontend/
 COPY frontend/apps/exchange-app/package*.json ./frontend/apps/exchange-app/
 COPY frontend/packages/shared-ui/package*.json ./frontend/packages/shared-ui/
-COPY frontend/packages/shared-ui/src ./frontend/packages/shared-ui/src/
 COPY frontend ./frontend
 WORKDIR /app/frontend
 RUN npm install

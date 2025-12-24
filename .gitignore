@@ -8,6 +8,7 @@ dist/
 build/
 *.tsbuildinfo
 .next
+.angular
 
 # Testing
 coverage/

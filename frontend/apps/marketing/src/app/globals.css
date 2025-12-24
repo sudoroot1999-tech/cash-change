@@ -3,25 +3,23 @@
  * Imports shared design system
  */
 
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* Import shared design system */
-@import url("../../../../packages/shared-ui/styles/design-system.css");
+@import '@exchange/shared-ui/styles/design-system.css';
 
 /* Marketing-specific styles */
 
 /* Hero section gradient background */
 .hero-gradient {
-  background: radial-gradient(
-    ellipse 80% 50% at 50% -20%,
-    rgba(99, 102, 241, 0.3),
-    transparent
-  );
+  background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.3), transparent);
 }
 
 /* Feature card hover effect */
 .feature-card {
-  transition: transform var(--transition-base), box-shadow var(--transition-base);
+  transition:
+    transform var(--transition-base),
+    box-shadow var(--transition-base);
 }
 
 .feature-card:hover {
@@ -43,8 +41,8 @@
   border-radius: var(--radius-xl);
   padding: 1px;
   background: var(--gradient-primary);
-  -webkit-mask: 
-    linear-gradient(#fff 0 0) content-box, 
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
@@ -68,8 +66,12 @@
 
 /* Marquee for trusted logos */
 @keyframes marquee {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
 }
 
 .marquee {
@@ -138,9 +140,5 @@
 
 /* CTA section */
 .cta-section {
-  background: linear-gradient(
-    180deg,
-    var(--color-bg-secondary) 0%,
-    var(--color-bg-primary) 100%
-  );
+  background: linear-gradient(180deg, var(--color-bg-secondary) 0%, var(--color-bg-primary) 100%);
 }

@@ -1,9 +1,9 @@
 import { Component, ChangeDetectionStrategy, signal, inject } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { CardComponent } from '@/core-components/card/card.component';
-import { ButtonComponent } from '@/core-components/button/button.component';
-import { BadgeComponent } from '@/core-components/badge/badge.component';
+import { CardComponent } from '@/components/card/card.component';
+import { ButtonComponent } from '@/components/button/button.component';
+import { BadgeComponent } from '@/components/badge/badge.component';
 import { AuthService } from '../../../../core/services/auth.service';
 
 interface WalletBalance {
@@ -42,24 +42,29 @@ interface WalletBalance {
               <span class="portfolio-label">Total Balance</span>
               <div class="portfolio-value">
                 <span class="currency-symbol">$</span>
-                <span class="value-amount">{{ totalBalance() | number:'1.2-2' }}</span>
+                <span class="value-amount">{{ totalBalance() | number: '1.2-2' }}</span>
               </div>
               <div class="portfolio-change positive">
                 <svg class="change-icon" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" transform="rotate(180 10 10)"/>
+                  <path
+                    fill-rule="evenodd"
+                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                    clip-rule="evenodd"
+                    transform="rotate(180 10 10)"
+                  />
                 </svg>
                 +$1,234.56 (2.34%) today
               </div>
             </div>
-            
+
             <div class="portfolio-breakdown">
               <div class="breakdown-item">
                 <span class="breakdown-label">Available</span>
-                <span class="breakdown-value">{{ availableBalance() | number:'1.2-2' }}</span>
+                <span class="breakdown-value">{{ availableBalance() | number: '1.2-2' }}</span>
               </div>
               <div class="breakdown-item">
                 <span class="breakdown-label">In Orders</span>
-                <span class="breakdown-value">{{ lockedBalance() | number:'1.2-2' }}</span>
+                <span class="breakdown-value">{{ lockedBalance() | number: '1.2-2' }}</span>
               </div>
               <div class="breakdown-item">
                 <span class="breakdown-label">Assets</span>
@@ -116,7 +121,11 @@ interface WalletBalance {
           <h2 class="table-title">Your Assets</h2>
           <div class="table-filters">
             <label class="hide-small-checkbox">
-              <input type="checkbox" [checked]="hideSmallBalances()" (change)="hideSmallBalances.set(!hideSmallBalances())" />
+              <input
+                type="checkbox"
+                [checked]="hideSmallBalances()"
+                (change)="hideSmallBalances.set(!hideSmallBalances())"
+              />
               <span>Hide small balances</span>
             </label>
           </div>
@@ -148,21 +157,24 @@ interface WalletBalance {
                       </div>
                     </div>
                   </td>
-                  <td class="text-right mono">{{ balance.available | number:'1.4-4' }}</td>
-                  <td class="text-right mono text-muted">{{ balance.locked | number:'1.4-4' }}</td>
-                  <td class="text-right mono">{{ balance.usdValue | number:'1.2-2' }}</td>
+                  <td class="text-right mono">{{ balance.available | number: '1.4-4' }}</td>
+                  <td class="text-right mono text-muted">{{ balance.locked | number: '1.4-4' }}</td>
+                  <td class="text-right mono">{{ balance.usdValue | number: '1.2-2' }}</td>
                   <td class="text-right">
-                    <span 
+                    <span
                       class="change"
                       [class.positive]="balance.change24h >= 0"
                       [class.negative]="balance.change24h < 0"
                     >
-                      {{ balance.change24h >= 0 ? '+' : '' }}{{ balance.change24h | number:'1.2-2' }}%
+                      {{ balance.change24h >= 0 ? '+' : ''
+                      }}{{ balance.change24h | number: '1.2-2' }}%
                     </span>
                   </td>
                   <td class="text-right">
                     <div class="row-actions">
-                      <a [routerLink]="['/trade', balance.asset + 'USDT']" class="action-link">Trade</a>
+                      <a [routerLink]="['/trade', balance.asset + 'USDT']" class="action-link"
+                        >Trade</a
+                      >
                       <button class="action-link">Deposit</button>
                       <button class="action-link">Withdraw</button>
                     </div>
@@ -175,308 +187,310 @@ interface WalletBalance {
       </ui-card>
     </div>
   `,
-  styles: [`
-    .wallet-page {
-      padding: var(--spacing-6);
-      max-width: 1440px;
-      margin: 0 auto;
-    }
-
-    .page-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: var(--spacing-6);
-    }
-
-    .page-title {
-      font-size: var(--font-size-3xl);
-      font-weight: var(--font-weight-bold);
-      color: var(--color-text-primary);
-      margin: 0 0 var(--spacing-1) 0;
-    }
-
-    .page-subtitle {
-      font-size: var(--font-size-base);
-      color: var(--color-text-secondary);
-      margin: 0;
-    }
-
-    .header-actions {
-      display: flex;
-      gap: var(--spacing-2);
-    }
-
-    .portfolio-section {
-      margin-bottom: var(--spacing-6);
-    }
-
-    .portfolio-content {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .portfolio-label {
-      font-size: var(--font-size-sm);
-      color: var(--color-text-tertiary);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .portfolio-value {
-      display: flex;
-      align-items: baseline;
-      gap: var(--spacing-1);
-      margin: var(--spacing-2) 0;
-    }
-
-    .currency-symbol {
-      font-size: var(--font-size-2xl);
-      font-weight: var(--font-weight-bold);
-      color: var(--color-text-secondary);
-    }
-
-    .value-amount {
-      font-size: var(--font-size-5xl);
-      font-weight: var(--font-weight-bold);
-      color: var(--color-text-primary);
-      font-family: var(--font-family-mono);
-    }
-
-    .portfolio-change {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-1);
-      font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-medium);
-    }
-
-    .portfolio-change.positive {
-      color: var(--color-success);
-    }
-
-    .change-icon {
-      width: 16px;
-      height: 16px;
-    }
-
-    .portfolio-breakdown {
-      display: flex;
-      gap: var(--spacing-8);
-    }
-
-    .breakdown-item {
-      display: flex;
-      flex-direction: column;
-      gap: var(--spacing-1);
-    }
-
-    .breakdown-label {
-      font-size: var(--font-size-xs);
-      color: var(--color-text-tertiary);
-    }
-
-    .breakdown-value {
-      font-size: var(--font-size-xl);
-      font-weight: var(--font-weight-semibold);
-      color: var(--color-text-primary);
-    }
-
-    .quick-actions {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: var(--spacing-4);
-      margin-bottom: var(--spacing-6);
-    }
-
-    .action-content {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-3);
-    }
-
-    .action-icon {
-      font-size: var(--font-size-2xl);
-    }
-
-    .action-info {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .action-title {
-      font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-semibold);
-      color: var(--color-text-primary);
-    }
-
-    .action-desc {
-      font-size: var(--font-size-xs);
-      color: var(--color-text-tertiary);
-    }
-
-    .table-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: var(--spacing-4);
-      border-bottom: 1px solid var(--color-border-primary);
-    }
-
-    .table-title {
-      font-size: var(--font-size-base);
-      font-weight: var(--font-weight-semibold);
-      color: var(--color-text-primary);
-      margin: 0;
-    }
-
-    .hide-small-checkbox {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-2);
-      font-size: var(--font-size-sm);
-      color: var(--color-text-secondary);
-      cursor: pointer;
-    }
-
-    .table-container {
-      overflow-x: auto;
-    }
-
-    .balances-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    .balances-table th {
-      padding: var(--spacing-3) var(--spacing-4);
-      font-size: var(--font-size-xs);
-      font-weight: var(--font-weight-medium);
-      color: var(--color-text-tertiary);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      text-align: left;
-      border-bottom: 1px solid var(--color-border-primary);
-      background: var(--color-bg-tertiary);
-    }
-
-    .balances-table td {
-      padding: var(--spacing-3) var(--spacing-4);
-      border-bottom: 1px solid var(--color-border-primary);
-    }
-
-    .balance-row:hover {
-      background: var(--color-bg-card-hover);
-    }
-
-    .text-right {
-      text-align: right;
-    }
-
-    .mono {
-      font-family: var(--font-family-mono);
-    }
-
-    .text-muted {
-      color: var(--color-text-tertiary);
-    }
-
-    .asset-info {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-3);
-    }
-
-    .asset-icon {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-bold);
-      color: white;
-    }
-
-    .asset-details {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .asset-name {
-      font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-semibold);
-      color: var(--color-text-primary);
-    }
-
-    .asset-symbol {
-      font-size: var(--font-size-xs);
-      color: var(--color-text-tertiary);
-    }
-
-    .change.positive {
-      color: var(--color-success);
-    }
-
-    .change.negative {
-      color: var(--color-danger);
-    }
-
-    .row-actions {
-      display: flex;
-      gap: var(--spacing-2);
-    }
-
-    .action-link {
-      padding: var(--spacing-1) var(--spacing-2);
-      font-size: var(--font-size-xs);
-      font-weight: var(--font-weight-medium);
-      color: var(--color-accent-400);
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      text-decoration: none;
-      transition: color var(--transition-fast);
-    }
-
-    .action-link:hover {
-      color: var(--color-accent-300);
-    }
-
-    @media (max-width: 1024px) {
-      .quick-actions {
-        grid-template-columns: repeat(2, 1fr);
-      }
-
-      .portfolio-content {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: var(--spacing-4);
-      }
-    }
-
-    @media (max-width: 768px) {
+  styles: [
+    `
       .wallet-page {
-        padding: var(--spacing-4);
+        padding: var(--spacing-6);
+        max-width: 1440px;
+        margin: 0 auto;
       }
 
       .page-header {
-        flex-direction: column;
-        gap: var(--spacing-4);
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: var(--spacing-6);
+      }
+
+      .page-title {
+        font-size: var(--font-size-3xl);
+        font-weight: var(--font-weight-bold);
+        color: var(--color-text-primary);
+        margin: 0 0 var(--spacing-1) 0;
+      }
+
+      .page-subtitle {
+        font-size: var(--font-size-base);
+        color: var(--color-text-secondary);
+        margin: 0;
       }
 
       .header-actions {
-        width: 100%;
+        display: flex;
+        gap: var(--spacing-2);
+      }
+
+      .portfolio-section {
+        margin-bottom: var(--spacing-6);
+      }
+
+      .portfolio-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .portfolio-label {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-tertiary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .portfolio-value {
+        display: flex;
+        align-items: baseline;
+        gap: var(--spacing-1);
+        margin: var(--spacing-2) 0;
+      }
+
+      .currency-symbol {
+        font-size: var(--font-size-2xl);
+        font-weight: var(--font-weight-bold);
+        color: var(--color-text-secondary);
+      }
+
+      .value-amount {
+        font-size: var(--font-size-5xl);
+        font-weight: var(--font-weight-bold);
+        color: var(--color-text-primary);
+        font-family: var(--font-family-mono);
+      }
+
+      .portfolio-change {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-1);
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-medium);
+      }
+
+      .portfolio-change.positive {
+        color: var(--color-success);
+      }
+
+      .change-icon {
+        width: 16px;
+        height: 16px;
+      }
+
+      .portfolio-breakdown {
+        display: flex;
+        gap: var(--spacing-8);
+      }
+
+      .breakdown-item {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-1);
+      }
+
+      .breakdown-label {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+      }
+
+      .breakdown-value {
+        font-size: var(--font-size-xl);
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-text-primary);
       }
 
       .quick-actions {
-        grid-template-columns: 1fr;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: var(--spacing-4);
+        margin-bottom: var(--spacing-6);
       }
-    }
-  `],
-  changeDetection: ChangeDetectionStrategy.OnPush
+
+      .action-content {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-3);
+      }
+
+      .action-icon {
+        font-size: var(--font-size-2xl);
+      }
+
+      .action-info {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .action-title {
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-text-primary);
+      }
+
+      .action-desc {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+      }
+
+      .table-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--spacing-4);
+        border-bottom: 1px solid var(--color-border-primary);
+      }
+
+      .table-title {
+        font-size: var(--font-size-base);
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-text-primary);
+        margin: 0;
+      }
+
+      .hide-small-checkbox {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-2);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        cursor: pointer;
+      }
+
+      .table-container {
+        overflow-x: auto;
+      }
+
+      .balances-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .balances-table th {
+        padding: var(--spacing-3) var(--spacing-4);
+        font-size: var(--font-size-xs);
+        font-weight: var(--font-weight-medium);
+        color: var(--color-text-tertiary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        text-align: left;
+        border-bottom: 1px solid var(--color-border-primary);
+        background: var(--color-bg-tertiary);
+      }
+
+      .balances-table td {
+        padding: var(--spacing-3) var(--spacing-4);
+        border-bottom: 1px solid var(--color-border-primary);
+      }
+
+      .balance-row:hover {
+        background: var(--color-bg-card-hover);
+      }
+
+      .text-right {
+        text-align: right;
+      }
+
+      .mono {
+        font-family: var(--font-family-mono);
+      }
+
+      .text-muted {
+        color: var(--color-text-tertiary);
+      }
+
+      .asset-info {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-3);
+      }
+
+      .asset-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-bold);
+        color: white;
+      }
+
+      .asset-details {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .asset-name {
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-text-primary);
+      }
+
+      .asset-symbol {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+      }
+
+      .change.positive {
+        color: var(--color-success);
+      }
+
+      .change.negative {
+        color: var(--color-danger);
+      }
+
+      .row-actions {
+        display: flex;
+        gap: var(--spacing-2);
+      }
+
+      .action-link {
+        padding: var(--spacing-1) var(--spacing-2);
+        font-size: var(--font-size-xs);
+        font-weight: var(--font-weight-medium);
+        color: var(--color-accent-400);
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        text-decoration: none;
+        transition: color var(--transition-fast);
+      }
+
+      .action-link:hover {
+        color: var(--color-accent-300);
+      }
+
+      @media (max-width: 1024px) {
+        .quick-actions {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .portfolio-content {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: var(--spacing-4);
+        }
+      }
+
+      @media (max-width: 768px) {
+        .wallet-page {
+          padding: var(--spacing-4);
+        }
+
+        .page-header {
+          flex-direction: column;
+          gap: var(--spacing-4);
+        }
+
+        .header-actions {
+          width: 100%;
+        }
+
+        .quick-actions {
+          grid-template-columns: 1fr;
+        }
+      }
+    `,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WalletOverviewComponent {
   private readonly authService = inject(AuthService);
@@ -484,26 +498,61 @@ export class WalletOverviewComponent {
   hideSmallBalances = signal(false);
 
   balances = signal<WalletBalance[]>([
-    { asset: 'BTC', name: 'Bitcoin', available: 0.5423, locked: 0.1000, usdValue: 27654.32, change24h: 2.34 },
-    { asset: 'ETH', name: 'Ethereum', available: 4.2345, locked: 0.5000, usdValue: 10678.90, change24h: -1.23 },
-    { asset: 'USDT', name: 'Tether', available: 15432.50, locked: 2500.00, usdValue: 17932.50, change24h: 0.01 },
-    { asset: 'SOL', name: 'Solana', available: 45.6789, locked: 0, usdValue: 4512.34, change24h: 5.67 },
-    { asset: 'BNB', name: 'BNB', available: 12.3456, locked: 2.0000, usdValue: 4478.90, change24h: 0.89 },
+    {
+      asset: 'BTC',
+      name: 'Bitcoin',
+      available: 0.5423,
+      locked: 0.1,
+      usdValue: 27654.32,
+      change24h: 2.34,
+    },
+    {
+      asset: 'ETH',
+      name: 'Ethereum',
+      available: 4.2345,
+      locked: 0.5,
+      usdValue: 10678.9,
+      change24h: -1.23,
+    },
+    {
+      asset: 'USDT',
+      name: 'Tether',
+      available: 15432.5,
+      locked: 2500.0,
+      usdValue: 17932.5,
+      change24h: 0.01,
+    },
+    {
+      asset: 'SOL',
+      name: 'Solana',
+      available: 45.6789,
+      locked: 0,
+      usdValue: 4512.34,
+      change24h: 5.67,
+    },
+    {
+      asset: 'BNB',
+      name: 'BNB',
+      available: 12.3456,
+      locked: 2.0,
+      usdValue: 4478.9,
+      change24h: 0.89,
+    },
   ]);
 
   filteredBalances = signal(this.balances());
 
   totalBalance = signal(65256.96);
-  availableBalance = signal(58000.00);
+  availableBalance = signal(58000.0);
   lockedBalance = signal(7256.96);
 
   getCoinColor(symbol: string): string {
     const colors: Record<string, string> = {
-      'BTC': '#F7931A',
-      'ETH': '#627EEA',
-      'USDT': '#26A17B',
-      'SOL': '#9945FF',
-      'BNB': '#F3BA2F',
+      BTC: '#F7931A',
+      ETH: '#627EEA',
+      USDT: '#26A17B',
+      SOL: '#9945FF',
+      BNB: '#F3BA2F',
     };
     return colors[symbol] || '#6366f1';
   }
