@@ -1,5 +1,4 @@
-FROM node:20-alpine AS builder
-RUN apk add --no-cache libc6-compat
+FROM node:20-slim AS builder
 
 WORKDIR /app
 COPY frontend/package*.json ./frontend/
@@ -11,6 +10,7 @@ RUN npm install
 RUN npm run build --workspace=@exchange/marketing
 
 FROM node:20-alpine AS execution
+RUN apk add --no-cache libc6-compat
 WORKDIR /app/frontend/apps/marketing
 ENV NODE_ENV=production
 COPY --from=builder /app/frontend/node_modules /app/frontend/node_modules

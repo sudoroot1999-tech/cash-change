@@ -466,6 +466,8 @@ services:
       dockerfile: frontend/apps/marketing/Dockerfile
     container_name: exchange-marketing
     restart: unless-stopped
+    ports:
+      - '3100:3100'
     environment:
       - NODE_ENV=development
     networks:
@@ -477,6 +479,8 @@ services:
       dockerfile: frontend/apps/exchange-app/Dockerfile
     container_name: exchange-app
     restart: unless-stopped
+    ports:
+      - '4200:4200'
     environment:
       - NODE_ENV=development
     networks:
@@ -494,7 +498,6 @@ services:
     depends_on:
       - marketing
       - exchange-app
-      - api-gateway
     networks:
       - exchange-network
 
