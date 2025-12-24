@@ -1,4 +1,6 @@
 FROM node:20-alpine AS builder
+RUN apk add --no-cache libc6-compat
+
 WORKDIR /app
 COPY frontend/package*.json ./frontend/
 COPY frontend/apps/exchange-app/package*.json ./frontend/apps/exchange-app/
