@@ -464,12 +464,8 @@ services:
     build:
       context: .
       dockerfile: frontend/apps/marketing/Dockerfile
-    container_name: exchange-marketing
-    restart: unless-stopped
-    ports:
-      - '3100:3100'
-    environment:
-      - NODE_ENV=development
+    expose:
+      - "3100"
     networks:
       - exchange-network
 
@@ -477,12 +473,8 @@ services:
     build:
       context: .
       dockerfile: frontend/apps/exchange-app/Dockerfile
-    container_name: exchange-app
-    restart: unless-stopped
-    ports:
-      - '4200:4200'
-    environment:
-      - NODE_ENV=development
+    volumes:
+      - exchange_app_dist:/dist
     networks:
       - exchange-network
 
@@ -492,6 +484,7 @@ services:
     container_name: exchange-nginx
     restart: unless-stopped
     volumes:
+      - exchange_app_dist:/usr/share/nginx/html/app:ro
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     ports:
       - '80:80'
@@ -511,3 +504,4 @@ volumes:
   redis_data:
   timescaledb_data:
   rabbitmq_data:
+  exchange_app_dist:

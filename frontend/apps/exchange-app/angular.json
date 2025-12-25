@@ -20,6 +20,7 @@
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
             "baseHref": "/app/",
+            "deployUrl": "/app/",
             "assets": [
               {
                 "glob": "**/*",
@@ -55,8 +56,10 @@
         "serve": {
           "builder": "@angular/build:dev-server",
           "options": {
-            "poll": 2000, 
-            "watch": true 
+            "baseHref": "/app/",
+            "deployUrl": "/app/",
+            "host": "0.0.0.0",
+            "port": 4200
           },
           "configurations": {
             "production": {
