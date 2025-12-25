@@ -233,4 +233,21 @@ export class UsersService {
     const passwordHash = await bcrypt.hash(newPassword, 12);
     await this.userRepository.update(id, { passwordHash });
   }
+
+  /**
+   * Validate user credentials
+   */
+  async validate(email: string, password: string): Promise<User | null> {
+    const user = await this.userRepository.findOne({
+      where: { email },
+      select: ['id', 'email', 'passwordHash', 'status', 'tier', 'kycLevel', 'twoFactorEnabled', 'twoFactorSecret'],
+    });
+
+    if (!user) return null;
+
+    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+    if (!isPasswordValid) return null;
+
+    return user;
+  }
 }

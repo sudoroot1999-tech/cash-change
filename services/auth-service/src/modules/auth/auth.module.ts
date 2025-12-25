@@ -30,7 +30,7 @@ import { Session } from '../sessions/entities/session.entity';
           options: {
             package: 'user',
             protoPath: join(__dirname, '../../../../../libs/common/proto/user.proto'),
-            url: configService.get('USER_SERVICE_GRPC_URL', 'user-service:5001'),
+            url: configService.get('USER_SERVICE_GRPC_URL', 'localhost:5001'),
           },
         }),
       },

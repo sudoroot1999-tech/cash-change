@@ -130,6 +130,11 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD:-redis_dev_password}
       - REDIS_HOST=${REDIS_HOST:-redis}
       - REDIS_PORT=${REDIS_PORT:-6379}
+      - MINIO_HOST=${MINIO_HOST:-minio}
+      - MINIO_PORT=${MINIO_PORT:-9000}
+      - MINIO_USE_SSL=${MINIO_USE_SSL:-false}
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minio_admin}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minio_dev_password}
       - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
       - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
       - RABBITMQ_USER=${RABBITMQ_USER:-exchange}
@@ -358,6 +363,11 @@ services:
       - POSTGRES_USER=${POSTGRES_USER:-exchange_user}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-exchange_dev_password}
       - POSTGRES_DB=${POSTGRES_DB:-exchange}
+      - MINIO_HOST=${MINIO_HOST:-minio}
+      - MINIO_PORT=${MINIO_PORT:-9000}
+      - MINIO_USE_SSL=${MINIO_USE_SSL:-false}
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minio_admin}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minio_dev_password}
       - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
       - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
       - RABBITMQ_USER=${RABBITMQ_USER:-exchange}

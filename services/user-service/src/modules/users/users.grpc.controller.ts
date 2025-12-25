@@ -36,6 +36,13 @@ export class UsersGrpcController {
     return this.mapUserToResponse(user);
   }
 
+  @GrpcMethod('UserService', 'Validate')
+  async validate(data: { email: string; password: string }) {
+    const user = await this.usersService.validate(data.email, data.password);
+    if (!user) return null;
+    return this.mapUserToResponse(user);
+  }
+
   private mapUserToResponse(user: User) {
     return {
       id: user.id,

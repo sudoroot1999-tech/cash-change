@@ -4,7 +4,6 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import * as bcrypt from 'bcrypt';
 import { authenticator } from '@otplib/preset-default';
 import * as qrcode from 'qrcode';
 import { Session } from '../sessions/entities/session.entity';
@@ -26,6 +25,7 @@ interface UserGrpcService {
   findById(data: { id: string }): any;
   findByEmail(data: { email: string }): any;
   create(data: { email: string; password?: string; referral_code?: string }): any;
+  validate(data: { email: string; password: string }): any;
 }
 
 @Injectable()
@@ -72,19 +72,20 @@ export class AuthService implements OnModuleInit {
    * Validate user credentials
    */
   async validateUser(email: string, password: string): Promise<User | null> {
-    // In production, this would call the user-service via gRPC/HTTP
-    // For now, we'll use direct database access
-    const user = await this.findUserByEmail(email);
-    if (!user) return null;
+    // Call user-service via gRPC for secure validation
+    try {
+      const grpcUser = await this.userGrpcService.validate({ email, password }).toPromise();
+      if (!grpcUser) return null;
 
-    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
-    if (!isPasswordValid) return null;
-
-    if (user.status !== 'active' && user.status !== 'pending') {
-      throw new UnauthorizedException('Account is suspended or banned');
+      const user = this.mapGrpcUserToInternal(grpcUser);
+      if (user.status !== 'active' && user.status !== 'pending') {
+        throw new UnauthorizedException('Account is suspended or banned');
+      }
+      return user;
+    } catch (error) {
+       // If RPC returns null or error, return null
+       return null;
     }
-
-    return user;
   }
 
   /**
@@ -236,14 +237,14 @@ export class AuthService implements OnModuleInit {
   }
 
   // Placeholder methods - in production these would call user-service
-  private async findUserByEmail(email: string): Promise<User | null> {
-    try {
-      const response = await this.userGrpcService.findByEmail({ email }).toPromise();
-      return this.mapGrpcUserToInternal(response);
-    } catch (error) {
-      return null;
-    }
-  }
+  // private async findUserByEmail(email: string): Promise<User | null> {
+  //   try {
+  //     const response = await this.userGrpcService.findByEmail({ email }).toPromise();
+  //     return this.mapGrpcUserToInternal(response);
+  //   } catch (error) {
+  //     return null;
+  //   }
+  // }
 
   private async findUserById(id: string): Promise<User | null> {
     try {
