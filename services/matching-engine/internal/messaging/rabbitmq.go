@@ -7,6 +7,7 @@ import (
 
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/exchange/matching-engine/internal/engine"
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
 
