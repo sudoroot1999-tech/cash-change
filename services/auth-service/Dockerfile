@@ -16,7 +16,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY --from=builder /app/libs/common/dist ./libs/common/dist
-COPY --from=builder /app/libs/common/src/package.json ./libs/common/dist/libs/common/src/
+COPY --from=builder /app/libs/common/package.json ./libs/common/dist/libs/common/src/
 COPY --from=builder /app/services/auth-service/dist ./dist
 COPY --from=builder /app/services/auth-service/package.json ./
 
