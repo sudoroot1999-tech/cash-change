@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
+	"github.com/exchange/market-data-service/internal/coingecko"
 	"github.com/exchange/market-data-service/internal/handlers"
 	"github.com/exchange/market-data-service/internal/ticker"
 	"github.com/exchange/market-data-service/internal/websocket"
@@ -65,7 +66,8 @@ func main() {
 	}
 
 	// Initialize services
-	tickerService := ticker.NewTickerService(redisClient, logger)
+	cgClient := coingecko.NewClient(10 * time.Second)
+	tickerService := ticker.NewTickerService(redisClient, cgClient, logger)
 	wsHub := websocket.NewHub(logger)
 	go wsHub.Run()
 

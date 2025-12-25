@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/shopspring/decimal"
+	"github.com/exchange/market-data-service/internal/marketdata"
 	"github.com/exchange/market-data-service/internal/websocket"
 	"go.uber.org/zap"
 )
@@ -70,26 +71,28 @@ type Kline struct {
 
 // TickerService manages market data
 type TickerService struct {
-	redis   *redis.Client
-	logger  *zap.Logger
-	tickers map[string]*Ticker
-	mu      sync.RWMutex
-	ctx     context.Context
+	redis    *redis.Client
+	logger   *zap.Logger
+	provider marketdata.Provider
+	tickers  map[string]*Ticker
+	mu       sync.RWMutex
+	ctx      context.Context
 }
 
 // Default symbols
 var defaultSymbols = []string{"BTC/USDT", "ETH/USDT", "ETH/BTC", "BNB/USDT", "USDC/USDT"}
 
 // NewTickerService creates a new ticker service
-func NewTickerService(redis *redis.Client, logger *zap.Logger) *TickerService {
+func NewTickerService(redis *redis.Client, provider marketdata.Provider, logger *zap.Logger) *TickerService {
 	ts := &TickerService{
-		redis:   redis,
-		logger:  logger,
-		tickers: make(map[string]*Ticker),
-		ctx:     context.Background(),
+		redis:    redis,
+		logger:   logger,
+		provider: provider,
+		tickers:  make(map[string]*Ticker),
+		ctx:      context.Background(),
 	}
 
-	// Initialize with mock data
+	// Initialize with mock data (or empty, but keep structure for safe start)
 	ts.initializeMockTickers()
 
 	return ts
@@ -126,8 +129,13 @@ func (s *TickerService) initializeMockTickers() {
 
 // StartUpdates starts periodic ticker updates
 func (s *TickerService) StartUpdates(hub *websocket.Hub) {
-	ticker := time.NewTicker(1 * time.Second)
+	// CoinGecko Free API limit: ~10-30 calls/min. We update every 30s.
+	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
+	
+	// Initial update
+	s.updateTickers()
+	s.broadcastToHub(hub)
 
 	for range ticker.C {
 		s.updateTickers()
@@ -136,31 +144,45 @@ func (s *TickerService) StartUpdates(hub *websocket.Hub) {
 }
 
 func (s *TickerService) updateTickers() {
+	// Fetch data from provider
+	data, err := s.provider.GetTickers(s.ctx, defaultSymbols)
+	if err != nil {
+		s.logger.Error("Failed to fetch market data", zap.Error(err))
+		return
+	}
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	for symbol, t := range s.tickers {
-		// Simulate small price changes
-		lastPrice, _ := decimal.NewFromString(t.LastPrice)
-		change := decimal.NewFromFloat((rand.Float64() - 0.5) * 0.001) // ±0.05%
-		newPrice := lastPrice.Mul(decimal.NewFromFloat(1).Add(change))
+	for _, d := range data {
+		t, exists := s.tickers[d.Symbol]
+		if !exists {
+			// Should ideally not happen if initialized, but handle it
+			continue
+		}
 
-		openPrice, _ := decimal.NewFromString(t.OpenPrice)
-		priceChange := newPrice.Sub(openPrice)
-		priceChangePercent := priceChange.Div(openPrice).Mul(decimal.NewFromInt(100))
-
-		t.LastPrice = newPrice.StringFixed(8)
+		t.LastPrice = fmt.Sprintf("%.8f", d.LastPrice)
 		t.ClosePrice = t.LastPrice
-		t.PriceChange = priceChange.StringFixed(8)
-		t.PriceChangePercent = priceChangePercent.StringFixed(2)
-		t.BidPrice = newPrice.Mul(decimal.NewFromFloat(0.999)).StringFixed(8)
-		t.AskPrice = newPrice.Mul(decimal.NewFromFloat(1.001)).StringFixed(8)
+		// For high/low/volume, we take directly from provider
+		t.High24h = fmt.Sprintf("%.8f", d.High24h)
+		t.Low24h = fmt.Sprintf("%.8f", d.Low24h)
+		t.Volume24h = fmt.Sprintf("%.8f", d.Volume24h)
+		t.QuoteVolume24h = fmt.Sprintf("%.2f", d.QuoteVolume24h)
+		t.PriceChange = fmt.Sprintf("%.8f", d.PriceChange)
+		t.PriceChangePercent = fmt.Sprintf("%.2f", d.PriceChangePercent)
+		
+		// Approximate bid/ask since not provided by simple market endpoint
+		lastPriceDec := decimal.NewFromFloat(d.LastPrice)
+		t.BidPrice = lastPriceDec.Mul(decimal.NewFromFloat(0.999)).StringFixed(8)
+		t.AskPrice = lastPriceDec.Mul(decimal.NewFromFloat(1.001)).StringFixed(8)
+		
 		t.Timestamp = time.Now().UnixMilli()
 
 		// Update Redis cache
-		data, _ := json.Marshal(t)
-		s.redis.Set(s.ctx, fmt.Sprintf("ticker:%s", symbol), data, 5*time.Second)
+		jsonData, _ := json.Marshal(t)
+		s.redis.Set(s.ctx, fmt.Sprintf("ticker:%s", d.Symbol), jsonData, 60*time.Second)
 	}
+	s.logger.Info("Updated tickers from provider", zap.Int("count", len(data)))
 }
 
 func (s *TickerService) broadcastToHub(hub *websocket.Hub) {
