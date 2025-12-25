@@ -39,11 +39,12 @@ export class NotificationsEventsController {
   async handleKycUpdated(@Payload() data: any): Promise<void> {
       this.logger.log(`Received KYC updated event for user: ${data.userId}`);
       
-      const statusMessage = {
+      const statusMessages: Record<string, string> = {
           'approved': 'Your KYC has been approved!',
           'rejected': 'Your KYC application was rejected.',
           'more_info_required': 'We need more information for your KYC.',
-      }[data.status] || `Your KYC status is now ${data.status}`;
+      };
+      const statusMessage = statusMessages[data.status] || `Your KYC status is now ${data.status}`;
 
       await this.notificationsService.send({
           userId: data.userId,

@@ -6,6 +6,7 @@ service UserService {
   rpc FindById (FindByIdRequest) returns (UserResponse);
   rpc FindByEmail (FindByEmailRequest) returns (UserResponse);
   rpc UpdateKycLevel (UpdateKycLevelRequest) returns (UserResponse);
+  rpc Create (CreateUserRequest) returns (UserResponse);
 }
 
 message FindByIdRequest {
@@ -19,6 +20,12 @@ message FindByEmailRequest {
 message UpdateKycLevelRequest {
   string user_id = 1;
   int32 kyc_level = 2;
+}
+
+message CreateUserRequest {
+  string email = 1;
+  string password = 2;
+  optional string referral_code = 3;
 }
 
 message UserResponse {

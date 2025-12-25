@@ -25,6 +25,7 @@ interface User {
 interface UserGrpcService {
   findById(data: { id: string }): any;
   findByEmail(data: { email: string }): any;
+  create(data: { email: string; password?: string; referral_code?: string }): any;
 }
 
 @Injectable()
@@ -41,6 +42,30 @@ export class AuthService implements OnModuleInit {
 
   onModuleInit() {
     this.userGrpcService = this.client.getService<UserGrpcService>('UserService');
+  }
+
+  /**
+   * Register a new user
+   */
+  async register(dto: any): Promise<any> {
+    try {
+      // Create user via User Service gRPC
+      const grpcUser = await this.userGrpcService.create({
+        email: dto.email,
+        password: dto.password,
+        referral_code: dto.referralCode,
+      }).toPromise();
+
+      const user = this.mapGrpcUserToInternal(grpcUser);
+
+      // Auto-login: Generate tokens
+      return this.generateTokens(user);
+    } catch (error: any) {
+      if (error?.details?.includes('already registered')) { // Check specifically for conflict
+        throw new BadRequestException('Email already registered');
+      }
+      throw error;
+    }
   }
 
   /**
