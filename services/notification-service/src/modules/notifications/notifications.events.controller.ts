@@ -1,5 +1,5 @@
 import { Controller, Logger } from '@nestjs/common';
-import { EventPattern, Payload, Ctx, RmqContext } from '@nestjs/microservices';
+import { EventPattern, Payload } from '@nestjs/microservices';
 import { RABBITMQ } from '@exchange/common';
 import { NotificationsService } from './notifications.service';
 import { NotificationChannel, NotificationPriority } from './entities/notification.entity';
@@ -11,7 +11,7 @@ export class NotificationsEventsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @EventPattern(RABBITMQ.QUEUES.USER_CREATED)
-  async handleUserCreated(@Payload() data: any, @Ctx() context: RmqContext): Promise<void> {
+  async handleUserCreated(@Payload() data: any): Promise<void> {
     this.logger.log(`Received user created event for: ${data.email}`);
     
     // Acknowledge message manually if needed, but usually auto-ack is default in NestJS RMQ unless noAck: false
