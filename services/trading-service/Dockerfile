@@ -7,7 +7,7 @@ COPY node_modules ./node_modules
 COPY services/trading-service ./services/trading-service
 COPY tsconfig.base.json ./
 
-
+RUN npm install -g typescript
 RUN npm ci --workspace=@exchange/common --workspace=@exchange/trading-service
 RUN npm run build --workspace=@exchange/common
 RUN npm run build --workspace=@exchange/trading-service

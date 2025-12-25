@@ -7,6 +7,7 @@ COPY libs/common ./libs/common
 COPY services/security-service ./services/security-service
 COPY tsconfig.base.json ./
 
+RUN npm install -g typescript
 RUN npm ci --workspace=@exchange/common --workspace=@exchange/security-service
 RUN npm run build --workspace=@exchange/common
 RUN npm run build --workspace=@exchange/security-service

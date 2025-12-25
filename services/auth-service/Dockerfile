@@ -7,7 +7,7 @@ COPY libs/common ./libs/common
 COPY services/auth-service ./services/auth-service
 COPY tsconfig.base.json ./
 
-
+RUN npm install -g typescript
 RUN npm ci --workspace=@exchange/common --workspace=@exchange/auth-service
 RUN npm run build --workspace=@exchange/common
 RUN npm run build --workspace=@exchange/auth-service
