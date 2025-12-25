@@ -5,8 +5,8 @@
   "scripts": {
     "build": "nest build",
     "dev": "nest start --watch",
-    "start": "node dist/main",
-    "start:prod": "node dist/main",
+    "start": "node dist/services/auth-service/src/main.js",
+    "start:prod": "node dist/services/auth-service/src/main.js",
     "test": "jest",
     "lint": "eslint \"{src,test}/**/*.ts\" --fix"
   },
