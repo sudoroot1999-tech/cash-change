@@ -3,7 +3,6 @@ WORKDIR /app
 
 # Copy workspace files
 COPY package*.json ./
-COPY node_modules ./node_modules
 COPY libs/common ./libs/common
 COPY services/user-service ./services/user-service
 COPY tsconfig.base.json ./
@@ -22,9 +21,8 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/libs/common/dist ./libs/common/dist
-COPY --from=builder /app/libs/common/package.json ./libs/common/package.json
+COPY --from=builder /app/libs/common/src/package.json ./libs/common/dist/libs/common/src/
 COPY --from=builder /app/services/user-service/dist ./dist
 COPY --from=builder /app/services/user-service/package.json ./
 

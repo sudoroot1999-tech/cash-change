@@ -3,7 +3,6 @@ WORKDIR /app
 
 COPY package*.json ./
 COPY libs/common ./libs/common
-COPY node_modules ./node_modules
 COPY services/trading-service ./services/trading-service
 COPY tsconfig.base.json ./
 
@@ -16,9 +15,8 @@ FROM node:20-alpine AS production
 WORKDIR /app
 ENV NODE_ENV=production
 
-COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/libs/common/dist ./libs/common/dist
-COPY --from=builder /app/libs/common/package.json ./libs/common/package.json
+COPY --from=builder /app/libs/common/src/package.json ./libs/common/dist/libs/common/src/
 COPY --from=builder /app/services/trading-service/dist ./dist
 COPY --from=builder /app/services/trading-service/package.json ./
 

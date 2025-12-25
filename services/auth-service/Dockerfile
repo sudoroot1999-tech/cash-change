@@ -2,7 +2,6 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 COPY package*.json ./
-COPY node_modules ./node_modules
 COPY libs/common ./libs/common
 COPY services/auth-service ./services/auth-service
 COPY tsconfig.base.json ./
@@ -16,9 +15,8 @@ FROM node:20-alpine AS production
 WORKDIR /app
 ENV NODE_ENV=production
 
-COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/libs/common/dist ./libs/common/dist
-COPY --from=builder /app/libs/common/package.json ./libs/common/package.json
+COPY --from=builder /app/libs/common/src/package.json ./libs/common/dist/libs/common/src/
 COPY --from=builder /app/services/auth-service/dist ./dist
 COPY --from=builder /app/services/auth-service/package.json ./
 
