@@ -9,15 +9,15 @@ export class ProxyService {
 
   constructor(configService: ConfigService) {
     this.services = {
-      users: configService.get('USER_SERVICE_URL', 'http://user-service:3001'),
-      auth: configService.get('AUTH_SERVICE_URL', 'http://auth-service:3002'),
-      wallets: configService.get('WALLET_SERVICE_URL', 'http://wallet-service:3003'),
-      trading: configService.get('TRADING_SERVICE_URL', 'http://trading-service:3004'),
-      market: configService.get('MARKET_DATA_URL', 'http://market-data-service:3005'),
-      notifications: configService.get('NOTIFICATION_URL', 'http://notification-service:3006'),
-      compliance: configService.get('COMPLIANCE_URL', 'http://compliance-service:3007'),
-      security: configService.get('SECURITY_URL', 'http://security-service:3008'),
-      reserves: configService.get('RESERVES_URL', 'http://proof-of-reserves-service:3009'),
+      users: configService.get('USER_SERVICE_URL', 'http://localhost:3001'),
+      auth: configService.get('AUTH_SERVICE_URL', 'http://localhost:3002'),
+      wallets: configService.get('WALLET_SERVICE_URL', 'http://localhost:3003'),
+      trading: configService.get('TRADING_SERVICE_URL', 'http://localhost:3004'),
+      market: configService.get('MARKET_DATA_URL', 'http://localhost:3005'),
+      notifications: configService.get('NOTIFICATION_URL', 'http://localhost:3006'),
+      compliance: configService.get('COMPLIANCE_URL', 'http://localhost:3007'),
+      security: configService.get('SECURITY_URL', 'http://localhost:3008'),
+      reserves: configService.get('RESERVES_URL', 'http://localhost:3009'),
     };
   }
 

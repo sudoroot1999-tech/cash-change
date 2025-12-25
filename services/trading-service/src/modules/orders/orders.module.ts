@@ -50,7 +50,20 @@ import { OrdersController } from './orders.controller';
           options: {
             package: 'matching',
             protoPath: join(__dirname, '../../../../../libs/common/proto/matching.proto'),
-            url: configService.get('MATCHING_ENGINE_GRPC_URL', 'matching-engine:5010'),
+            url: configService.get('MATCHING_ENGINE_GRPC_URL', 'localhost:5010'),
+          },
+        }),
+      },
+      {
+        name: 'MARKET_PACKAGE',
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.GRPC,
+          options: {
+            package: 'market',
+            protoPath: join(__dirname, '../../../../../libs/common/proto/market.proto'),
+            url: configService.get('MARKET_DATA_GRPC_URL', 'localhost:5005'),
           },
         }),
       },

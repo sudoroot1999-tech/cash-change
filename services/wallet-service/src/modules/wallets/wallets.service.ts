@@ -3,13 +3,28 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Wallet } from './entities/wallet.entity';
 
+import { ClientGrpc } from '@nestjs/microservices';
+import { MarketService } from '@exchange/common';
+import { OnModuleInit, Inject } from '@nestjs/common';
+
 @Injectable()
-export class WalletsService {
+export class WalletsService implements OnModuleInit {
+  private marketService: MarketService;
+
   constructor(
     @InjectRepository(Wallet)
     private readonly walletRepository: Repository<Wallet>,
     private readonly dataSource: DataSource,
+    @Inject('MARKET_PACKAGE') private client: ClientGrpc,
   ) {}
+
+  onModuleInit() {
+    this.marketService = this.client.getService<MarketService>('MarketService');
+  }
+
+  async getMarkets() {
+    return this.marketService.getAllTickers({}).toPromise();
+  }
 
   async getUserWallets(userId: string): Promise<Wallet[]> {
     return this.walletRepository.find({ where: { userId } });

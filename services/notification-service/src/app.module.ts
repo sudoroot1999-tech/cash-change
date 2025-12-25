@@ -41,7 +41,7 @@ import { AuthModule } from './modules/auth/auth.module';
           redisUrl.length > 0
             ? redisUrl
             : {
-                host: config.get<string>('REDIS_HOST') || 'redis',
+                host: config.get<string>('REDIS_HOST') || 'localhost',
                 port: Number(config.get<string | number>('REDIS_PORT') || 6379),
                 // Match docker-compose default when REDIS_PASSWORD is unset
                 password: config.get<string>('REDIS_PASSWORD') || 'redis_dev_password',

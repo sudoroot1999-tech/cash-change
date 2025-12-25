@@ -11,7 +11,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
-import { RequireAuth, CurrentUser, AuthenticatedUser } from '@exchange/common';
+import { RequireAuth, CurrentUser, AuthenticatedUser, Public } from '@exchange/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto, OrderResponseDto } from './dto/order.dto';
 import { OrderStatus } from './entities/order.entity';
@@ -21,6 +21,13 @@ import { OrderStatus } from './entities/order.entity';
 @RequireAuth()
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
+
+  @Public()
+  @Get('markets')
+  @ApiOperation({ summary: 'Get all markets data' })
+  async getMarkets() {
+    return { data: await this.ordersService.getMarkets() };
+  }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)

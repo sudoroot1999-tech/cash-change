@@ -1,0 +1,96 @@
+syntax = "proto3";
+
+package market;
+
+option go_package = "./internal/pb";
+
+service MarketService {
+  rpc GetTicker(GetTickerRequest) returns (TickerResponse);
+  rpc GetAllTickers(Empty) returns (AllTickersResponse);
+  rpc GetOrderBook(GetOrderBookRequest) returns (OrderBookResponse);
+  rpc GetRecentTrades(GetRecentTradesRequest) returns (RecentTradesResponse);
+  rpc GetKlines(GetKlinesRequest) returns (KlinesResponse);
+}
+
+message Empty {}
+
+message GetTickerRequest {
+  string symbol = 1;
+}
+
+message TickerResponse {
+  string symbol = 1;
+  string last_price = 2;
+  string price_change = 3;
+  string price_change_percent = 4;
+  string high_24h = 5;
+  string low_24h = 6;
+  string volume_24h = 7;
+  string quote_volume_24h = 8;
+  string open_price = 9;
+  string close_price = 10;
+  string bid_price = 11;
+  string ask_price = 12;
+  int64 timestamp = 13;
+}
+
+message AllTickersResponse {
+  repeated TickerResponse tickers = 1;
+}
+
+message GetOrderBookRequest {
+  string symbol = 1;
+  int32 depth = 2;
+}
+
+message OrderBookLevel {
+  string price = 1;
+  string quantity = 2;
+}
+
+message OrderBookResponse {
+  string symbol = 1;
+  repeated OrderBookLevel bids = 2;
+  repeated OrderBookLevel asks = 3;
+  int64 timestamp = 4;
+}
+
+message GetRecentTradesRequest {
+  string symbol = 1;
+  int32 limit = 2;
+}
+
+message Trade {
+  string id = 1;
+  string symbol = 2;
+  string price = 3;
+  string quantity = 4;
+  string side = 5;
+  int64 timestamp = 6;
+}
+
+message RecentTradesResponse {
+  repeated Trade trades = 1;
+}
+
+message GetKlinesRequest {
+  string symbol = 1;
+  string interval = 2;
+  int32 limit = 3;
+}
+
+message Kline {
+  int64 open_time = 1;
+  string open = 2;
+  string high = 3;
+  string low = 4;
+  string close = 5;
+  string volume = 6;
+  int64 close_time = 7;
+  string quote_volume = 8;
+  int32 trades = 9;
+}
+
+message KlinesResponse {
+  repeated Kline klines = 1;
+}

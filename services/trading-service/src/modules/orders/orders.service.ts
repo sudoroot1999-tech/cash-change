@@ -20,12 +20,20 @@ export class OrdersService implements OnModuleInit {
     private readonly tradeRepository: Repository<Trade>,
     @Inject('WALLET_PACKAGE') private readonly client: ClientGrpc,
     @Inject('MATCHING_PACKAGE') private readonly matchingClient: ClientGrpc,
+    @Inject('MARKET_PACKAGE') private readonly marketClient: ClientGrpc,
     @Inject('TRADING_PACKAGE') private readonly rmqClient: ClientProxy,
   ) {}
+
+  private marketService: any;
 
   onModuleInit() {
     this.walletService = this.client.getService<any>('WalletService');
     this.matchingService = this.matchingClient.getService<any>('MatchingService');
+    this.marketService = this.marketClient.getService<any>('MarketService');
+  }
+
+  async getMarkets() {
+    return this.marketService.getAllTickers({}).toPromise();
   }
 
   /**

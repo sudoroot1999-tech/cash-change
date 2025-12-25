@@ -14,6 +14,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/exchange/market-data-service/internal/coingecko"
 	"github.com/exchange/market-data-service/internal/handlers"
+	"github.com/exchange/market-data-service/internal/grpc"
 	"github.com/exchange/market-data-service/internal/ticker"
 	"github.com/exchange/market-data-service/internal/websocket"
 	"go.uber.org/zap"
@@ -26,6 +27,10 @@ func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "3005"
+	}
+	grpcPort := os.Getenv("GRPC_PORT")
+	if grpcPort == "" {
+		grpcPort = "5005"
 	}
 
 	// Redis connection
@@ -42,7 +47,7 @@ func main() {
 	} else {
 		host := os.Getenv("REDIS_HOST")
 		if host == "" {
-			host = "redis"
+			host = "localhost"
 		}
 		portStr := os.Getenv("REDIS_PORT")
 		if portStr == "" {
@@ -119,6 +124,9 @@ func main() {
 			logger.Fatal("Server error", zap.Error(err))
 		}
 	}()
+
+	// Start gRPC server
+	go grpc.StartGRPCServer(grpcPort, tickerService, logger)
 
 	// Graceful shutdown
 	quit := make(chan os.Signal, 1)

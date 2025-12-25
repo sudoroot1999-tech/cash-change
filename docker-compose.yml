@@ -268,6 +268,7 @@ services:
     restart: unless-stopped
     environment:
       - PORT=3005
+      - GRPC_PORT=5005
       - TIMESCALE_HOST=${TIMESCALE_HOST:-timescaledb}
       - TIMESCALE_PORT=${TIMESCALE_PORT:-5432}
       - TIMESCALE_USER=${TIMESCALE_USER:-exchange_user}
@@ -283,6 +284,7 @@ services:
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
     ports:
       - '3005:3005'
+      - '5005:5005'
     depends_on:
       redis:
         condition: service_healthy
