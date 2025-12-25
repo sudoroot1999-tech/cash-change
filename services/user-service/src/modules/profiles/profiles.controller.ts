@@ -6,8 +6,12 @@ import {
   Body,
   Param,
   ParseUUIDPipe,
+  Post,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { ProfilesService, UpdateProfileDto } from './profiles.service';
 
 @ApiTags('Profiles')
@@ -41,5 +45,28 @@ export class ProfilesController {
     @Body() preferences: Record<string, unknown>,
   ) {
     return this.profilesService.updatePreferences(userId, preferences);
+  }
+
+  @Post('avatar')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @ApiOperation({ summary: 'Upload avatar' })
+  @ApiParam({ name: 'userId', type: 'string', format: 'uuid' })
+  async uploadAvatar(
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.profilesService.uploadAvatar(userId, file);
   }
 }

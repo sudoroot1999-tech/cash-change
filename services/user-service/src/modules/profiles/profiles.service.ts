@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { StorageService } from '@exchange/common';
 import { UserProfile } from './entities/profile.entity';
 
 export class UpdateProfileDto {
@@ -21,6 +22,7 @@ export class ProfilesService {
   constructor(
     @InjectRepository(UserProfile)
     private readonly profileRepository: Repository<UserProfile>,
+    private readonly storageService: StorageService,
   ) {}
 
   /**
@@ -74,5 +76,24 @@ export class ProfilesService {
     } catch {
       return this.create(userId);
     }
+  }
+
+  /**
+   * Upload avatar
+   */
+  async uploadAvatar(userId: string, file: Express.Multer.File): Promise<UserProfile> {
+    const profile = await this.findByUserId(userId);
+    
+    // Generate unique object name
+    const ext = file.originalname.split('.').pop();
+    const objectName = `avatars/${userId}_${Date.now()}.${ext}`;
+    
+    // Upload to MinIO
+    await this.storageService.uploadFile('user-profiles', objectName, file.buffer, file.size, {
+      'Content-Type': file.mimetype,
+    });
+    
+    profile.avatarUrl = objectName;
+    return this.profileRepository.save(profile);
   }
 }

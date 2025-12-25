@@ -21,13 +21,24 @@ export class KycController {
   @UseInterceptors(FilesInterceptor('files'))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Upload KYC documents' })
-  async uploadDocuments(@CurrentUser() _user: AuthenticatedUser, @UploadedFiles() files: Array<Express.Multer.File>) {
-    // In a real implementation this would upload to S3/Azure Blob
-    // For MVP we just return success
-    return { 
-      message: 'Documents uploaded successfully', 
-      count: files?.length || 0,
-      files: files?.map(f => f.originalname) 
+  async uploadDocuments(
+    @CurrentUser() user: AuthenticatedUser,
+    @UploadedFiles() files: Array<Express.Multer.File>,
+  ) {
+    if (!files || files.length === 0) {
+      return { message: 'No files uploaded', count: 0, files: [] };
+    }
+
+    const uploadedFiles: string[] = [];
+    for (const file of files) {
+      const objectName = await this.kycService.uploadDocument(user.userId, file);
+      uploadedFiles.push(objectName);
+    }
+
+    return {
+      message: 'Documents uploaded successfully',
+      count: uploadedFiles.length,
+      files: uploadedFiles,
     };
   }
 

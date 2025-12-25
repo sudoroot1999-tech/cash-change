@@ -5,6 +5,7 @@ import { UsersModule } from './modules/users/users.module';
 import { ProfilesModule } from './modules/profiles/profiles.module';
 import { HealthModule } from './modules/health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { StorageModule } from '@exchange/common';
 
 @Module({
   imports: [
@@ -29,6 +30,19 @@ import { AuthModule } from './modules/auth/auth.module';
         synchronize: configService.get('NODE_ENV') === 'development',
         logging: configService.get('NODE_ENV') === 'development',
         schema: 'users',
+      }),
+    }),
+
+    // Storage
+    StorageModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        endPoint: configService.get('MINIO_HOST', 'minio'),
+        port: parseInt(configService.get('MINIO_PORT', '9000')),
+        useSSL: configService.get('MINIO_USE_SSL', 'false') === 'true',
+        accessKey: configService.get('MINIO_ROOT_USER', 'minio_admin'),
+        secretKey: configService.get('MINIO_ROOT_PASSWORD', 'minio_dev_password'),
       }),
     }),
 

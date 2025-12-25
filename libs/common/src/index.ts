@@ -11,3 +11,5 @@ export * from './guards/jwt-auth.guard';
 export * from './guards/jwt.strategy';
 export * from './decorators/user.decorator';
 export * from './types/auth.types';
+export * from './storage/storage.module';
+export * from './storage/storage.service';

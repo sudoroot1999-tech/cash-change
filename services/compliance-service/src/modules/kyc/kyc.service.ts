@@ -5,7 +5,7 @@ import { Repository } from 'typeorm';
 import { KycRequest, KycStatus, KycLevel } from './entities/kyc-request.entity';
 import { SubmitKycDto, ReviewKycDto } from './dto/kyc.dto';
 import { ClientProxy } from '@nestjs/microservices';
-import { RABBITMQ } from '@exchange/common';
+import { RABBITMQ, StorageService } from '@exchange/common';
 
 @Injectable()
 export class KycService implements OnModuleInit {
@@ -17,6 +17,7 @@ export class KycService implements OnModuleInit {
     private readonly kycRepository: Repository<KycRequest>,
     @Inject('USER_PACKAGE') private readonly client: ClientGrpc,
     @Inject('COMPLIANCE_PACKAGE') private readonly rmqClient: ClientProxy,
+    private readonly storageService: StorageService,
   ) {}
 
   onModuleInit() {
@@ -100,5 +101,16 @@ export class KycService implements OnModuleInit {
     } catch (error) {
       this.logger.error(`Failed to update user KYC level: ${(error as any).message}`);
     }
+  }
+
+  async uploadDocument(userId: string, file: Express.Multer.File): Promise<string> {
+    const ext = file.originalname.split('.').pop();
+    const objectName = `documents/${userId}/${Date.now()}_${Math.round(Math.random() * 1000)}.${ext}`;
+
+    await this.storageService.uploadFile('kyc-documents', objectName, file.buffer, file.size, {
+      'Content-Type': file.mimetype,
+    });
+
+    return objectName;
   }
 }
