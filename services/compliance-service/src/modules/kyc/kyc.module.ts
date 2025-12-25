@@ -32,9 +32,7 @@ import { KycController } from './kyc.controller';
         useFactory: (configService: ConfigService) => ({
           transport: Transport.RMQ,
           options: {
-            urls: [
-              `${configService.get<string>('RABBITMQ_HOST', 'rabbitmq')}:${configService.get<string>('RABBITMQ_PORT', '5672')}${configService.get<string>('RABBITMQ_USER', 'exchange')}:${configService.get<string>('RABBITMQ_PASSWORD', 'rabbitmq_dev_password')}`,
-            ],
+            urls: [configService.get<string>('RABBITMQ_URL', 'amqp://localhost:5672')],
             queue: RABBITMQ.QUEUES.KYC_UPDATED,
             queueOptions: {
               durable: true,

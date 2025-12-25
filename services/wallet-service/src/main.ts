@@ -25,12 +25,12 @@ async function bootstrap() {
   // Wait, I can't easily get ConfigService from app context if I haven't imported it in main.ts
   // Actually I can: app.get(ConfigService).
   // But I need to add import.
-  const rmqUrl = configService.get<string>('RABBITMQ_URL', 'amqp://localhost:5672');
+ 
 
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.RMQ,
     options: {
-      urls: [rmqUrl],
+      urls: [configService.get<string>('RABBITMQ_URL', 'amqp://localhost:5672')],
       queue: 'wallet_service_queue',
       queueOptions: {
         durable: true,

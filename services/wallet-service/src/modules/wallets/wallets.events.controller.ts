@@ -1,5 +1,5 @@
 import { Controller, Logger } from '@nestjs/common';
-import { EventPattern, Payload, Ctx, RmqContext } from '@nestjs/microservices';
+import { EventPattern, Payload} from '@nestjs/microservices';
 import { RABBITMQ } from '@exchange/common';
 import { WalletsService } from './wallets.service';
 
@@ -10,7 +10,7 @@ export class WalletsEventsController {
   constructor(private readonly walletsService: WalletsService) {}
 
   @EventPattern(RABBITMQ.QUEUES.TRADE_EXECUTED)
-  async handleTradeExecuted(@Payload() data: any, @Ctx() context: RmqContext): Promise<void> {
+  async handleTradeExecuted(@Payload() data: any): Promise<void> {
     this.logger.log(`Received trade executed event: ${data.tradeId}`);
     
     try {
