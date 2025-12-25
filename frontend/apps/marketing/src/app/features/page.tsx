@@ -3,33 +3,43 @@ import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Features',
-  description: 'Explore the powerful features of CryptoX exchange. Advanced trading tools, institutional-grade security, and real-time market data.',
+  description:
+    'Explore the powerful features of CryptoX exchange. Advanced trading tools, institutional-grade security, and real-time market data.',
 };
 
 const mainFeatures = [
   {
     icon: '📊',
     title: 'Advanced Trading Tools',
-    description: 'Professional charting with TradingView integration, technical indicators, and drawing tools for in-depth market analysis.',
-    features: ['100+ Technical Indicators', 'Multiple Chart Types', 'Custom Timeframes', 'Drawing Tools']
+    description:
+      'Professional charting with TradingView integration, technical indicators, and drawing tools for in-depth market analysis.',
+    features: [
+      '100+ Technical Indicators',
+      'Multiple Chart Types',
+      'Custom Timeframes',
+      'Drawing Tools',
+    ],
   },
   {
     icon: '⚡',
     title: 'High-Performance Engine',
-    description: 'Our matching engine processes millions of orders per second with sub-millisecond latency for lightning-fast execution.',
-    features: ['1M+ Orders/Second', '<1ms Latency', '99.99% Uptime', 'Auto-Scaling']
+    description:
+      'Our matching engine processes millions of orders per second with sub-millisecond latency for lightning-fast execution.',
+    features: ['1M+ Orders/Second', '<1ms Latency', '99.99% Uptime', 'Auto-Scaling'],
   },
   {
     icon: '🔒',
     title: 'Bank-Grade Security',
-    description: 'Multi-layer security with cold storage, multi-sig wallets, and continuous security audits to protect your assets.',
-    features: ['Cold Storage', 'Multi-Signature', '2FA/MFA', 'Insurance Coverage']
+    description:
+      'Multi-layer security with cold storage, multi-sig wallets, and continuous security audits to protect your assets.',
+    features: ['Cold Storage', 'Multi-Signature', '2FA/MFA', 'Insurance Coverage'],
   },
   {
     icon: '📱',
     title: 'Cross-Platform Access',
-    description: 'Trade anywhere with our responsive web app, iOS and Android mobile apps, and powerful API for automated trading.',
-    features: ['Web Platform', 'iOS App', 'Android App', 'REST & WebSocket API']
+    description:
+      'Trade anywhere with our responsive web app, iOS and Android mobile apps, and powerful API for automated trading.',
+    features: ['Web Platform', 'iOS App', 'Android App', 'REST & WebSocket API'],
   },
 ];
 
@@ -43,8 +53,14 @@ const tradingFeatures = [
 ];
 
 const securityFeatures = [
-  { title: 'Multi-Factor Authentication', description: 'SMS, Email, TOTP, and hardware key support' },
-  { title: 'Withdrawal Whitelist', description: 'Only allow withdrawals to pre-approved addresses' },
+  {
+    title: 'Multi-Factor Authentication',
+    description: 'SMS, Email, TOTP, and hardware key support',
+  },
+  {
+    title: 'Withdrawal Whitelist',
+    description: 'Only allow withdrawals to pre-approved addresses',
+  },
   { title: 'Anti-Phishing Code', description: 'Verify official emails with your personal code' },
   { title: 'Device Management', description: 'Monitor and manage all connected devices' },
   { title: 'IP Restrictions', description: 'Limit account access by IP address' },
@@ -63,11 +79,12 @@ export default function FeaturesPage() {
             Everything you need to <span className="text-gradient">trade crypto</span>
           </h1>
           <p className="text-xl text-text-secondary max-w-3xl mx-auto mb-10">
-            From beginner-friendly interfaces to advanced trading tools, CryptoX provides a complete suite of features for every type of trader.
+            From beginner-friendly interfaces to advanced trading tools, CryptoX provides a complete
+            suite of features for every type of trader.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link
-              href="http://localhost:4200/auth/register"
+              href="/app/auth/register"
               className="px-8 py-4 text-base font-semibold text-white bg-gradient-to-r from-accent-500 to-accent-600 rounded-xl hover:from-accent-600 hover:to-accent-700 shadow-lg transition-all"
             >
               Start Trading
@@ -94,8 +111,18 @@ export default function FeaturesPage() {
                 <ul className="grid grid-cols-2 gap-2">
                   {feature.features.map((item, i) => (
                     <li key={i} className="flex items-center gap-2 text-sm text-text-tertiary">
-                      <svg className="w-4 h-4 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      <svg
+                        className="w-4 h-4 text-success"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 13l4 4L19 7"
+                        />
                       </svg>
                       {item}
                     </li>
@@ -142,15 +169,26 @@ export default function FeaturesPage() {
                 Your security is our priority
               </h2>
               <p className="text-lg text-text-secondary mb-8">
-                We employ industry-leading security measures to ensure your assets and data are always protected.
+                We employ industry-leading security measures to ensure your assets and data are
+                always protected.
               </p>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {securityFeatures.map((feature, index) => (
                   <div key={index} className="flex items-start gap-3">
                     <div className="w-5 h-5 rounded-full bg-success/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <svg className="w-3 h-3 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      <svg
+                        className="w-3 h-3 text-success"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 13l4 4L19 7"
+                        />
                       </svg>
                     </div>
                     <div>
@@ -195,7 +233,7 @@ export default function FeaturesPage() {
             Join thousands of traders who trust CryptoX for their crypto journey.
           </p>
           <Link
-            href="http://localhost:4200/auth/register"
+            href="/app/auth/register"
             className="inline-flex px-8 py-4 text-base font-semibold text-white bg-gradient-to-r from-accent-500 to-accent-600 rounded-xl hover:from-accent-600 hover:to-accent-700 shadow-lg transition-all"
           >
             Create Free Account

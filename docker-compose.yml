@@ -528,7 +528,6 @@ services:
     depends_on:
       - marketing
       - exchange-app
-      - api-gateway
     networks:
       - exchange-network
 

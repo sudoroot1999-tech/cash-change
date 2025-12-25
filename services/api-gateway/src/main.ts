@@ -12,7 +12,7 @@ async function bootstrap() {
   app.use(helmet());
   
   app.enableCors({
-    origin: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:4200'],
+    origin: process.env.CORS_ORIGINS?.split(',') || ['*'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],

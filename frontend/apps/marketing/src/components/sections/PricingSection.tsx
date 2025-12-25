@@ -24,7 +24,14 @@ const plans = [
     name: 'Enterprise',
     price: { monthly: 49.99, annual: 39.99 },
     description: "let's discuss with sales team",
-    features: ['Unlimited Projects', 'Analytics', 'Insights Panel', 'Share Features', 'Dedicated Support', 'Custom Integrations'],
+    features: [
+      'Unlimited Projects',
+      'Analytics',
+      'Insights Panel',
+      'Share Features',
+      'Dedicated Support',
+      'Custom Integrations',
+    ],
     cta: 'Chat With Us',
     popular: false,
   },
@@ -74,9 +81,7 @@ export function PricingSection() {
             >
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-text-primary">{plan.name}</h3>
-                {plan.popular && (
-                  <span className="text-xs text-accent-400">Most Preferred</span>
-                )}
+                {plan.popular && <span className="text-xs text-accent-400">Most Preferred</span>}
               </div>
 
               <div className="mb-6">
@@ -89,8 +94,18 @@ export function PricingSection() {
               <ul className="space-y-3 mb-8">
                 {plan.features.map((feature, i) => (
                   <li key={i} className="flex items-center gap-2 text-sm text-text-secondary">
-                    <svg className="w-4 h-4 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    <svg
+                      className="w-4 h-4 text-success"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
                     </svg>
                     {feature}
                   </li>
@@ -98,7 +113,7 @@ export function PricingSection() {
               </ul>
 
               <Link
-                href="http://localhost:4200/auth/register"
+                href="/app/auth/register"
                 className={`block w-full text-center py-3 px-4 text-sm font-semibold rounded-xl transition-all ${
                   plan.popular
                     ? 'bg-gradient-to-r from-accent-500 to-accent-600 text-white hover:from-accent-600 hover:to-accent-700'

@@ -8,12 +8,13 @@ export function CTASection() {
           Ready to start trading?
         </h2>
         <p className="text-lg text-text-secondary mb-10 max-w-2xl mx-auto">
-          Promote your Web3 Startup with this Framer Template. Join thousands of traders who trust CryptoX for their crypto journey.
+          Promote your Web3 Startup with this Framer Template. Join thousands of traders who trust
+          CryptoX for their crypto journey.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
-            href="http://localhost:4200/auth/register"
+            href="/app/auth/register"
             className="w-full sm:w-auto px-8 py-4 text-base font-semibold text-white bg-gradient-to-r from-accent-500 to-accent-600 rounded-xl hover:from-accent-600 hover:to-accent-700 shadow-lg hover:shadow-xl transition-all"
           >
             Get Started Free

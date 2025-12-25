@@ -66,11 +66,13 @@ const tradingFees = [
 const faqs = [
   {
     question: 'Can I switch plans at any time?',
-    answer: 'Yes, you can upgrade or downgrade your plan at any time. Changes take effect immediately and billing is prorated.',
+    answer:
+      'Yes, you can upgrade or downgrade your plan at any time. Changes take effect immediately and billing is prorated.',
   },
   {
     question: 'What payment methods do you accept?',
-    answer: 'We accept credit/debit cards, bank transfers, and cryptocurrency payments (BTC, ETH, USDT).',
+    answer:
+      'We accept credit/debit cards, bank transfers, and cryptocurrency payments (BTC, ETH, USDT).',
   },
   {
     question: 'Is there a free trial?',
@@ -83,7 +85,8 @@ const faqs = [
 ];
 
 export default function PricingPage() {
-  const [isAnnual, setIsAnnual] = useState(true);  const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [isAnnual, setIsAnnual] = useState(true);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   return (
     <div className="min-h-screen">
@@ -156,8 +159,18 @@ export default function PricingPage() {
                 <ul className="space-y-3 mb-8">
                   {plan.features.map((feature, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm text-text-secondary">
-                      <svg className="w-5 h-5 text-success flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      <svg
+                        className="w-5 h-5 text-success flex-shrink-0"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 13l4 4L19 7"
+                        />
                       </svg>
                       {feature}
                     </li>
@@ -165,7 +178,7 @@ export default function PricingPage() {
                 </ul>
 
                 <Link
-                  href={plan.name === 'Pro' ? '/contact' : 'http://localhost:4200/auth/register'}
+                  href={plan.name === 'Pro' ? '/contact' : '/app/auth/register'}
                   className={`block w-full text-center py-3 px-4 text-sm font-semibold rounded-xl transition-all ${
                     plan.popular
                       ? 'bg-gradient-to-r from-accent-500 to-accent-600 text-white hover:from-accent-600 hover:to-accent-700'
@@ -197,10 +210,18 @@ export default function PricingPage() {
             <table className="w-full">
               <thead>
                 <tr className="bg-bg-tertiary">
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-text-tertiary uppercase">Tier</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-text-tertiary uppercase">30-Day Volume</th>
-                  <th className="px-6 py-4 text-right text-xs font-semibold text-text-tertiary uppercase">Maker Fee</th>
-                  <th className="px-6 py-4 text-right text-xs font-semibold text-text-tertiary uppercase">Taker Fee</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-text-tertiary uppercase">
+                    Tier
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-text-tertiary uppercase">
+                    30-Day Volume
+                  </th>
+                  <th className="px-6 py-4 text-right text-xs font-semibold text-text-tertiary uppercase">
+                    Maker Fee
+                  </th>
+                  <th className="px-6 py-4 text-right text-xs font-semibold text-text-tertiary uppercase">
+                    Taker Fee
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -208,8 +229,12 @@ export default function PricingPage() {
                   <tr key={index} className="border-t border-border-primary">
                     <td className="px-6 py-4 text-sm font-medium text-text-primary">{fee.tier}</td>
                     <td className="px-6 py-4 text-sm text-text-secondary">{fee.volume}</td>
-                    <td className="px-6 py-4 text-sm text-right font-mono text-success">{fee.maker}</td>
-                    <td className="px-6 py-4 text-sm text-right font-mono text-text-primary">{fee.taker}</td>
+                    <td className="px-6 py-4 text-sm text-right font-mono text-success">
+                      {fee.maker}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-right font-mono text-text-primary">
+                      {fee.taker}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -223,9 +248,7 @@ export default function PricingPage() {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <span className="text-sm font-medium text-accent-400 mb-4 block">FAQ</span>
-            <h2 className="text-3xl font-bold text-text-primary">
-              Frequently asked questions
-            </h2>
+            <h2 className="text-3xl font-bold text-text-primary">Frequently asked questions</h2>
           </div>
 
           <div className="glass-card p-2">
@@ -242,13 +265,16 @@ export default function PricingPage() {
                     viewBox="0 0 24 24"
                     stroke="currentColor"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
                   </svg>
                 </button>
                 {openFaq === index && (
-                  <div className="px-4 pb-4 text-sm text-text-secondary">
-                    {faq.answer}
-                  </div>
+                  <div className="px-4 pb-4 text-sm text-text-secondary">{faq.answer}</div>
                 )}
               </div>
             ))}
@@ -266,7 +292,7 @@ export default function PricingPage() {
             Join millions of traders and start your crypto journey today.
           </p>
           <Link
-            href="http://localhost:4200/auth/register"
+            href="/app/auth/register"
             className="inline-flex px-8 py-4 text-base font-semibold text-white bg-gradient-to-r from-accent-500 to-accent-600 rounded-xl hover:from-accent-600 hover:to-accent-700 shadow-lg transition-all"
           >
             Create Free Account

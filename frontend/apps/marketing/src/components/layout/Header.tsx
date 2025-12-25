@@ -56,13 +56,13 @@ export function Header() {
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center gap-3">
             <Link
-              href="http://localhost:4200/app/auth/login"
+              href="/app/app/auth/login"
               className="px-4 py-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors"
             >
               Login
             </Link>
             <Link
-              href="http://localhost:4200/auth/register"
+              href="/app/auth/register"
               className="px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-accent-500 to-accent-600 rounded-lg hover:from-accent-600 hover:to-accent-700 shadow-md hover:shadow-lg transition-all"
             >
               Get Started
@@ -111,13 +111,13 @@ export function Header() {
               ))}
               <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-border-primary">
                 <Link
-                  href="http://localhost:4200/app/auth/login"
+                  href="/app/auth/login"
                   className="px-3 py-2 text-base font-medium text-text-secondary"
                 >
                   Login
                 </Link>
                 <Link
-                  href="http://localhost:4200/auth/register"
+                  href="/app/auth/register"
                   className="px-4 py-2.5 text-center text-sm font-medium text-white bg-gradient-to-r from-accent-500 to-accent-600 rounded-lg"
                 >
                   Get Started

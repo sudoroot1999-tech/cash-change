@@ -25,8 +25,18 @@ export function TokenizedAssetsSection() {
               {features.map((feature, index) => (
                 <li key={index} className="flex items-center gap-3">
                   <div className="w-6 h-6 rounded-full bg-success/20 flex items-center justify-center">
-                    <svg className="w-4 h-4 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    <svg
+                      className="w-4 h-4 text-success"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
                     </svg>
                   </div>
                   <span className="text-text-primary">{feature}</span>
@@ -35,7 +45,7 @@ export function TokenizedAssetsSection() {
             </ul>
 
             <Link
-              href="http://localhost:4200/auth/register"
+              href="/app/auth/register"
               className="inline-flex px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-accent-500 to-accent-600 rounded-xl hover:from-accent-600 hover:to-accent-700 shadow-md hover:shadow-lg transition-all"
             >
               Get Started
@@ -52,7 +62,10 @@ export function TokenizedAssetsSection() {
 
               <button className="w-full flex items-center justify-center gap-2 px-4 py-3 mb-4 text-sm font-medium text-text-primary bg-bg-tertiary border border-border-primary rounded-xl hover:bg-bg-elevated transition-colors">
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path
+                    fill="currentColor"
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  />
                 </svg>
                 Continue with Google
               </button>
@@ -70,16 +83,16 @@ export function TokenizedAssetsSection() {
                 Continue with Email
               </button>
 
-              <p className="text-center text-xs text-text-tertiary mt-4">
-                View more options
-              </p>
+              <p className="text-center text-xs text-text-tertiary mt-4">View more options</p>
             </div>
 
             {/* Floating card */}
             <div className="absolute -bottom-4 -right-4 glass-card p-4 max-w-[200px]">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-text-tertiary">USDT Vault</span>
-                <span className="text-xs text-success bg-success/10 px-2 py-0.5 rounded">Low Risk</span>
+                <span className="text-xs text-success bg-success/10 px-2 py-0.5 rounded">
+                  Low Risk
+                </span>
               </div>
               <p className="text-2xl font-bold text-text-primary mb-1">04.11% APY</p>
               <p className="text-xs text-text-tertiary">TVL: $81,923.23</p>
