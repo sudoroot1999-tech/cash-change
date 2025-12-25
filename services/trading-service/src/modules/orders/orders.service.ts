@@ -130,8 +130,36 @@ export class OrdersService implements OnModuleInit {
         id: orderId,
         symbol: symbol,
       }).toPromise();
+      
+      // Unlock remaining balance
+      // We need to calculate how much to unlock based on remaining quantity
+      const remainingAmount = parseFloat(order.remainingQuantity.toString()) * (order.price ? parseFloat(order.price.toString()) : 0); // Logic mainly for LIMIT orders
+      // For market orders, it's more complex as we locked estimated amount? 
+      // Assuming LIMIT for now as createOrder enforces price for LIMIT.
+      
+      if (order.side === 'buy' && order.price) { // Only buy orders lock quote currency
+          // Simplification: asset_id from symbol (e.g. BTC/USDT -> USDT)
+          const assetId = symbol.split('/')[1]; 
+          await this.walletService.unlockBalance({
+              user_id: userId,
+              asset_id: assetId,
+              amount: remainingAmount.toString()
+          }).toPromise();
+      } else if (order.side === 'sell') {
+           // Sell orders lock base currency
+           const assetId = symbol.split('/')[0];
+           await this.walletService.unlockBalance({
+              user_id: userId,
+              asset_id: assetId,
+              amount: order.remainingQuantity.toString()
+          }).toPromise();
+      }
+
     } catch (error) {
       this.logger.error('Failed to cancel at matching engine via gRPC', error);
+      // If matching engine fails, we don't cancel local order? Or we mark as failed?
+      // Should probably re-throw
+      throw error;
     }
 
     order.status = OrderStatus.CANCELLED;
@@ -243,6 +271,7 @@ export class OrdersService implements OnModuleInit {
       this.rmqClient.emit(RABBITMQ.QUEUES.TRADE_EXECUTED, {
         tradeId: trade.id,
         pairId: pairId,
+        symbol: trade.symbol, // Added symbol from matching engine response
         buyerId: trade.buyer_id || trade.buyerId,
         sellerId: trade.seller_id || trade.sellerId,
         price: trade.price,

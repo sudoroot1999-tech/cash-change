@@ -92,4 +92,73 @@ export class WalletsService {
     wallet.availableBalance = (available - parseFloat(amount)).toFixed(18);
     return this.walletRepository.save(wallet);
   }
+
+  async settleTrade(
+    buyerId: string,
+    sellerId: string,
+    baseAsset: string,
+    quoteAsset: string,
+    quantity: string,
+    cost: string,
+  ): Promise<void> {
+      const queryRunner = this.dataSource.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+
+      try {
+          // Buyer:
+          // 1. Debit Locked Quote (since it was locked on order creation)
+          // 2. Credit Available Base
+          
+          const buyerQuoteWallet = await queryRunner.manager.findOne(Wallet, { where: { userId: buyerId, assetId: quoteAsset }, lock: { mode: 'pessimistic_write' } });
+          const buyerBaseWallet = await this.getOrCreateWalletWithRunner(queryRunner, buyerId, baseAsset);
+          
+          if (buyerQuoteWallet) {
+              const locked = parseFloat(buyerQuoteWallet.lockedBalance);
+              const costNum = parseFloat(cost);
+              // Handle potential precision/rounding issues or partial fills where we locked more.
+              // For now assume perfect match or close enough.
+              buyerQuoteWallet.lockedBalance = (locked - costNum).toFixed(18);
+              await queryRunner.manager.save(buyerQuoteWallet);
+          }
+
+          const buyerBase = parseFloat(buyerBaseWallet.availableBalance);
+          buyerBaseWallet.availableBalance = (buyerBase + parseFloat(quantity)).toFixed(18);
+          await queryRunner.manager.save(buyerBaseWallet);
+
+          // Seller:
+          // 1. Debit Locked Base
+          // 2. Credit Available Quote
+          
+          const sellerBaseWallet = await queryRunner.manager.findOne(Wallet, { where: { userId: sellerId, assetId: baseAsset }, lock: { mode: 'pessimistic_write' } });
+          const sellerQuoteWallet = await this.getOrCreateWalletWithRunner(queryRunner, sellerId, quoteAsset);
+
+          if (sellerBaseWallet) {
+              const locked = parseFloat(sellerBaseWallet.lockedBalance);
+              const qtyNum = parseFloat(quantity);
+              sellerBaseWallet.lockedBalance = (locked - qtyNum).toFixed(18);
+              await queryRunner.manager.save(sellerBaseWallet);
+          }
+          
+          const sellerQuote = parseFloat(sellerQuoteWallet.availableBalance);
+          sellerQuoteWallet.availableBalance = (sellerQuote + parseFloat(cost)).toFixed(18);
+          await queryRunner.manager.save(sellerQuoteWallet);
+
+          await queryRunner.commitTransaction();
+      } catch (err) {
+          await queryRunner.rollbackTransaction();
+          throw err; // This might cause infinite retry in RabbitMQ if not handled carefuly
+      } finally {
+          await queryRunner.release();
+      }
+  }
+
+  private async getOrCreateWalletWithRunner(runner: any, userId: string, assetId: string): Promise<Wallet> {
+      let wallet = await runner.manager.findOne(Wallet, { where: { userId, assetId }, lock: { mode: 'pessimistic_write' } });
+      if (!wallet) {
+          wallet = runner.manager.create(Wallet, { userId, assetId, availableBalance: '0', lockedBalance: '0' });
+          wallet = await runner.manager.save(wallet);
+      }
+      return wallet;
+  }
 }

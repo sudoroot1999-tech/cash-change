@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { join } from 'path';
 import { AppModule } from './app.module';
@@ -16,6 +17,24 @@ async function bootstrap() {
       package: 'wallet',
       protoPath: join(__dirname, '../../../libs/common/proto/wallet.proto'),
       url: `0.0.0.0:${process.env.GRPC_PORT || 5003}`,
+    },
+  });
+
+  // Connect RabbitMQ microservice
+  const configService = app.get(ConfigService); // Need to import ConfigService in main.ts or get from context? 
+  // Wait, I can't easily get ConfigService from app context if I haven't imported it in main.ts
+  // Actually I can: app.get(ConfigService).
+  // But I need to add import.
+  const rmqUrl = configService.get<string>('RABBITMQ_URL', 'amqp://localhost:5672');
+
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.RMQ,
+    options: {
+      urls: [rmqUrl],
+      queue: 'wallet_service_queue',
+      queueOptions: {
+        durable: true,
+      },
     },
   });
 

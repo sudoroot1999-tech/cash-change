@@ -1,5 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { Transport, MicroserviceOptions } from '@nestjs/microservices';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
@@ -21,8 +23,34 @@ async function bootstrap() {
     SwaggerModule.setup('docs', app, SwaggerModule.createDocument(app, config));
   }
 
+  // Connect to RabbitMQ
+  const configService = app.get(ConfigService);
+  const rmqUrl = configService.get<string>('RABBITMQ_URL', 'amqp://localhost:5672');
+  
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.RMQ,
+    options: {
+      urls: [rmqUrl],
+      queue: 'notification_service_queue',
+      queueOptions: {
+        durable: true,
+      },
+      // Bind to specific exchanges if needed, but usually we just listen to the queue 
+      // where the producer (UserService) publishes to.
+      // Wait, usually the 'queue' here is the queue we LISTEN to. 
+      // If UserService emits to 'user_created_queue', we need to listen to THAT or bind to the exchange.
+      // NestJS RMQ defaults: @EventPattern('name') usually binds queue to exchange 'name' if not default?
+      // Actually standard pattern: Consumers listen to their OWN queue, and we bind topics to it. 
+      // Or we listen to the queue defined in the annotation.
+      // For now let's use a general queue for the service.
+    },
+  });
+
+  await app.startAllMicroservices();
+
   const port = process.env.PORT || 3006;
   await app.listen(port);
   logger.log(`Notification Service running on port ${port}`);
+  logger.log(`Microservices started`);
 }
 bootstrap();

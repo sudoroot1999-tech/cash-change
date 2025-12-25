@@ -5,9 +5,11 @@ import { WalletsService } from './wallets.service';
 import { WalletsController } from './wallets.controller';
 import { WalletsGrpcController } from './wallets.grpc.controller';
 
+import { WalletsEventsController } from './wallets.events.controller';
+
 @Module({
   imports: [TypeOrmModule.forFeature([Wallet])],
-  controllers: [WalletsController, WalletsGrpcController],
+  controllers: [WalletsController, WalletsGrpcController, WalletsEventsController],
   providers: [WalletsService],
   exports: [WalletsService],
 })

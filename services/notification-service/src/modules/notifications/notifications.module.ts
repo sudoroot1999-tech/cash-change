@@ -6,12 +6,14 @@ import { NotificationsService } from './notifications.service';
 import { NotificationsController } from './notifications.controller';
 import { NotificationsProcessor } from './notifications.processor';
 
+import { NotificationsEventsController } from './notifications.events.controller';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([Notification]),
     BullModule.registerQueue({ name: 'notifications' }),
   ],
-  controllers: [NotificationsController],
+  controllers: [NotificationsController, NotificationsEventsController],
   providers: [NotificationsService, NotificationsProcessor],
   exports: [NotificationsService],
 })
