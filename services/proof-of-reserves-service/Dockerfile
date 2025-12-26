@@ -16,10 +16,10 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY package*.json ./
-COPY --from=builder /app/libs/common/dist ./libs/common/dist
-COPY --from=builder /app/libs/common/package.json ./libs/common/package.json
-COPY --from=builder /app/services/proof-of-reserves-service/dist ./services/proof-of-reserves-service/dist
-COPY --from=builder /app/services/proof-of-reserves-service/package.json ./services/proof-of-reserves-service/package.json
+COPY --from=builder /app/services/proof-of-reserves-service/dist/services/proof-of-reserves-service ./services/proof-of-reserves-service/dist
+COPY --from=builder /app/services/proof-of-reserves-service/dist/libs ./libs/
+COPY services/proof-of-reserves-service/package.json ./services/proof-of-reserves-service/package.json
+COPY libs/common/package.json ./libs/common/package.json
 
 RUN npm ci --workspace=@exchange/proof-of-reserves-service --omit=dev
 

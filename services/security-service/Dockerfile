@@ -16,10 +16,10 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY package*.json ./
-COPY --from=builder /app/libs/common/dist ./libs/common/dist
-COPY --from=builder /app/libs/common/package.json ./libs/common/package.json
-COPY --from=builder /app/services/security-service/dist ./services/security-service/dist
-COPY --from=builder /app/services/security-service/package.json ./services/security-service/package.json
+COPY --from=builder /app/services/security-service/dist/services/security-service ./services/security-service/dist
+COPY --from=builder /app/services/security-service/dist/libs ./libs/
+COPY services/security-service/package.json ./services/security-service/package.json
+COPY libs/common/package.json ./libs/common/package.json
 
 RUN npm ci --workspace=@exchange/security-service --omit=dev
 

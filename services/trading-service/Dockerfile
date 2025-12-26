@@ -16,10 +16,10 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY package*.json ./
-COPY --from=builder /app/libs/common/dist ./libs/common/dist
-COPY --from=builder /app/libs/common/package.json ./libs/common/package.json
-COPY --from=builder /app/services/trading-service/dist ./services/trading-service/dist
-COPY --from=builder /app/services/trading-service/package.json ./services/trading-service/package.json
+COPY --from=builder /app/services/trading-service/dist/services/trading-service ./services/trading-service/dist
+COPY --from=builder /app/services/trading-service/dist/libs ./libs/
+COPY services/trading-service/package.json ./services/trading-service/package.json
+COPY libs/common/package.json ./libs/common/package.json
 
 RUN npm ci --workspace=@exchange/trading-service --omit=dev
 

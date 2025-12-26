@@ -22,10 +22,10 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY package*.json ./
-COPY --from=builder /app/libs/common/dist ./libs/common/dist
-COPY --from=builder /app/libs/common/package.json ./libs/common/package.json
-COPY --from=builder /app/services/user-service/dist ./services/user-service/dist
-COPY --from=builder /app/services/user-service/package.json ./services/user-service/package.json
+COPY --from=builder /app/services/user-service/dist/services/user-service ./services/user-service/dist
+COPY --from=builder /app/services/user-service/dist/libs ./libs/
+COPY services/user-service/package.json ./services/user-service/package.json
+COPY libs/common/package.json ./libs/common/package.json
 
 RUN npm ci --workspace=@exchange/user-service --omit=dev
 EXPOSE 3001

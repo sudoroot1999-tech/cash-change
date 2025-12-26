@@ -15,10 +15,10 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY package*.json ./
-COPY --from=builder /app/libs/common/dist ./libs/common/dist
-COPY --from=builder /app/libs/common/package.json ./libs/common/package.json
-COPY --from=builder /app/services/api-gateway/dist ./services/api-gateway/dist
-COPY --from=builder /app/services/api-gateway/package.json ./services/api-gateway/package.json
+COPY --from=builder /app/services/api-gateway/dist/services/api-gateway ./services/api-gateway/dist
+COPY --from=builder /app/services/api-gateway/dist/libs ./libs/
+COPY services/api-gateway/package.json ./services/api-gateway/package.json
+COPY libs/common/package.json ./libs/common/package.json
 
 RUN npm ci --workspace=@exchange/api-gateway --omit=dev
 

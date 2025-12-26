@@ -15,10 +15,10 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY package*.json ./
-COPY --from=builder /app/libs/common/dist ./libs/common/dist
-COPY --from=builder /app/libs/common/package.json ./libs/common/package.json
-COPY --from=builder /app/services/notification-service/dist ./services/notification-service/dist
-COPY --from=builder /app/services/notification-service/package.json ./services/notification-service/package.json
+COPY --from=builder /app/services/notification-service/dist/services/notification-service ./services/notification-service/dist
+COPY --from=builder /app/services/notification-service/dist/libs ./libs/
+COPY services/notification-service/package.json ./services/notification-service/package.json
+COPY libs/common/package.json ./libs/common/package.json
 
 RUN npm ci --workspace=@exchange/notification-service --omit=dev
 

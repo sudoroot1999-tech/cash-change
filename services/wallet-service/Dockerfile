@@ -15,10 +15,10 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY package*.json ./
-COPY --from=builder /app/libs/common/dist ./libs/common/dist
-COPY --from=builder /app/libs/common/package.json ./libs/common/package.json
-COPY --from=builder /app/services/wallet-service/dist ./service/wallet-service/dist
-COPY --from=builder /app/services/wallet-service/package.json ./service/wallet-service/package.json
+COPY --from=builder /app/services/wallet-service/dist/services/wallet-service ./services/wallet-service/dist
+COPY --from=builder /app/services/wallet-service/dist/libs ./libs/
+COPY services/wallet-service/package.json ./services/wallet-service/package.json
+COPY libs/common/package.json ./libs/common/package.json
 
 RUN npm ci --workspace=@exchange/wallet-service --omit=dev
 
