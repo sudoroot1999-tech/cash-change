@@ -83,8 +83,8 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio_admin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minio_dev_password}
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - '9000:9000'
+      - '9001:9001'
     volumes:
       - minio_data:/data
     networks:
@@ -140,6 +140,8 @@ services:
       - RABBITMQ_USER=${RABBITMQ_USER:-exchange}
       - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
+      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-15m}
     ports:
       - '3001:3001'
       - '5001:5001'
@@ -355,7 +357,6 @@ services:
     networks:
       - exchange-network
 
-
   compliance-service:
     build:
       context: .
@@ -383,7 +384,7 @@ services:
       - USER_SERVICE_URL=http://user-service:3001
       - USER_SERVICE_GRPC_URL=user-service:5001
     ports:
-      - "3007:3007"
+      - '3007:3007'
     depends_on:
       postgres:
         condition: service_healthy
@@ -408,7 +409,7 @@ services:
       - REDIS_PORT=${REDIS_PORT:-6379}
       - REDIS_PASSWORD=${REDIS_PASSWORD:-redis_dev_password}
     ports:
-      - "3008:3008"
+      - '3008:3008'
     depends_on:
       postgres:
         condition: service_healthy
@@ -441,7 +442,7 @@ services:
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
       - WALLET_SERVICE_URL=http://wallet-service:3003
     ports:
-      - "3009:3009"
+      - '3009:3009'
     depends_on:
       postgres:
         condition: service_healthy
@@ -451,7 +452,6 @@ services:
         condition: service_healthy
     networks:
       - exchange-network
-
 
   # ==================== API Gateway ====================
   api-gateway:
@@ -486,13 +486,13 @@ services:
     depends_on:
       - user-service
       - auth-service
-      - wallet-service
-      - trading-service
-      - market-data-service
-      - notification-service
-      - compliance-service
-      - security-service
-      - proof-of-reserves-service
+      # - wallet-service
+      # - trading-service
+      # - market-data-service
+      # - notification-service
+      # - compliance-service
+      # - security-service
+      # - proof-of-reserves-service
     networks:
       - exchange-network
 
@@ -502,7 +502,7 @@ services:
       context: .
       dockerfile: frontend/apps/marketing/Dockerfile
     expose:
-      - "3100"
+      - '3100'
     networks:
       - exchange-network
 
@@ -528,6 +528,7 @@ services:
     depends_on:
       - marketing
       - exchange-app
+      - api-gateway
     networks:
       - exchange-network
 

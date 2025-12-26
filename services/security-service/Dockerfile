@@ -15,10 +15,13 @@ FROM node:20-alpine AS production
 WORKDIR /app
 ENV NODE_ENV=production
 
+COPY package*.json ./
 COPY --from=builder /app/libs/common/dist ./libs/common/dist
-COPY --from=builder /app/libs/common/package.json ./libs/common/dist/libs/common/src/
-COPY --from=builder /app/services/security-service/dist ./dist
-COPY --from=builder /app/services/security-service/package.json ./
+COPY --from=builder /app/libs/common/package.json ./libs/common/package.json
+COPY --from=builder /app/services/security-service/dist ./services/security-service/dist
+COPY --from=builder /app/services/security-service/package.json ./services/security-service/package.json
+
+RUN npm ci --workspace=@exchange/security-service --omit=dev
 
 EXPOSE 3008
-CMD ["npm", "run", "start"]
+CMD ["npm", "run", "start","--workspace=@exchange/security-service"]
