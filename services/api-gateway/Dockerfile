@@ -1,11 +1,12 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
+RUN npm install -g typescript
+
 COPY package*.json ./
 COPY libs/common ./libs/common
 COPY services/api-gateway ./services/api-gateway
 COPY tsconfig.base.json ./
 
-RUN npm install -g typescript
 RUN npm ci
 RUN npm run build --workspace=@exchange/common
 RUN npm run build --workspace=@exchange/api-gateway
