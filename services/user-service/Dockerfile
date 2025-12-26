@@ -10,7 +10,7 @@ COPY tsconfig.base.json ./
 # Install ts compiler
 RUN npm install -g typescript
 # Install dependencies
-RUN npm ci --workspace=@exchange/common --workspace=@exchange/user-service
+RUN npm ci 
 # Build
 RUN npm run build --workspace=@exchange/common
 RUN npm run build --workspace=@exchange/user-service

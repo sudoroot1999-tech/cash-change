@@ -7,7 +7,7 @@ COPY services/compliance-service ./services/compliance-service
 COPY tsconfig.base.json ./
 
 RUN npm install -g typescript
-RUN npm ci --workspace=@exchange/common --workspace=@exchange/compliance-service
+RUN npm ci 
 RUN npm run build --workspace=@exchange/common
 RUN npm run build --workspace=@exchange/compliance-service
 
