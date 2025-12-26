@@ -154,6 +154,8 @@ services:
         condition: service_healthy
     networks:
       - exchange-network
+    volumes:
+      - user-node-modules:/app/node_modules
 
   auth-service:
     build:
@@ -184,6 +186,8 @@ services:
         condition: service_healthy
     networks:
       - exchange-network
+    volumes:
+      - auth-node-modules:/app/node_modules
 
   wallet-service:
     build:
@@ -208,6 +212,8 @@ services:
       - RABBITMQ_USER=${RABBITMQ_USER:-exchange}
       - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
+      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-15m}
     ports:
       - '3003:3003'
       - '5003:5003'
@@ -220,6 +226,8 @@ services:
         condition: service_healthy
     networks:
       - exchange-network
+    volumes:
+      - wallet-node-modules:/app/node_modules
 
   trading-service:
     build:
@@ -250,6 +258,8 @@ services:
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
       - MATCHING_ENGINE_GRPC_URL=matching-engine:5010
       - WALLET_SERVICE_GRPC_URL=wallet-service:5003
+      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-15m}
     ports:
       - '3004:3004'
     depends_on:
@@ -261,6 +271,8 @@ services:
         condition: service_healthy
     networks:
       - exchange-network
+    volumes:
+      - trading-node-modules:/app/node_modules
 
   market-data-service:
     build:
@@ -284,6 +296,8 @@ services:
       - RABBITMQ_USER=${RABBITMQ_USER:-exchange}
       - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
+      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-15m}
     ports:
       - '3005:3005'
       - '5005:5005'
@@ -312,6 +326,8 @@ services:
       - RABBITMQ_USER=${RABBITMQ_USER:-exchange}
       - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
+      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-15m}
     ports:
       - '3010:3010'
       - '5010:5010'
@@ -345,6 +361,8 @@ services:
       - RABBITMQ_USER=${RABBITMQ_USER:-exchange}
       - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
+      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-15m}
     ports:
       - '3006:3006'
     depends_on:
@@ -356,6 +374,8 @@ services:
         condition: service_healthy
     networks:
       - exchange-network
+    volumes:
+      - notification-node-modules:/app/node_modules
 
   compliance-service:
     build:
@@ -383,6 +403,8 @@ services:
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
       - USER_SERVICE_URL=http://user-service:3001
       - USER_SERVICE_GRPC_URL=user-service:5001
+      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-15m}
     ports:
       - '3007:3007'
     depends_on:
@@ -390,6 +412,8 @@ services:
         condition: service_healthy
     networks:
       - exchange-network
+    volumes:
+      - compliance-node-modules:/app/node_modules
 
   security-service:
     build:
@@ -408,6 +432,13 @@ services:
       - REDIS_HOST=${REDIS_HOST:-redis}
       - REDIS_PORT=${REDIS_PORT:-6379}
       - REDIS_PASSWORD=${REDIS_PASSWORD:-redis_dev_password}
+      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
+      - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - RABBITMQ_USER=${RABBITMQ_USER:-exchange}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
+      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-15m}
     ports:
       - '3008:3008'
     depends_on:
@@ -417,6 +448,8 @@ services:
         condition: service_healthy
     networks:
       - exchange-network
+    volumes:
+      - security-node-modules:/app/node_modules
 
   proof-of-reserves-service:
     build:
@@ -441,6 +474,8 @@ services:
       - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
       - WALLET_SERVICE_URL=http://wallet-service:3003
+      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-15m}
     ports:
       - '3009:3009'
     depends_on:
@@ -452,6 +487,8 @@ services:
         condition: service_healthy
     networks:
       - exchange-network
+    volumes:
+      - proof-of-reserves-node-modules:/app/node_modules
 
   # ==================== API Gateway ====================
   api-gateway:
@@ -481,6 +518,7 @@ services:
       - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
       - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-15m}
     ports:
       - '3000:3000'
     depends_on:
@@ -495,6 +533,8 @@ services:
       - proof-of-reserves-service
     networks:
       - exchange-network
+    volumes:
+      - gateway-node-modules:/app/node_modules
 
   # ==================== Frontend Services ====================
   marketing:
@@ -544,3 +584,12 @@ volumes:
   rabbitmq_data:
   minio_data:
   exchange_app_dist:
+  wallet-node-modules:
+  user-node-modules:
+  trading-node-modules:
+  security-node-modules:
+  proof-of-reserves-node-modules:
+  notification-node-modules:
+  compliance-node-modules:
+  auth-node-modules:
+  gateway-node-modules:

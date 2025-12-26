@@ -15,7 +15,7 @@ async function bootstrap() {
     transport: Transport.GRPC,
     options: {
       package: 'wallet',
-      protoPath: join(__dirname, '../../../libs/common/proto/wallet.proto'),
+      protoPath: join(__dirname, 'libs/common/proto/wallet.proto'),
       url: `0.0.0.0:${process.env.GRPC_PORT || 5003}`,
     },
   });

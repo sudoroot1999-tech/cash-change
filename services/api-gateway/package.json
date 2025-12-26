@@ -5,7 +5,7 @@
   "scripts": {
     "build": "nest build",
     "dev": "nest start --watch",
-    "start": "node services/api-gateway/dist/main.js",
+    "start": "node dist/main.js",
     "test": "jest"
   },
   "dependencies": {

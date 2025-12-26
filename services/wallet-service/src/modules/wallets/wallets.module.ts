@@ -23,7 +23,7 @@ import { join } from 'path';
           transport: Transport.GRPC,
           options: {
             package: 'market',
-            protoPath: join(__dirname, '../../../../../libs/common/proto/market.proto'),
+            protoPath: join(__dirname, '../../libs/common/proto/market.proto'),
             url: configService.get('MARKET_DATA_GRPC_URL', 'localhost:5005'),
           },
         }),

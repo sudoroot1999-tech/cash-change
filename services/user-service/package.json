@@ -5,8 +5,7 @@
   "scripts": {
     "build": "nest build",
     "dev": "nest start --watch",
-    "start": "node services/user-service/dist/main.js",
-    "start:prod": "node services/user-service/dist/main.js",
+    "start": "node dist/main.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",

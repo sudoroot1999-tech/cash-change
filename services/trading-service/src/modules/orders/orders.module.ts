@@ -21,7 +21,7 @@ import { OrdersController } from './orders.controller';
           transport: Transport.GRPC,
           options: {
             package: 'wallet',
-            protoPath: join(__dirname, '../../../../../libs/common/proto/wallet.proto'),
+            protoPath: join(__dirname, '../../libs/common/proto/wallet.proto'),
             url: configService.get('WALLET_SERVICE_GRPC_URL', 'localhost:5003'),
           },
         }),
@@ -49,7 +49,7 @@ import { OrdersController } from './orders.controller';
           transport: Transport.GRPC,
           options: {
             package: 'matching',
-            protoPath: join(__dirname, '../../../../../libs/common/proto/matching.proto'),
+            protoPath: join(__dirname, '../../libs/common/proto/matching.proto'),
             url: configService.get('MATCHING_ENGINE_GRPC_URL', 'localhost:5010'),
           },
         }),
@@ -62,7 +62,7 @@ import { OrdersController } from './orders.controller';
           transport: Transport.GRPC,
           options: {
             package: 'market',
-            protoPath: join(__dirname, '../../../../../libs/common/proto/market.proto'),
+            protoPath: join(__dirname, '../../libs/common/proto/market.proto'),
             url: configService.get('MARKET_DATA_GRPC_URL', 'localhost:5005'),
           },
         }),
