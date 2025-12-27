@@ -1,13 +1,15 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
-RUN npm install -g typescript
 
-COPY package*.json ./
-COPY libs/common ./libs/common
-COPY services/proof-of-reserves-service ./services/proof-of-reserves-service
+COPY package.json package-lock.json ./
+COPY libs/common/package.json libs/common/
+COPY services/proof-of-reserves-service/package.json services/proof-of-reserves-service/
 COPY tsconfig.base.json ./
 
-RUN npm ci 
+RUN npm ci --legacy-peer-deps
+
+COPY . .
+
 RUN npm run build --workspace=@exchange/common
 RUN npm run build --workspace=@exchange/proof-of-reserves-service
 

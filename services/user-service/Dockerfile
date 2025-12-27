@@ -1,17 +1,15 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Install ts compiler
-RUN npm install -g typescript
-
-# Copy workspace files
-COPY package*.json ./
-COPY libs/common ./libs/common
-COPY services/user-service ./services/user-service
+COPY package.json package-lock.json ./
+COPY libs/common/package.json libs/common/
+COPY services/user-service/package.json services/user-service/
 COPY tsconfig.base.json ./
 
-# Install dependencies
-RUN npm install --legacy-peer-deps
+RUN npm ci --legacy-peer-deps
+
+COPY . .
+
 # Build
 RUN npm run build --workspace=@exchange/common
 RUN npm run build --workspace=@exchange/user-service
