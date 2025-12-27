@@ -11,14 +11,9 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiParam,
-} from '@nestjs/swagger';
-import { RequireAuth, Public } from '@exchange/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+import { RequireAuth, Public, CurrentUser } from '@exchange/common';
+import { AuthenticatedUser } from '@exchange/common';
 import { UsersService } from './users.service';
 import { CreateUserDto, UpdateUserDto, UserResponseDto, PaginationQueryDto } from './dto/user.dto';
 import { User } from './entities/user.entity';
@@ -37,6 +32,16 @@ export class UsersController {
   @ApiResponse({ status: 409, description: 'Email or phone already registered' })
   async create(@Body() createUserDto: CreateUserDto): Promise<UserResponseDto> {
     const user = await this.usersService.create(createUserDto);
+    return this.toResponseDto(user);
+  }
+
+  @Get()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current user from token' })
+  @ApiResponse({ status: 200, description: 'Current user data', type: UserResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getCurrentUser(@CurrentUser() currentUser: AuthenticatedUser): Promise<UserResponseDto> {
+    const user = await this.usersService.findById(currentUser.id);
     return this.toResponseDto(user);
   }
 
@@ -88,10 +93,7 @@ export class UsersController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get user referrals' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
-  async getReferrals(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Query() query: PaginationQueryDto,
-  ) {
+  async getReferrals(@Param('id', ParseUUIDPipe) id: string, @Query() query: PaginationQueryDto) {
     const { page = 1, limit = 20 } = query;
     const { items, total } = await this.usersService.getReferrals(id, page, limit);
     return {

@@ -11,7 +11,7 @@ COPY services/user-service ./services/user-service
 COPY tsconfig.base.json ./
 
 # Install dependencies
-RUN npm ci 
+RUN npm install --legacy-peer-deps
 # Build
 RUN npm run build --workspace=@exchange/common
 RUN npm run build --workspace=@exchange/user-service

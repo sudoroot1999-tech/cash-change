@@ -25,7 +25,8 @@
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "strictPropertyInitialization": false
+    "strictPropertyInitialization": false,
+    "types": []
   },
   "exclude": ["node_modules", "dist", "coverage"]
 }

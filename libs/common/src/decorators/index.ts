@@ -2,14 +2,14 @@ import { UseGuards, applyDecorators, SetMetadata } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 
+// Export the CurrentUser decorator
+export { CurrentUser } from './user.decorator';
+
 /**
  * Decorator to mark a method or controller as requiring authentication
  */
 export function RequireAuth() {
-  return applyDecorators(
-    UseGuards(JwtAuthGuard),
-    ApiBearerAuth(),
-  );
+  return applyDecorators(UseGuards(JwtAuthGuard), ApiBearerAuth());
 }
 
 /**

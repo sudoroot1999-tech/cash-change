@@ -1,7 +1,7 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, tap, catchError, of } from 'rxjs';
+import { Observable, tap, catchError, of, switchMap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface User {
@@ -22,7 +22,7 @@ export interface AuthResponse {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AuthService {
   private readonly API_URL = `${environment.apiUrl}/auth`;
@@ -41,23 +41,29 @@ export class AuthService {
 
   constructor(
     private readonly http: HttpClient,
-    private readonly router: Router
+    private readonly router: Router,
   ) {}
 
   login(email: string, password: string): Observable<AuthResponse> {
     this._isLoading.set(true);
 
     return this.http.post<AuthResponse>(`${this.API_URL}/login`, { email, password }).pipe(
-      tap(response => {
+      switchMap((response) => {
         this.storeTokens(response.accessToken, response.refreshToken);
-        this.storeUser(response.user);
-        this._user.set(response.user);
-        this._isLoading.set(false);
+        // Fetch current user from GET /users endpoint
+        return this.getCurrentUserFromServer().pipe(
+          tap((user) => {
+            this.storeUser(user);
+            this._user.set(user);
+            this._isLoading.set(false);
+          }),
+          switchMap(() => of(response)),
+        );
       }),
-      catchError(error => {
+      catchError((error) => {
         this._isLoading.set(false);
         throw error;
-      })
+      }),
     );
   }
 
@@ -65,16 +71,22 @@ export class AuthService {
     this._isLoading.set(true);
 
     return this.http.post<AuthResponse>(`${this.API_URL}/register`, data).pipe(
-      tap(response => {
+      switchMap((response) => {
         this.storeTokens(response.accessToken, response.refreshToken);
-        this.storeUser(response.user);
-        this._user.set(response.user);
-        this._isLoading.set(false);
+        // Fetch current user from GET /users endpoint
+        return this.getCurrentUserFromServer().pipe(
+          tap((user) => {
+            this.storeUser(user);
+            this._user.set(user);
+            this._isLoading.set(false);
+          }),
+          switchMap(() => of(response)),
+        );
       }),
-      catchError(error => {
+      catchError((error) => {
         this._isLoading.set(false);
         throw error;
-      })
+      }),
     );
   }
 
@@ -86,20 +98,28 @@ export class AuthService {
     this.router.navigate(['/auth/login']);
   }
 
+  /**
+   * Fetch current user from GET /users endpoint
+   */
+  private getCurrentUserFromServer(): Observable<User> {
+    const usersApiUrl = `${environment.apiUrl}/users`;
+    return this.http.get<User>(usersApiUrl);
+  }
+
   getToken(): string | null {
     return localStorage.getItem(this.TOKEN_KEY);
   }
 
-  refreshToken(): Observable<AuthResponse> {
+  refreshToken(): Observable<AuthResponse | null> {
     const refreshToken = localStorage.getItem(this.REFRESH_KEY);
     if (!refreshToken) {
-      return of(null as any);
+      return of(null);
     }
 
     return this.http.post<AuthResponse>(`${this.API_URL}/refresh`, { refreshToken }).pipe(
-      tap(response => {
+      tap((response) => {
         this.storeTokens(response.accessToken, response.refreshToken);
-      })
+      }),
     );
   }
 
