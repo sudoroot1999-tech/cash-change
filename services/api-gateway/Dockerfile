@@ -4,12 +4,11 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY libs/common/package.json libs/common/
 COPY services/api-gateway/package.json services/api-gateway/
-COPY tsconfig.base.json ./
 
 RUN npm ci --legacy-peer-deps
 
 COPY . .
-
+COPY tsconfig.base.json ./
 RUN npm run build --workspace=@exchange/common
 RUN npm run build --workspace=@exchange/api-gateway
 

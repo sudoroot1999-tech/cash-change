@@ -6,7 +6,6 @@
   "workspaces": [
     "libs/*",
     "services/*",
-    "apps/*",
     "frontend/apps/*",
     "frontend/packages/*"
   ],

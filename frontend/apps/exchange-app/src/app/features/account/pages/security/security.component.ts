@@ -86,6 +86,7 @@ interface Session {
                 placeholder="Enter current password"
                 [ngModel]="passwordForm.current"
                 (ngModelChange)="passwordForm.current = $event"
+                [ngModelOptions]="{ standalone: true }"
               />
             </div>
 
@@ -96,6 +97,7 @@ interface Session {
                 placeholder="Enter new password"
                 [ngModel]="passwordForm.new"
                 (ngModelChange)="passwordForm.new = $event"
+                [ngModelOptions]="{ standalone: true }"
               />
               <div class="password-strength">
                 <div class="strength-bar">
@@ -112,6 +114,7 @@ interface Session {
                 placeholder="Confirm new password"
                 [ngModel]="passwordForm.confirm"
                 (ngModelChange)="passwordForm.confirm = $event"
+                [ngModelOptions]="{ standalone: true }"
               />
             </div>
 

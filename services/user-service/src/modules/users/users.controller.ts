@@ -41,7 +41,7 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'Current user data', type: UserResponseDto })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getCurrentUser(@CurrentUser() currentUser: AuthenticatedUser): Promise<UserResponseDto> {
-    const user = await this.usersService.findById(currentUser.id);
+    const user = await this.usersService.findById(currentUser.userId);
     return this.toResponseDto(user);
   }
 

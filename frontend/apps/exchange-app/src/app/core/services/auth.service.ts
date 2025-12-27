@@ -53,6 +53,7 @@ export class AuthService {
         // Fetch current user from GET /users endpoint
         return this.getCurrentUserFromServer().pipe(
           tap((user) => {
+            console.log(user)
             this.storeUser(user);
             this._user.set(user);
             this._isLoading.set(false);

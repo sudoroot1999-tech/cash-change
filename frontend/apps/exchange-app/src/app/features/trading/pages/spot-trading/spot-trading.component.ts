@@ -6,6 +6,7 @@ import {
   OnInit,
   OnDestroy,
   computed,
+  effect,
 } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -433,11 +434,13 @@ export class SpotTradingComponent implements OnInit, OnDestroy {
   readonly isLoading = computed(() => this.marketData.isLoading());
 
   // Market summary data
-  readonly lastPrice = computed(() => {
-    const price = this.marketData.lastPrice();
-    this.detectPriceTick(price);
-    return price;
-  });
+readonly lastPrice = computed(() => this.marketData.lastPrice());
+
+private priceTickEffect = effect(() => {
+  const price = this.lastPrice();
+  this.detectPriceTick(price);
+});
+
 
   readonly priceChange = computed(() => {
     const ticker = this.marketData.ticker();

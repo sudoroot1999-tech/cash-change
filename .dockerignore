@@ -1,0 +1,11 @@
+node_modules/
+*.pem
+*.key
+secrets/
+.idea/
+.vscode/
+*.swp
+*.swo
+.env
+.env.local
+.env.*.local

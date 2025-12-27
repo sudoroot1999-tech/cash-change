@@ -4,7 +4,6 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY libs/common/package.json libs/common/
 COPY services/compliance-service/package.json services/compliance-service/
-COPY tsconfig.base.json ./
 
 RUN npm ci --legacy-peer-deps
 

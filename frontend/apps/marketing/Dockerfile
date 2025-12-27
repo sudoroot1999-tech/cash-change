@@ -22,8 +22,8 @@ ENV PORT=3100
 
 WORKDIR /app
 
-COPY --from=builder /app/frontend/apps/marketing/.next/standalone ./
-COPY --from=builder /app/frontend/apps/marketing/.next/static ./.next/static
+COPY --from=builder /app/frontend/apps/marketing/.next/standalone/apps/marketing/ ./
+COPY --from=builder /app/frontend/apps/marketing/.next/standalone/node_modules ./node_modules
 
 EXPOSE 3100
 CMD ["node", "server.js"]
