@@ -3,7 +3,7 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 COPY libs/common/package.json libs/common/
-COPY services/auth-service/package.json services/auth-service/
+COPY services/wallet-service/package.json services/wallet-service/
 COPY tsconfig.base.json ./
 
 RUN npm ci --legacy-peer-deps
