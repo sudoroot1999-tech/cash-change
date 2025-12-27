@@ -1,9 +1,10 @@
-import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CardComponent } from '@/components/card/card.component';
 import { ButtonComponent } from '@/components/button/button.component';
 import { InputComponent } from '@/components/input/input.component';
+import { AuthService } from '@/app/core/services/auth.service';
 
 interface SettingsSection {
   id: string;
@@ -563,6 +564,9 @@ interface SettingsSection {
 })
 export class SettingsComponent {
   activeSection = signal('general');
+    private readonly authService = inject(AuthService);
+
+  readonly user = computed(() => this.authService.user());
 
   sections: SettingsSection[] = [
     { id: 'general', title: 'General', icon: '⚙️' },
@@ -572,8 +576,8 @@ export class SettingsComponent {
   ];
 
   settings = {
-    username: 'trader123',
-    email: 'trader@example.com',
+    username: this.user()?.username || 'trader123' ,
+    email:  this.user()?.email || 'trader@example.com' ,
     timezone: 'UTC',
     language: 'en',
     emailNotifications: true,

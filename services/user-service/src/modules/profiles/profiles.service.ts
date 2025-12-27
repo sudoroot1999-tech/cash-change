@@ -43,6 +43,9 @@ export class ProfilesService {
     if (!profile) {
       throw new NotFoundException('Profile not found');
     }
+    if (profile.avatarUrl) {
+      profile.avatarUrl = await this.storageService.getFileUrl("user-profiles", profile.avatarUrl);   
+    }
     return profile;
   }
 
