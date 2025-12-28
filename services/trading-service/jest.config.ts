@@ -31,6 +31,15 @@ const config: Config = {
   },
   
   setupFilesAfterEnv: ['<rootDir>/test/setup.ts'],
+
+  // Globals
+  globals: {
+    'ts-jest': {
+      isolatedModules: true,
+    },
+  },
+  
+
   maxWorkers: '50%',
   testTimeout: 10000,
 };
