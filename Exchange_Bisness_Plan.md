@@ -423,14 +423,14 @@ CEX Architecture
 Technology Stack - CEX:
 
 Backend: Go (matching engine), Node.js (APIs), Python (ML/AI)
-Frontend: Next.js 14, React 18, TailwindCSS
-Database: PostgreSQL (primary), Redis (cache), MongoDB (logs)
+Frontend: Next.js, Angular, TailwindCSS
+Database: PostgreSQL (primary), Redis (cache), MongoDB (logs), TimescaleDB
 Message Queue: RabbitMQ / Apache Kafka
 Blockchain Nodes: Self-hosted full nodes (BTC, ETH, BSC)
 
 DEX Architecture
 ┌──────────────────────────────────────┐
-│      Web3 Frontend (Next.js)         │
+│      Web3 Frontend (Angular)         │
 └────────────────┬─────────────────────┘
                  │
         ┌────────┴────────┐
@@ -516,8 +516,8 @@ US state licenses (NY BitLicense، etc.)
 🪙 توکن‌اکونومیکس (Native Token)
 Token Details
 
-نام: ExchangeToken (مثال)
-Symbol: EXT
+نام: CashCoin
+Symbol: CASH
 Standard: ERC-20 + BEP-20 (multi-chain)
 Total Supply: 2,000,000,000 (2 Billion)
 Initial Circulating: 400M (20%)
