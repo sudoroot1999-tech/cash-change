@@ -31,15 +31,17 @@ message UpdateKycLevelRequest {
 message CreateUserRequest {
   string email = 1;
   string password = 2;
-  optional string referral_code = 3;
+  optional string username = 3;
+  optional string referral_code = 4;
 }
 
 message UserResponse {
   string id = 1;
   string email = 2;
-  string status = 3;
-  string tier = 4;
-  int32 kyc_level = 5;
-  bool two_factor_enabled = 6;
-  optional string password_hash = 7;
+  optional string username = 3;
+  string status = 4;
+  string tier = 5;
+  int32 kyc_level = 6;
+  bool two_factor_enabled = 7;
+  optional string password_hash = 8;
 }

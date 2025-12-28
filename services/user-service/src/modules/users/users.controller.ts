@@ -124,6 +124,7 @@ export class UsersController {
     return {
       id: user.id,
       email: user.email,
+      username: user.username || undefined,
       phone: user.phone || undefined,
       status: user.status,
       tier: user.tier,

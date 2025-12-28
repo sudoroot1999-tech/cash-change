@@ -1,10 +1,11 @@
-import { Component, ChangeDetectionStrategy, signal, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, inject, OnInit, computed } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { CardComponent } from '@/components/card/card.component';
 import { ButtonComponent } from '@/components/button/button.component';
 import { BadgeComponent } from '@/components/badge/badge.component';
 import { AuthService } from '../../../../core/services/auth.service';
+import { WalletService, Wallet } from '../../../../core/services/wallet.service';
 
 interface WalletBalance {
   asset: string;
@@ -492,59 +493,99 @@ interface WalletBalance {
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class WalletOverviewComponent {
+export class WalletOverviewComponent implements OnInit {
   private readonly authService = inject(AuthService);
+  private readonly walletService = inject(WalletService);
 
   hideSmallBalances = signal(false);
+  isLoading = signal(false);
 
-  balances = signal<WalletBalance[]>([
-    {
-      asset: 'BTC',
-      name: 'Bitcoin',
-      available: 0.5423,
-      locked: 0.1,
-      usdValue: 27654.32,
-      change24h: 2.34,
-    },
-    {
-      asset: 'ETH',
-      name: 'Ethereum',
-      available: 4.2345,
-      locked: 0.5,
-      usdValue: 10678.9,
-      change24h: -1.23,
-    },
-    {
-      asset: 'USDT',
-      name: 'Tether',
-      available: 15432.5,
-      locked: 2500.0,
-      usdValue: 17932.5,
-      change24h: 0.01,
-    },
-    {
-      asset: 'SOL',
-      name: 'Solana',
-      available: 45.6789,
-      locked: 0,
-      usdValue: 4512.34,
-      change24h: 5.67,
-    },
-    {
-      asset: 'BNB',
-      name: 'BNB',
-      available: 12.3456,
-      locked: 2.0,
-      usdValue: 4478.9,
-      change24h: 0.89,
-    },
-  ]);
+  wallets = signal<Wallet[]>([]);
+  balances = signal<WalletBalance[]>([]);
+  
+  filteredBalances = computed(() => {
+    const balances = this.balances();
+    if (this.hideSmallBalances()) {
+      return balances.filter((b) => b.usdValue >= 1);
+    }
+    return balances;
+  });
 
-  filteredBalances = signal(this.balances());
+  totalBalance = computed(() => {
+    return this.balances().reduce((sum, b) => sum + b.usdValue, 0);
+  });
 
-  totalBalance = signal(65256.96);
-  availableBalance = signal(58000.0);
-  lockedBalance = signal(7256.96);
+  availableBalance = computed(() => {
+    return this.balances().reduce((sum, b) => sum + (b.available * this.getAssetPrice(b.asset)), 0);
+  });
+
+  lockedBalance = computed(() => {
+    return this.balances().reduce((sum, b) => sum + (b.locked * this.getAssetPrice(b.asset)), 0);
+  });
+
+  ngOnInit(): void {
+    this.loadWallets();
+  }
+
+  private loadWallets(): void {
+    this.isLoading.set(true);
+    this.walletService.getUserWallets().subscribe({
+      next: (wallets) => {
+        this.wallets.set(wallets);
+        this.convertWalletsToBalances(wallets);
+        this.isLoading.set(false);
+      },
+      error: (error) => {
+        console.error('Failed to load wallets:', error);
+        this.isLoading.set(false);
+      },
+    });
+  }
+
+  private convertWalletsToBalances(wallets: Wallet[]): void {
+    const balances: WalletBalance[] = wallets.map((wallet) => {
+      const available = parseFloat(wallet.availableBalance);
+      const locked = parseFloat(wallet.lockedBalance);
+      const price = this.getAssetPrice(wallet.assetId);
+      const usdValue = (available + locked) * price;
+
+      return {
+        asset: wallet.assetId,
+        name: this.getAssetName(wallet.assetId),
+        available,
+        locked,
+        usdValue,
+        change24h: 0, // Would need to fetch from market data
+      };
+    });
+
+    this.balances.set(balances);
+  }
+
+  private getAssetPrice(asset: string): number {
+    // Mock prices - in production, fetch from market data service
+    const prices: Record<string, number> = {
+      BTC: 43000,
+      ETH: 2300,
+      USDT: 1,
+      SOL: 98,
+      BNB: 310,
+      USDC: 1,
+    };
+    return prices[asset] || 0;
+  }
+
+  private getAssetName(asset: string): string {
+    const names: Record<string, string> = {
+      BTC: 'Bitcoin',
+      ETH: 'Ethereum',
+      USDT: 'Tether',
+      SOL: 'Solana',
+      BNB: 'BNB',
+      USDC: 'USD Coin',
+    };
+    return names[asset] || asset;
+  }
 
   getCoinColor(symbol: string): string {
     const colors: Record<string, string> = {

@@ -1,8 +1,18 @@
-import { Component, ChangeDetectionStrategy, input, output, signal, computed } from '@angular/core';
+import {
+  Component,
+  ChangeDetectionStrategy,
+  input,
+  output,
+  signal,
+  computed,
+  inject,
+  effect,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonComponent } from '@/components/button/button.component';
 import { InputComponent } from '@/components/input/input.component';
+import { WalletService } from '../../../../core/services/wallet.service';
 
 interface TradingPair {
   symbol: string;
@@ -18,7 +28,7 @@ interface TradingPair {
 interface OrderData {
   side: 'buy' | 'sell';
   type: 'limit' | 'market';
-  price: number | null;
+  price?: number;
   amount: number;
   total: number;
 }
@@ -119,7 +129,11 @@ interface OrderData {
       <div class="balance-info">
         <span class="balance-label">Available:</span>
         <span class="balance-value">
-          {{ side() === 'buy' ? '10,000.00 USDT' : '0.5423 BTC' }}
+          {{
+            side() === 'buy'
+              ? (quoteBalance() | number: '1.2-2') + ' ' + pair().quoteAsset
+              : (baseBalance() | number: '1.4-4') + ' ' + pair().baseAsset
+          }}
         </span>
       </div>
 
@@ -339,12 +353,55 @@ export class TradeFormComponent {
   pair = input.required<TradingPair>();
   orderSubmit = output<OrderData>();
 
+  private readonly walletService = inject(WalletService);
+
   orderType = signal<'limit' | 'market'>('limit');
   side = signal<'buy' | 'sell'>('buy');
   price = signal<number | null>(null);
   amount = signal<number>(0);
 
   percentages = [25, 50, 75, 100];
+
+  // Available balances
+  quoteBalance = signal<number>(0);
+  baseBalance = signal<number>(0);
+
+  constructor() {
+    // Load balances when component initializes
+    this.loadBalances();
+
+    // Reload balances when pair changes
+    effect(() => {
+      this.pair();
+      this.loadBalances();
+    });
+  }
+
+  private loadBalances(): void {
+    const pair = this.pair();
+    const baseAsset = pair.baseAsset;
+    const quoteAsset = pair.quoteAsset;
+
+    // Load base asset balance
+    this.walletService.getBalance(baseAsset).subscribe({
+      next: (balance) => {
+        this.baseBalance.set(parseFloat(balance.available));
+      },
+      error: () => {
+        this.baseBalance.set(0);
+      },
+    });
+
+    // Load quote asset balance
+    this.walletService.getBalance(quoteAsset).subscribe({
+      next: (balance) => {
+        this.quoteBalance.set(parseFloat(balance.available));
+      },
+      error: () => {
+        this.quoteBalance.set(0);
+      },
+    });
+  }
 
   total = computed(() => {
     const p = this.orderType() === 'limit' ? this.price() : this.pair().price;
@@ -355,11 +412,13 @@ export class TradeFormComponent {
 
   setPercentage(pct: number): void {
     // Calculate amount based on percentage of available balance
-    const availableBalance = this.side() === 'buy' ? 10000 : 0.5423;
+    const availableBalance = this.side() === 'buy' ? this.quoteBalance() : this.baseBalance();
     if (this.side() === 'buy') {
       const buyPrice =
         this.orderType() === 'limit' ? (this.price() ?? this.pair().price) : this.pair().price;
-      this.amount.set((availableBalance * pct) / 100 / buyPrice);
+      if (buyPrice > 0) {
+        this.amount.set((availableBalance * pct) / 100 / buyPrice);
+      }
     } else {
       this.amount.set((availableBalance * pct) / 100);
     }
@@ -376,7 +435,7 @@ export class TradeFormComponent {
     this.orderSubmit.emit({
       side: this.side(),
       type: this.orderType(),
-      price: this.orderType() === 'limit' ? this.price() : null,
+      price: this.orderType() === 'limit' ? this.price() ?? undefined : undefined,
       amount: this.amount(),
       total: this.total(),
     });

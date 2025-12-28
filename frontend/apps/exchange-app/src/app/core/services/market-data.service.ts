@@ -233,19 +233,24 @@ export class MarketDataService implements OnDestroy {
   
   private async loadHistoricalCandles(symbol: string, interval: string): Promise<void> {
     try {
-      // In production, this would be an API call
-      // const candles = await this.http.get<OHLCV[]>(
-      //   `${environment.apiUrl}/market/klines`,
-      //   { params: { symbol, interval, limit: '500' } }
-      // ).toPromise();
+      // Try to fetch from API first
+      const candles = await this.http.get<OHLCV[]>(
+        `${environment.apiUrl}/market/klines/${symbol}`,
+        { params: { interval: this.mapInterval(interval), limit: '500' } }
+      ).toPromise();
       
-      // For now, generate mock data
-      const candles = this.generateMockCandles(symbol, interval, 200);
-      this._candleData.set(candles);
+      if (candles && candles.length > 0) {
+        this._candleData.set(candles);
+        return;
+      }
+      
+      // Fall back to mock data if API returns empty
+      const mockCandles = this.generateMockCandles(symbol, interval, 200);
+      this._candleData.set(mockCandles);
       
     } catch (error) {
       console.error('Failed to load historical candles:', error);
-      // Fall back to mock data
+      // Fall back to mock data on error
       const candles = this.generateMockCandles(symbol, interval, 200);
       this._candleData.set(candles);
     }

@@ -1,4 +1,10 @@
-import { Injectable, UnauthorizedException, BadRequestException, OnModuleInit, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+  OnModuleInit,
+  Inject,
+} from '@nestjs/common';
 import { ClientGrpc } from '@nestjs/microservices';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -12,6 +18,7 @@ import { Session } from '../sessions/entities/session.entity';
 interface User {
   id: string;
   email: string;
+  username: string | null;
   passwordHash: string;
   status: string;
   tier: string;
@@ -24,7 +31,12 @@ interface User {
 interface UserGrpcService {
   findById(data: { id: string }): any;
   findByEmail(data: { email: string }): any;
-  create(data: { email: string; password?: string; referral_code?: string }): any;
+  create(data: {
+    email: string;
+    password?: string;
+    username?: string;
+    referral_code?: string;
+  }): any;
   validate(data: { email: string; password: string }): any;
 }
 
@@ -50,18 +62,22 @@ export class AuthService implements OnModuleInit {
   async register(dto: any): Promise<any> {
     try {
       // Create user via User Service gRPC
-      const grpcUser = await this.userGrpcService.create({
-        email: dto.email,
-        password: dto.password,
-        referral_code: dto.referralCode,
-      }).toPromise();
+      const grpcUser = await this.userGrpcService
+        .create({
+          email: dto.email,
+          password: dto.password,
+          username: dto.username,
+          referral_code: dto.referralCode,
+        })
+        .toPromise();
 
       const user = this.mapGrpcUserToInternal(grpcUser);
 
       // Auto-login: Generate tokens
       return this.generateTokens(user);
     } catch (error: any) {
-      if (error?.details?.includes('already registered')) { // Check specifically for conflict
+      if (error?.details?.includes('already registered')) {
+        // Check specifically for conflict
         throw new BadRequestException('Email already registered');
       }
       throw error;
@@ -83,8 +99,8 @@ export class AuthService implements OnModuleInit {
       }
       return user;
     } catch (error) {
-       // If RPC returns null or error, return null
-       return null;
+      // If RPC returns null or error, return null
+      return null;
     }
   }
 
@@ -135,7 +151,11 @@ export class AuthService implements OnModuleInit {
     // Rotate refresh token
     await this.sessionRepository.delete(session.id);
 
-    return this.generateTokens(user, session.deviceInfo ?? undefined, session.ipAddress ?? undefined);
+    return this.generateTokens(
+      user,
+      session.deviceInfo ?? undefined,
+      session.ipAddress ?? undefined,
+    );
   }
 
   /**
@@ -259,6 +279,7 @@ export class AuthService implements OnModuleInit {
     return {
       id: grpcUser.id,
       email: grpcUser.email,
+      username: grpcUser.username || null,
       passwordHash: grpcUser.password_hash,
       status: grpcUser.status,
       tier: grpcUser.tier,

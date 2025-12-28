@@ -27,10 +27,11 @@ export class UsersGrpcController {
   }
 
   @GrpcMethod('UserService', 'Create')
-  async create(data: { email: string; password?: string; referral_code?: string }) {
+  async create(data: { email: string; password?: string; username?: string; referral_code?: string }) {
     const user = await this.usersService.create({
       email: data.email,
       password: data.password || '', // Password might be hashed or handled by service
+      username: data.username,
       referralCode: data.referral_code,
     });
     return this.mapUserToResponse(user);
@@ -47,6 +48,7 @@ export class UsersGrpcController {
     return {
       id: user.id,
       email: user.email,
+      username: user.username || undefined,
       status: user.status,
       tier: user.tier,
       kyc_level: user.kycLevel,

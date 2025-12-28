@@ -15,6 +15,16 @@ export class RegisterDto {
   })
   password: string;
 
+  @ApiPropertyOptional({ example: 'johndoe', description: 'Unique username' })
+  @IsOptional()
+  @IsString()
+  @MinLength(3)
+  @MaxLength(50)
+  @Matches(/^[a-zA-Z0-9_-]+$/, {
+    message: 'Username can only contain letters, numbers, underscores, and hyphens',
+  })
+  username?: string;
+
   @ApiPropertyOptional({ example: 'ABCD1234' })
   @IsOptional()
   @IsString()

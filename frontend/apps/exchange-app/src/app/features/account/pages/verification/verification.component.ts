@@ -666,7 +666,10 @@ export class VerificationComponent {
 
   currentStatus = computed(() => {
     const user = this.authService.user();
-    return user?.kycStatus || 'unverified';
+    const kycLevel = user?.kycLevel || 0;
+    if (kycLevel >= 3) return 'verified';
+    if (kycLevel > 0) return 'pending';
+    return 'unverified';
   });
 
   currentTier = computed(() => {

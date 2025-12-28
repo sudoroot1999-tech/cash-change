@@ -15,6 +15,16 @@ export class CreateUserDto {
   })
   password!: string;
 
+  @ApiPropertyOptional({ example: 'johndoe', description: 'Unique username' })
+  @IsOptional()
+  @IsString()
+  @MinLength(3)
+  @MaxLength(50)
+  @Matches(/^[a-zA-Z0-9_-]+$/, {
+    message: 'Username can only contain letters, numbers, underscores, and hyphens',
+  })
+  username?: string;
+
   @ApiPropertyOptional({ example: '+1234567890' })
   @IsOptional()
   @IsString()
@@ -29,6 +39,16 @@ export class CreateUserDto {
 }
 
 export class UpdateUserDto {
+  @ApiPropertyOptional({ example: 'johndoe', description: 'Unique username' })
+  @IsOptional()
+  @IsString()
+  @MinLength(3)
+  @MaxLength(50)
+  @Matches(/^[a-zA-Z0-9_-]+$/, {
+    message: 'Username can only contain letters, numbers, underscores, and hyphens',
+  })
+  username?: string;
+
   @ApiPropertyOptional({ example: '+1234567890' })
   @IsOptional()
   @IsString()
@@ -42,6 +62,9 @@ export class UserResponseDto {
 
   @ApiProperty()
   email!: string;
+
+  @ApiPropertyOptional()
+  username?: string;
 
   @ApiPropertyOptional()
   phone?: string;

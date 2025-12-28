@@ -7,11 +7,15 @@ import { environment } from '../../../environments/environment';
 export interface User {
   id: string;
   email: string;
-  username: string;
-  kycLevel: 'NONE' | 'BASIC' | 'ADVANCED' | 'CORPORATE';
-  kycStatus?: string;
-  feeTier?: string;
-  isTwoFactorEnabled?: boolean;
+  username?: string;
+  phone?: string;
+  status?: string;
+  tier?: string;
+  kycLevel?: number;
+  referralCode?: string;
+  twoFactorEnabled?: boolean;
+  emailVerified?: boolean;
+  phoneVerified?: boolean;
   createdAt: string;
 }
 
@@ -39,6 +43,14 @@ export class AuthService {
   readonly isAuthenticated = computed(() => !!this._user());
   readonly username = computed(() => this._user()?.username ?? 'Guest');
 
+  /**
+   * Update user data (used by UserService)
+   */
+  updateUser(user: User): void {
+    this.storeUser(user);
+    this._user.set(user);
+  }
+
   constructor(
     private readonly http: HttpClient,
     private readonly router: Router,
@@ -53,7 +65,7 @@ export class AuthService {
         // Fetch current user from GET /users endpoint
         return this.getCurrentUserFromServer().pipe(
           tap((user) => {
-            console.log(user)
+            console.log(user);
             this.storeUser(user);
             this._user.set(user);
             this._isLoading.set(false);

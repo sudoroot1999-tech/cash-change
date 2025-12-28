@@ -1,19 +1,8 @@
-import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, inject, OnInit, effect } from '@angular/core';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import { CardComponent } from '@/components/card/card.component';
 import { BadgeComponent } from '@/components/badge/badge.component';
-
-interface Order {
-  id: string;
-  symbol: string;
-  side: 'buy' | 'sell';
-  type: 'limit' | 'market';
-  price: number;
-  amount: number;
-  filled: number;
-  status: 'open' | 'filled' | 'cancelled' | 'partial';
-  createdAt: Date;
-}
+import { TradingService, Order, Trade } from '../../../../core/services/trading.service';
 
 @Component({
   selector: 'app-order-history',
@@ -28,7 +17,7 @@ interface Order {
 
       <!-- Order Tabs -->
       <div class="order-tabs">
-        @for (tab of tabs; track tab.key) {
+        @for (tab of tabs(); track tab.key) {
           <button
             class="tab-btn"
             [class.active]="activeTab() === tab.key"
@@ -60,45 +49,100 @@ interface Order {
               </tr>
             </thead>
             <tbody>
-              @for (order of filteredOrders(); track order.id) {
-                <tr class="order-row">
-                  <td class="date">{{ order.createdAt | date: 'yyyy-MM-dd HH:mm' }}</td>
-                  <td class="pair">{{ order.symbol }}</td>
-                  <td class="type">{{ order.type | titlecase }}</td>
-                  <td>
-                    <span
-                      class="side"
-                      [class.buy]="order.side === 'buy'"
-                      [class.sell]="order.side === 'sell'"
-                    >
-                      {{ order.side | titlecase }}
-                    </span>
-                  </td>
-                  <td class="text-right mono">{{ order.price | number: '1.2-2' }}</td>
-                  <td class="text-right mono">{{ order.amount | number: '1.4-4' }}</td>
-                  <td class="text-right mono">
-                    {{ (order.filled / order.amount) * 100 | number: '1.0-0' }}%
-                  </td>
-                  <td>
-                    <ui-badge [variant]="getStatusVariant(order.status)">{{
-                      order.status | titlecase
-                    }}</ui-badge>
-                  </td>
-                  <td class="text-right">
-                    @if (order.status === 'open') {
-                      <button class="cancel-btn" (click)="cancelOrder(order.id)">Cancel</button>
-                    }
-                  </td>
-                </tr>
-              } @empty {
+              @if (isLoading()) {
                 <tr>
                   <td colspan="9" class="empty-state">
                     <div class="empty-content">
-                      <span class="empty-icon">📋</span>
-                      <span class="empty-text">No orders found</span>
+                      <span class="empty-text">Loading...</span>
                     </div>
                   </td>
                 </tr>
+              } @else {
+                @if (activeTab() === 'trades') {
+                  @for (trade of trades(); track trade.id) {
+                    <tr class="order-row">
+                      <td class="date">{{ trade.createdAt | date: 'yyyy-MM-dd HH:mm' }}</td>
+                      <td class="pair">{{ trade.symbol }}</td>
+                      <td class="type">Trade</td>
+                      <td>
+                        <span
+                          class="side"
+                          [class.buy]="trade.side === 'buy'"
+                          [class.sell]="trade.side === 'sell'"
+                        >
+                          {{ trade.side | titlecase }}
+                        </span>
+                      </td>
+                      <td class="text-right mono">{{ trade.price | number: '1.2-2' }}</td>
+                      <td class="text-right mono">{{ trade.quantity | number: '1.4-4' }}</td>
+                      <td class="text-right mono">100%</td>
+                      <td>
+                        <ui-badge variant="success">Filled</ui-badge>
+                      </td>
+                      <td></td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="9" class="empty-state">
+                        <div class="empty-content">
+                          <span class="empty-icon">📋</span>
+                          <span class="empty-text">No trades found</span>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                } @else {
+                  @for (order of filteredOrders(); track order.id) {
+                    <tr class="order-row">
+                      <td class="date">{{ order.createdAt | date: 'yyyy-MM-dd HH:mm' }}</td>
+                      <td class="pair">{{ order.symbol || 'N/A' }}</td>
+                      <td class="type">{{ order.type | titlecase }}</td>
+                      <td>
+                        <span
+                          class="side"
+                          [class.buy]="order.side === 'buy'"
+                          [class.sell]="order.side === 'sell'"
+                        >
+                          {{ order.side | titlecase }}
+                        </span>
+                      </td>
+                      <td class="text-right mono">
+                        {{ order.price ? (order.price | number: '1.2-2') : 'Market' }}
+                      </td>
+                      <td class="text-right mono">{{ order.quantity | number: '1.4-4' }}</td>
+                       <td class="text-right mono">
+                         {{
+                           (Number(order.filledQuantity) / Number(order.quantity)) * 100
+                             | number: '1.0-0'
+                         }}%
+                       </td>
+                      <td>
+                        <ui-badge [variant]="getStatusVariant(order.status)">{{
+                          order.status | titlecase
+                        }}</ui-badge>
+                      </td>
+                      <td class="text-right">
+                        @if (order.status === 'OPEN' || order.status === 'PENDING') {
+                          <button
+                            class="cancel-btn"
+                            (click)="cancelOrder(order.id, order.symbol || '')"
+                          >
+                            Cancel
+                          </button>
+                        }
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="9" class="empty-state">
+                        <div class="empty-content">
+                          <span class="empty-icon">📋</span>
+                          <span class="empty-text">No orders found</span>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                }
               }
             </tbody>
           </table>
@@ -277,75 +321,125 @@ interface Order {
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class OrderHistoryComponent {
-  activeTab = signal('open');
+export class OrderHistoryComponent implements OnInit {
+  private readonly tradingService = inject(TradingService);
 
-  tabs = [
-    { key: 'open', label: 'Open Orders', count: 3 },
+  activeTab = signal('open');
+  isLoading = signal(false);
+
+  tabs = signal([
+    { key: 'open', label: 'Open Orders', count: 0 },
     { key: 'history', label: 'Order History', count: 0 },
     { key: 'trades', label: 'Trade History', count: 0 },
-  ];
-
-  orders = signal<Order[]>([
-    {
-      id: '1',
-      symbol: 'BTC/USDT',
-      side: 'buy',
-      type: 'limit',
-      price: 42500,
-      amount: 0.5,
-      filled: 0,
-      status: 'open',
-      createdAt: new Date(),
-    },
-    {
-      id: '2',
-      symbol: 'ETH/USDT',
-      side: 'sell',
-      type: 'limit',
-      price: 2300,
-      amount: 2.0,
-      filled: 1.5,
-      status: 'partial',
-      createdAt: new Date(Date.now() - 3600000),
-    },
-    {
-      id: '3',
-      symbol: 'SOL/USDT',
-      side: 'buy',
-      type: 'market',
-      price: 98.5,
-      amount: 10,
-      filled: 10,
-      status: 'filled',
-      createdAt: new Date(Date.now() - 86400000),
-    },
-    {
-      id: '4',
-      symbol: 'BNB/USDT',
-      side: 'sell',
-      type: 'limit',
-      price: 320,
-      amount: 5,
-      filled: 0,
-      status: 'cancelled',
-      createdAt: new Date(Date.now() - 172800000),
-    },
   ]);
 
-  filteredOrders = signal(this.orders());
+  orders = signal<Order[]>([]);
+  trades = signal<Trade[]>([]);
+  filteredOrders = signal<Order[]>([]);
+
+  ngOnInit(): void {
+    this.loadData();
+
+    // Watch for tab changes
+    effect(() => {
+      this.activeTab();
+      this.filterOrders();
+    });
+  }
+
+  private loadData(): void {
+    this.isLoading.set(true);
+
+    // Load open orders
+    this.tradingService.getOpenOrders().subscribe({
+      next: (orders) => {
+        this.orders.update((current) => {
+          const openOrders = orders.filter((o) => o.status === 'OPEN' || o.status === 'PENDING');
+          const allOrders = [...current, ...openOrders];
+          this.tabs.update((tabs) => {
+            tabs[0].count = openOrders.length;
+            return tabs;
+          });
+          return allOrders;
+        });
+        this.isLoading.set(false);
+        this.filterOrders();
+      },
+      error: (error) => {
+        console.error('Failed to load open orders:', error);
+        this.isLoading.set(false);
+      },
+    });
+
+    // Load order history
+    this.tradingService.getOrders({ page: 1, limit: 100 }).subscribe({
+      next: (response) => {
+        this.orders.set(response.data);
+        this.tabs.update((tabs) => {
+          tabs[1].count = response.meta.total;
+          return tabs;
+        });
+        this.filterOrders();
+      },
+      error: (error) => {
+        console.error('Failed to load order history:', error);
+      },
+    });
+
+    // Load trade history
+    this.tradingService.getTradeHistory({ page: 1, limit: 100 }).subscribe({
+      next: (response) => {
+        this.trades.set(response.data);
+        this.tabs.update((tabs) => {
+          tabs[2].count = response.meta.total;
+          return tabs;
+        });
+      },
+      error: (error) => {
+        console.error('Failed to load trade history:', error);
+      },
+    });
+  }
+
+  private filterOrders(): void {
+    const tab = this.activeTab();
+    if (tab === 'open') {
+      this.filteredOrders.set(
+        this.orders().filter((o) => o.status === 'OPEN' || o.status === 'PENDING'),
+      );
+    } else if (tab === 'history') {
+      this.filteredOrders.set(
+        this.orders().filter((o) => o.status !== 'OPEN' && o.status !== 'PENDING'),
+      );
+    }
+  }
 
   getStatusVariant(status: string): 'default' | 'success' | 'danger' | 'warning' | 'info' {
     const variants: Record<string, 'default' | 'success' | 'danger' | 'warning' | 'info'> = {
-      open: 'info',
-      filled: 'success',
-      partial: 'warning',
-      cancelled: 'danger',
+      OPEN: 'info',
+      PENDING: 'info',
+      FILLED: 'success',
+      PARTIALLY_FILLED: 'warning',
+      CANCELLED: 'danger',
     };
     return variants[status] || 'default';
   }
 
-  cancelOrder(orderId: string): void {
-    console.log('Cancel order:', orderId);
+  cancelOrder(orderId: string, symbol: string): void {
+    if (!symbol) {
+      alert('Symbol is required to cancel order');
+      return;
+    }
+
+    this.tradingService.cancelOrder(orderId, symbol).subscribe({
+      next: () => {
+        console.log('Order cancelled');
+        this.loadData();
+      },
+      error: (error) => {
+        console.error('Failed to cancel order:', error);
+        alert(error.error?.message || 'Failed to cancel order');
+      },
+    });
   }
 }

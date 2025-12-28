@@ -1,7 +1,15 @@
-import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import {
+  Component,
+  ChangeDetectionStrategy,
+  inject,
+  signal,
+  computed,
+  OnInit,
+} from '@angular/core';
+import { CommonModule, DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../../core/services/auth.service';
+import { UserService, UserProfile } from '../../../../core/services/user.service';
 import { CardComponent } from '@/components/card/card.component';
 import { ButtonComponent } from '@/components/button/button.component';
 import { BadgeComponent } from '@/components/badge/badge.component';
@@ -42,7 +50,7 @@ import { BadgeComponent } from '@/components/badge/badge.component';
                 <ui-badge [variant]="verificationStatus().variant">
                   {{ verificationStatus().label }}
                 </ui-badge>
-                @if (user()?.isTwoFactorEnabled) {
+                @if (user()?.twoFactorEnabled) {
                   <ui-badge variant="success">2FA Enabled</ui-badge>
                 }
               </div>
@@ -59,8 +67,8 @@ import { BadgeComponent } from '@/components/badge/badge.component';
               <span class="stat-label">30d Volume</span>
             </div>
             <div class="stat">
-              <span class="stat-value">{{ user()?.feeTier || 'Starter' }}</span>
-              <span class="stat-label">Fee Tier</span>
+              <span class="stat-value">{{ user()?.tier || 'BASIC' }}</span>
+              <span class="stat-label">Tier</span>
             </div>
           </div>
         </ui-card>
@@ -425,14 +433,20 @@ import { BadgeComponent } from '@/components/badge/badge.component';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ProfileComponent {
+export class ProfileComponent implements OnInit {
   private readonly authService = inject(AuthService);
+  private readonly userService = inject(UserService);
 
   readonly user = computed(() => this.authService.user());
+  readonly profile = signal<UserProfile | null>(null);
+  readonly isLoading = signal(false);
 
   readonly userInitials = computed(() => {
     const u = this.user();
-    if (!u?.username) return '?';
+    if (!u?.username) {
+      const email = u?.email || '';
+      return email.slice(0, 2).toUpperCase();
+    }
     return u.username.slice(0, 2).toUpperCase();
   });
 
@@ -440,52 +454,33 @@ export class ProfileComponent {
     const u = this.user();
     if (!u) return { label: 'Unverified', variant: 'default' as const };
 
-    switch (u.kycStatus) {
-      case 'verified':
-        return { label: 'Verified', variant: 'success' as const };
-      case 'pending':
-        return { label: 'Pending', variant: 'warning' as const };
-      case 'rejected':
-        return { label: 'Rejected', variant: 'danger' as const };
-      default:
-        return { label: 'Unverified', variant: 'default' as const };
+    const kycLevel = u.kycLevel || 0;
+    if (kycLevel >= 3) {
+      return { label: 'Verified', variant: 'success' as const };
+    } else if (kycLevel > 0) {
+      return { label: 'Pending', variant: 'warning' as const };
     }
+    return { label: 'Unverified', variant: 'default' as const };
   });
 
-  readonly tradingVolume = signal('$12,450.00');
+  readonly tradingVolume = signal('$0.00');
+  readonly recentActivity = signal<any[]>([]);
 
-  readonly recentActivity = signal([
-    {
-      id: 1,
-      type: 'login',
-      icon: '🔐',
-      title: 'Login',
-      description: 'New login from Chrome on Windows',
-      time: '2 mins ago',
-    },
-    {
-      id: 2,
-      type: 'trade',
-      icon: '📈',
-      title: 'Trade Executed',
-      description: 'Bought 0.05 BTC @ $43,250',
-      time: '1 hour ago',
-    },
-    {
-      id: 3,
-      type: 'withdrawal',
-      icon: '💸',
-      title: 'Withdrawal',
-      description: 'Withdrew 500 USDT',
-      time: '3 hours ago',
-    },
-    {
-      id: 4,
-      type: 'login',
-      icon: '🔐',
-      title: 'Login',
-      description: 'New login from Safari on macOS',
-      time: 'Yesterday',
-    },
-  ]);
+  ngOnInit(): void {
+    this.loadProfile();
+  }
+
+  private loadProfile(): void {
+    this.isLoading.set(true);
+    this.userService.getProfile().subscribe({
+      next: (profile) => {
+        this.profile.set(profile);
+        this.isLoading.set(false);
+      },
+      error: (error) => {
+        console.error('Failed to load profile:', error);
+        this.isLoading.set(false);
+      },
+    });
+  }
 }

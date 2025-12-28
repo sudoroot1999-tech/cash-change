@@ -33,6 +33,10 @@ export class User {
   @Column({ type: 'varchar', unique: true, length: 255 })
   email!: string;
 
+  @Index()
+  @Column({ type: 'varchar', unique: true, length: 50, nullable: true })
+  username!: string | null;
+
   @Column({ type: 'varchar', unique: true, length: 50, nullable: true })
   phone!: string | null;
 

@@ -35,6 +35,16 @@ export class UsersService {
       throw new ConflictException('Email already registered');
     }
 
+    // Check username uniqueness if provided
+    if (createUserDto.username) {
+      const usernameExists = await this.userRepository.findOne({
+        where: { username: createUserDto.username },
+      });
+      if (usernameExists) {
+        throw new ConflictException('Username already taken');
+      }
+    }
+
     // Check phone uniqueness if provided
     if (createUserDto.phone) {
       const phoneExists = await this.userRepository.findOne({
@@ -65,6 +75,7 @@ export class UsersService {
     // Create user
     const user = this.userRepository.create({
       email: createUserDto.email,
+      username: createUserDto.username || null,
       phone: createUserDto.phone || null,
       passwordHash,
       referralCode,
@@ -115,6 +126,16 @@ export class UsersService {
    */
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
     const user = await this.findById(id);
+
+    // Check username uniqueness if being updated
+    if (updateUserDto.username && updateUserDto.username !== user.username) {
+      const usernameExists = await this.userRepository.findOne({
+        where: { username: updateUserDto.username },
+      });
+      if (usernameExists) {
+        throw new ConflictException('Username already taken');
+      }
+    }
 
     // Check phone uniqueness if being updated
     if (updateUserDto.phone && updateUserDto.phone !== user.phone) {

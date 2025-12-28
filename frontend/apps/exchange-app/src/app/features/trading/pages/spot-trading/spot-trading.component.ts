@@ -10,7 +10,6 @@ import {
 } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { toSignal } from '@angular/core/rxjs-interop';
 import { CardComponent } from '@/components/card/card.component';
 import { ButtonComponent } from '@/components/button/button.component';
 import { BadgeComponent } from '@/components/badge/badge.component';
@@ -19,7 +18,8 @@ import { TradeFormComponent } from '../../components/trade-form/trade-form.compo
 import { TradingPairSelectorComponent } from '../../components/trading-pair-selector/trading-pair-selector.component';
 import { RecentTradesComponent } from '../../components/recent-trades/recent-trades.component';
 import { TradingChartComponent } from '../../components/trading-chart/trading-chart.component';
-import { MarketDataService, MarketSummary } from '../../../../core/services/market-data.service';
+import { MarketDataService } from '../../../../core/services/market-data.service';
+import { TradingService, Order } from '../../../../core/services/trading.service';
 
 interface TradingPair {
   symbol: string;
@@ -129,7 +129,7 @@ interface TradingPair {
               [class.active]="ordersTab() === 'open'"
               (click)="ordersTab.set('open')"
             >
-              Open Orders (3)
+              Open Orders ({{ openOrders().length }})
             </button>
             <button
               class="orders-tab"
@@ -163,16 +163,34 @@ interface TradingPair {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td>2024-01-15 14:32</td>
-                    <td>{{ currentSymbol() }}</td>
-                    <td>Limit</td>
-                    <td class="text-success">Buy</td>
-                    <td>{{ lastPrice() * 0.98 | number: '1.2-2' }}</td>
-                    <td>0.5 {{ baseAsset() }}</td>
-                    <td>0%</td>
-                    <td><button class="cancel-btn">Cancel</button></td>
-                  </tr>
+                  @for (order of openOrders(); track order.id) {
+                    <tr>
+                      <td>{{ order.createdAt | date: 'yyyy-MM-dd HH:mm' }}</td>
+                      <td>{{ currentSymbol() }}</td>
+                      <td>{{ order.type | titlecase }}</td>
+                      <td
+                        [class.text-success]="order.side === 'buy'"
+                        [class.text-danger]="order.side === 'sell'"
+                      >
+                        {{ order.side | titlecase }}
+                      </td>
+                      <td>{{ order.price ? (order.price | number: '1.2-2') : 'Market' }}</td>
+                      <td>{{ order.quantity | number: '1.4-4' }} {{ baseAsset() }}</td>
+                       <td>
+                         {{
+                           (Number(order.filledQuantity) / Number(order.quantity)) * 100
+                             | number: '1.0-0'
+                         }}%
+                       </td>
+                      <td>
+                        <button class="cancel-btn" (click)="cancelOrder(order.id)">Cancel</button>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="8" class="empty-state">No open orders</td>
+                    </tr>
+                  }
                 </tbody>
               </table>
             }
@@ -380,6 +398,22 @@ interface TradingPair {
         border: none;
         border-radius: var(--radius-sm);
         cursor: pointer;
+        transition: all var(--transition-fast);
+      }
+
+      .cancel-btn:hover {
+        background: var(--color-danger);
+        color: white;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: var(--spacing-4);
+        color: var(--color-text-tertiary);
+      }
+
+      .text-danger {
+        color: var(--color-danger);
       }
 
       .text-success {
@@ -409,11 +443,13 @@ export class SpotTradingComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly marketData = inject(MarketDataService);
+  private readonly tradingService = inject(TradingService);
 
   // Local state
   ordersTab = signal<'open' | 'history' | 'trades'>('open');
   private lastPriceValue = 0;
   priceTickDirection = signal<'up' | 'down' | null>(null);
+  openOrders = signal<Order[]>([]);
 
   // Selected pair for the trade form
   selectedPair = signal<TradingPair>({
@@ -434,13 +470,12 @@ export class SpotTradingComponent implements OnInit, OnDestroy {
   readonly isLoading = computed(() => this.marketData.isLoading());
 
   // Market summary data
-readonly lastPrice = computed(() => this.marketData.lastPrice());
+  readonly lastPrice = computed(() => this.marketData.lastPrice());
 
-private priceTickEffect = effect(() => {
-  const price = this.lastPrice();
-  this.detectPriceTick(price);
-});
-
+  private priceTickEffect = effect(() => {
+    const price = this.lastPrice();
+    this.detectPriceTick(price);
+  });
 
   readonly priceChange = computed(() => {
     const ticker = this.marketData.ticker();
@@ -490,6 +525,21 @@ private priceTickEffect = effect(() => {
       low24h: 0,
       volume24h: 0,
     });
+
+    // Load open orders
+    this.loadOpenOrders();
+  }
+
+  private loadOpenOrders(): void {
+    const symbol = this.currentSymbol();
+    this.tradingService.getOpenOrders(symbol).subscribe({
+      next: (orders) => {
+        this.openOrders.set(orders);
+      },
+      error: (error) => {
+        console.error('Failed to load open orders:', error);
+      },
+    });
   }
 
   ngOnDestroy(): void {
@@ -507,9 +557,32 @@ private priceTickEffect = effect(() => {
     this.router.navigate(['/trade', pair.symbol], { replaceUrl: true });
   }
 
-  onOrderSubmit(order: any): void {
-    console.log('Order submitted:', order);
-    // Would send to trading service API
+  onOrderSubmit(order: {
+    side: 'buy' | 'sell';
+    type: 'limit' | 'market';
+    amount: number;
+    price?: number;
+  }): void {
+    const symbol = this.currentSymbol();
+    const orderData = {
+      symbol: symbol.replace('USDT', '/USDT'), // Convert BTCUSDT to BTC/USDT format
+      side: order.side,
+      type: order.type,
+      quantity: order.amount.toString(),
+      ...(order.type === 'limit' && order.price ? { price: order.price.toString() } : {}),
+    };
+
+    this.tradingService.createOrder(orderData).subscribe({
+      next: (createdOrder) => {
+        console.log('Order created:', createdOrder);
+        // Reload open orders
+        this.loadOpenOrders();
+      },
+      error: (error) => {
+        console.error('Failed to create order:', error);
+        alert(error.error?.message || 'Failed to create order');
+      },
+    });
   }
 
   formatVolume(volume: number): string {
@@ -545,5 +618,19 @@ private priceTickEffect = effect(() => {
       }, 300);
     }
     this.lastPriceValue = newPrice;
+  }
+
+  cancelOrder(orderId: string): void {
+    const symbol = this.currentSymbol().replace('USDT', '/USDT');
+    this.tradingService.cancelOrder(orderId, symbol).subscribe({
+      next: () => {
+        console.log('Order cancelled');
+        this.loadOpenOrders();
+      },
+      error: (error) => {
+        console.error('Failed to cancel order:', error);
+        alert(error.error?.message || 'Failed to cancel order');
+      },
+    });
   }
 }
