@@ -462,7 +462,7 @@ DEX Architecture
 Technology Stack - DEX:
 
 Smart Contracts: Solidity 0.8.x
-Frontend: Next.js, ethers.js, wagmi
+Frontend: Next.js,Angular ethers.js, wagmi
 Indexing: The Graph Protocol
 IPFS: NFT metadata storage
 Oracles: Chainlink price feeds
@@ -651,7 +651,7 @@ Engineering (10):
 
 2x Backend (Go)
 2x Backend (Node.js)
-2x Frontend (React/Next.js)
+2x Frontend (React/Next.js,Angular)
 2x Smart Contract (Solidity)
 1x DevOps
 1x Security Engineer
