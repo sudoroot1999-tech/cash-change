@@ -367,9 +367,6 @@ export class TradeFormComponent {
   baseBalance = signal<number>(0);
 
   constructor() {
-    // Load balances when component initializes
-    this.loadBalances();
-
     // Reload balances when pair changes
     effect(() => {
       this.pair();

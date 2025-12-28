@@ -664,7 +664,7 @@ export class VerificationComponent {
     },
   ];
 
-  currentStatus = computed(() => {
+  currentStatus = computed<'verified' | 'pending' | 'unverified' | 'rejected'>(() => {
     const user = this.authService.user();
     const kycLevel = user?.kycLevel || 0;
     if (kycLevel >= 3) return 'verified';

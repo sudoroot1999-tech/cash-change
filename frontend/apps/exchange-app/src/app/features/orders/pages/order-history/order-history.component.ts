@@ -322,6 +322,7 @@ import { TradingService, Order, Trade } from '../../../../core/services/trading.
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OrderHistoryComponent implements OnInit {
+  protected readonly Number = Number;
   private readonly tradingService = inject(TradingService);
 
   activeTab = signal('open');

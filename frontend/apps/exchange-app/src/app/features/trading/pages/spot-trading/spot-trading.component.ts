@@ -440,6 +440,7 @@ interface TradingPair {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SpotTradingComponent implements OnInit, OnDestroy {
+  protected readonly Number = Number;
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly marketData = inject(MarketDataService);
