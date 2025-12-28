@@ -27,4 +27,4 @@ COPY --from=builder /app/services/api-gateway/package.json ./services/api-gatewa
 RUN npm ci --workspace=@exchange/api-gateway --omit=dev
 
 EXPOSE 3003
-CMD ["npm", "run", "start", "--workspace=@exchange/api-gateway"]
+CMD ["node" , "dist/main.js"]

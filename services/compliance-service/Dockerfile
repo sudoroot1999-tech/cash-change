@@ -27,5 +27,5 @@ COPY --from=builder /app/services/compliance-service/package.json ./services/com
 RUN npm ci --workspace=@exchange/compliance-service --omit=dev
 
 EXPOSE 3003
-CMD ["npm", "run", "start", "--workspace=@exchange/compliance-service"]
+CMD ["node" , "dist/main.js"]
 

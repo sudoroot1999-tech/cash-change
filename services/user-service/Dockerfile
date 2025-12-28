@@ -30,4 +30,4 @@ COPY --from=builder /app/services/user-service/package.json ./services/user-serv
 RUN npm ci --workspace=@exchange/user-service --omit=dev
 
 EXPOSE 3003
-CMD ["npm", "run", "start", "--workspace=@exchange/user-service"]
+CMD ["node" , "dist/main.js"]

@@ -27,4 +27,4 @@ COPY --from=builder /app/services/proof-of-reserves-service/package.json ./servi
 RUN npm ci --workspace=@exchange/proof-of-reserves-service --omit=dev
 
 EXPOSE 3003
-CMD ["npm", "run", "start", "--workspace=@exchange/proof-of-reserves-service"]
+CMD ["node" , "dist/main.js"]

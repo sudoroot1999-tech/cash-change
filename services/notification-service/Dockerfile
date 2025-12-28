@@ -27,4 +27,4 @@ COPY --from=builder /app/services/notification-service/package.json ./services/n
 RUN npm ci --workspace=@exchange/notification-service --omit=dev
 
 EXPOSE 3003
-CMD ["npm", "run", "start", "--workspace=@exchange/notification-service"]
+CMD ["node" , "dist/main.js"]

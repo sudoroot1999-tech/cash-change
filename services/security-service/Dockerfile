@@ -27,4 +27,4 @@ COPY --from=builder /app/services/security-service/package.json ./services/secur
 RUN npm ci --workspace=@exchange/security-service --omit=dev
 
 EXPOSE 3003
-CMD ["npm", "run", "start", "--workspace=@exchange/security-service"]
+CMD ["node" , "dist/main.js"]

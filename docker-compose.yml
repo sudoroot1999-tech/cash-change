@@ -524,13 +524,13 @@ services:
     depends_on:
       - user-service
       - auth-service
-      # - wallet-service
-      # - trading-service
-      # - market-data-service
+      - wallet-service
+      - trading-service
+      - market-data-service
       # - notification-service
-      # - compliance-service
-      # - security-service
-      # - proof-of-reserves-service
+      - compliance-service
+      - security-service
+      - proof-of-reserves-service
     networks:
       - exchange-network
     volumes:

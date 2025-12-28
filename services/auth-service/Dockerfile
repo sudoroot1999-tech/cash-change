@@ -27,4 +27,4 @@ COPY --from=builder /app/services/auth-service/package.json ./services/auth-serv
 RUN npm ci --workspace=@exchange/auth-service --omit=dev
 
 EXPOSE 3003
-CMD ["npm", "run", "start", "--workspace=@exchange/auth-service"]
+CMD ["node" , "dist/main.js"]

@@ -26,4 +26,4 @@ COPY --from=builder /app/services/trading-service/package.json ./services/tradin
 RUN npm ci --workspace=@exchange/trading-service --omit=dev
 
 EXPOSE 3003
-CMD ["npm", "run", "start", "--workspace=@exchange/trading-service"]
+CMD ["node" , "dist/main.js"]

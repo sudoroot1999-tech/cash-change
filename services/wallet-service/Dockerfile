@@ -27,4 +27,4 @@ COPY --from=builder /app/services/wallet-service/package.json ./services/wallet-
 RUN npm ci --workspace=@exchange/wallet-service --omit=dev
 
 EXPOSE 3003
-CMD ["npm", "run", "start", "--workspace=@exchange/wallet-service"]
+CMD ["node" , "dist/main.js"]
