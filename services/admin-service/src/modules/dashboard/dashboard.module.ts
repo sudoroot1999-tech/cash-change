@@ -18,7 +18,7 @@ import { DashboardController } from './dashboard.controller';
           transport: Transport.GRPC,
           options: {
             package: 'user',
-            protoPath: join(__dirname, '../../../../../libs/common/proto/user.proto'),
+            protoPath: join(__dirname, '../../libs/common/proto/user.proto'),
             url: configService.get('USER_SERVICE_GRPC_URL', 'user-service:5001'),
           },
         }),
@@ -31,7 +31,7 @@ import { DashboardController } from './dashboard.controller';
           transport: Transport.GRPC,
           options: {
             package: 'market',
-            protoPath: join(__dirname, '../../../../../libs/common/proto/market.proto'),
+            protoPath: join(__dirname, '../../libs/common/proto/market.proto'),
             url: configService.get('MARKET_DATA_GRPC_URL', 'market-data-service:5005'),
           },
         }),

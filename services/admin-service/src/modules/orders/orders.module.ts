@@ -18,7 +18,7 @@ import { OrdersController } from './orders.controller';
           transport: Transport.GRPC,
           options: {
             package: 'matching',
-            protoPath: join(__dirname, '../../../../../libs/common/proto/matching.proto'),
+            protoPath: join(__dirname, '../../libs/common/proto/matching.proto'),
             url: configService.get('MATCHING_ENGINE_GRPC_URL', 'matching-engine:5010'),
           },
         }),

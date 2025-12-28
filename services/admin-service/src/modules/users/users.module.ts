@@ -18,7 +18,7 @@ import { UsersController } from './users.controller';
           transport: Transport.GRPC,
           options: {
             package: 'user',
-            protoPath: join(__dirname, '../../../../../libs/common/proto/user.proto'),
+            protoPath: join(__dirname, '../../libs/common/proto/user.proto'),
             url: configService.get('USER_SERVICE_GRPC_URL', 'user-service:5001'),
           },
         }),

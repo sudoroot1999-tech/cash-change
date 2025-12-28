@@ -18,7 +18,7 @@ import { TransactionsController } from './transactions.controller';
           transport: Transport.GRPC,
           options: {
             package: 'wallet',
-            protoPath: join(__dirname, '../../../../../libs/common/proto/wallet.proto'),
+            protoPath: join(__dirname, '../../libs/common/proto/wallet.proto'),
             url: configService.get('WALLET_SERVICE_GRPC_URL', 'wallet-service:5003'),
           },
         }),
