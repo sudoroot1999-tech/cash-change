@@ -1,0 +1,31 @@
+{
+  "users": [
+    {
+      "id": "user-001",
+      "email": "john.doe@example.com",
+      "username": "johndoe",
+      "password": "hashed_password_here",
+      "role": "user",
+      "kycStatus": "verified",
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "user-002",
+      "email": "jane.smith@example.com",
+      "username": "janesmith",
+      "password": "hashed_password_here",
+      "role": "user",
+      "kycStatus": "pending",
+      "createdAt": "2024-02-15T00:00:00.000Z"
+    },
+    {
+      "id": "admin-001",
+      "email": "admin@cryptox.com",
+      "username": "admin",
+      "password": "hashed_password_here",
+      "role": "admin",
+      "kycStatus": "verified",
+      "createdAt": "2023-06-01T00:00:00.000Z"
+    }
+  ]
+}

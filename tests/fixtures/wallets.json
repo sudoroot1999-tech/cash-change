@@ -1,0 +1,44 @@
+{
+  "wallets": [
+    {
+      "id": "wallet-001",
+      "userId": "user-001",
+      "currency": "BTC",
+      "available": "1.5",
+      "locked": "0.0",
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "wallet-002",
+      "userId": "user-001",
+      "currency": "USDT",
+      "available": "50000.00",
+      "locked": "5000.00",
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "wallet-003",
+      "userId": "user-001",
+      "currency": "ETH",
+      "available": "10.0",
+      "locked": "0.0",
+      "createdAt": "2024-01-15T00:00:00.000Z"
+    },
+    {
+      "id": "wallet-004",
+      "userId": "user-002",
+      "currency": "BTC",
+      "available": "0.25",
+      "locked": "0.0",
+      "createdAt": "2024-02-15T00:00:00.000Z"
+    },
+    {
+      "id": "wallet-005",
+      "userId": "user-002",
+      "currency": "USDT",
+      "available": "10000.00",
+      "locked": "1000.00",
+      "createdAt": "2024-02-15T00:00:00.000Z"
+    }
+  ]
+}

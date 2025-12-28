@@ -1,0 +1,40 @@
+{
+  "orders": [
+    {
+      "id": "order-001",
+      "userId": "user-001",
+      "symbol": "BTCUSDT",
+      "side": "buy",
+      "type": "limit",
+      "status": "filled",
+      "price": "45000.00",
+      "quantity": "0.5",
+      "filledQuantity": "0.5",
+      "createdAt": "2024-12-01T10:00:00.000Z"
+    },
+    {
+      "id": "order-002",
+      "userId": "user-001",
+      "symbol": "ETHUSDT",
+      "side": "sell",
+      "type": "market",
+      "status": "filled",
+      "price": "2500.00",
+      "quantity": "2.0",
+      "filledQuantity": "2.0",
+      "createdAt": "2024-12-02T14:30:00.000Z"
+    },
+    {
+      "id": "order-003",
+      "userId": "user-002",
+      "symbol": "BTCUSDT",
+      "side": "buy",
+      "type": "limit",
+      "status": "open",
+      "price": "42000.00",
+      "quantity": "1.0",
+      "filledQuantity": "0",
+      "createdAt": "2024-12-10T09:15:00.000Z"
+    }
+  ]
+}
