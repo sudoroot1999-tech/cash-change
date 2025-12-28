@@ -490,6 +490,40 @@ services:
     volumes:
       - proof-of-reserves-node-modules:/app/node_modules
 
+  admin-service:
+    build:
+      context: .
+      dockerfile: services/admin-service/Dockerfile
+    container_name: exchange-admin-service
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=development
+      - PORT=3011
+      - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_USER=${POSTGRES_USER:-exchange_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-exchange_dev_password}
+      - POSTGRES_DB=${POSTGRES_DB:-exchange}
+      - USER_SERVICE_URL=http://user-service:3001
+      - USER_SERVICE_GRPC_URL=user-service:5001
+      - TRADING_SERVICE_URL=http://trading-service:3004
+      - WALLET_SERVICE_URL=http://wallet-service:3003
+      - WALLET_SERVICE_GRPC_URL=wallet-service:5003
+      - COMPLIANCE_URL=http://compliance-service:3007
+      - MATCHING_ENGINE_GRPC_URL=matching-engine:5010
+      - MARKET_DATA_GRPC_URL=market-data-service:5005
+      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-15m}
+    ports:
+      - '3011:3011'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - exchange-network
+    volumes:
+      - admin-node-modules:/app/node_modules
+
   # ==================== API Gateway ====================
   api-gateway:
     build:
@@ -509,6 +543,7 @@ services:
       - COMPLIANCE_URL=http://compliance-service:3007
       - SECURITY_URL=http://security-service:3008
       - RESERVES_URL=http://proof-of-reserves-service:3009
+      - ADMIN_URL=http://admin-service:3011
       - REDIS_HOST=${REDIS_HOST:-redis}
       - REDIS_PORT=${REDIS_PORT:-6379}
       - REDIS_PASSWORD=${REDIS_PASSWORD:-redis_dev_password}
@@ -531,6 +566,7 @@ services:
       - compliance-service
       - security-service
       - proof-of-reserves-service
+      # - admin-service
     networks:
       - exchange-network
     volumes:
@@ -593,3 +629,4 @@ volumes:
   compliance-node-modules:
   auth-node-modules:
   gateway-node-modules:
+  admin-node-modules:

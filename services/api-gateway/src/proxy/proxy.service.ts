@@ -18,14 +18,24 @@ export class ProxyService {
       compliance: configService.get('COMPLIANCE_URL', 'http://localhost:3007'),
       security: configService.get('SECURITY_URL', 'http://localhost:3008'),
       reserves: configService.get('RESERVES_URL', 'http://localhost:3009'),
+      admin: configService.get('ADMIN_URL', 'http://localhost:3011'),
     };
   }
 
-  async forward(service: string, path: string, method: Method, body?: any, headers?: Record<string, string>, query?: Record<string, string>) {
+  async forward(
+    service: string,
+    path: string,
+    method: Method,
+    body?: any,
+    headers?: Record<string, string>,
+    query?: Record<string, string>,
+  ) {
     const baseUrl = this.services[service];
     if (!baseUrl) throw new HttpException(`Unknown service: ${service}`, 400);
 
-    const url = new URL(`${baseUrl}/api/v1${path}`);
+    // Admin service already has /api/v1/admin prefix, so we use path as-is
+    const servicePath = service === 'admin' ? path : `/api/v1${path}`;
+    const url = new URL(`${baseUrl}${servicePath}`);
     if (query) Object.entries(query).forEach(([k, v]) => url.searchParams.set(k, v));
 
     const config: AxiosRequestConfig = {

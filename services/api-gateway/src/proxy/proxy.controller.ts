@@ -7,6 +7,7 @@ import { ProxyService } from './proxy.service';
 
 // Route mappings: path prefix -> service name
 const ROUTES: Record<string, string> = {
+  '/admin': 'admin',
   '/users': 'users',
   '/auth': 'auth',
   '/wallets': 'wallets',
@@ -28,6 +29,7 @@ const PUBLIC_PATHS = [
   '/auth/login',
   '/auth/register',
   '/auth/refresh',
+  '/admin/auth/login', // Admin login is public
   '/market',
   '/reserves/latest',
 ];
