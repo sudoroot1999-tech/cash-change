@@ -27,6 +27,7 @@ GRANT ALL ON SCHEMA reserves TO exchange_user;
 CREATE TABLE IF NOT EXISTS users.users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email VARCHAR(255) UNIQUE NOT NULL,
+    username VARCHAR(50) UNIQUE,
     phone VARCHAR(50) UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'suspended', 'banned')),

@@ -1,4 +1,7 @@
 node_modules/
+dist
+.next
+.angular
 *.pem
 *.key
 secrets/
