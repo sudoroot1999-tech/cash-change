@@ -1,4 +1,5 @@
 node_modules/
+package-lock.json
 dist
 .next
 .angular
@@ -12,3 +13,9 @@ secrets/
 .env
 .env.local
 .env.*.local
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
