@@ -28,7 +28,7 @@
     "format:check": "prettier --check \"**/*.{ts,js,json,md}\""
   },
   "devDependencies": {
-    "@pact-foundation/pact": "^12.1.1",
+    "@pact-foundation/pact": "^16.0.4",
     "@playwright/test": "^1.40.0",
     "@types/jest": "^29.5.11",
     "@types/mocha": "^10.0.10",
@@ -47,5 +47,10 @@
   "engines": {
     "node": ">=20.0.0",
     "npm": ">=10.0.0"
+  },
+  "dependencies": {
+    "@nestjs/cli": "11.0.14",
+    "@nestjs/swagger": "11.2.3",
+    "nodemailer": "7.0.12"
   }
 }

@@ -1,13 +1,15 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
+RUN npm install -g typescript
+COPY package*.json ./
+COPY tsconfig.base.json ./
+COPY libs/common/package.json libs/common/package.json
+COPY services/trading-service/package.json services/trading-service/package.json
 
-COPY package.json package-lock.json ./
-COPY libs/common/package.json libs/common/
-COPY services/trading-service/package.json services/trading-service/
-
-RUN npm ci --legacy-peer-deps
+RUN npm install
 
 COPY . .
+
 RUN npm run build --workspace=@exchange/common
 RUN npm run build --workspace=@exchange/trading-service
 

@@ -1,11 +1,12 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
+RUN npm install -g typescript
+COPY package*.json ./
+COPY tsconfig.base.json ./
+COPY libs/common/package.json libs/common/package.json
+COPY services/user-service/package.json services/user-service/package.json
 
-COPY package.json package-lock.json ./
-COPY libs/common/package.json libs/common/
-COPY services/user-service/package.json services/user-service/
-
-RUN npm ci --legacy-peer-deps
+RUN npm install
 
 COPY . .
 

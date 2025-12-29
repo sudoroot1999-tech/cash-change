@@ -3,9 +3,14 @@
   "compilerOptions": {
     "outDir": "./dist",
     "module": "CommonJS",
-    "moduleResolution": "Node"
+    "moduleResolution": "Node",
+    "declaration": true,
+    "rootDir": "./src",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "lib": ["dom", "ES2022"],
+    "skipLibCheck": true,
   },
   "include": ["src/**/*"],
-  "types": ["node"],
-  "exclude": [ "dist", "test"]
+  "exclude": [ "dist", "test", "**/*.spec.ts", "**/*.test.ts"]
 }

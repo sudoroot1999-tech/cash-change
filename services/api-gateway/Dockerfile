@@ -1,14 +1,15 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
+RUN npm install -g typescript
+COPY package*.json ./
+COPY tsconfig.base.json ./
+COPY libs/common/package.json libs/common/package.json
+COPY services/api-gateway/package.json services/api-gateway/package.json
 
-COPY package.json package-lock.json ./
-COPY libs/common/package.json libs/common/
-COPY services/api-gateway/package.json services/api-gateway/
-
-RUN npm ci --legacy-peer-deps
+RUN npm install
 
 COPY . .
-COPY tsconfig.base.json ./
+
 RUN npm run build --workspace=@exchange/common
 RUN npm run build --workspace=@exchange/api-gateway
 

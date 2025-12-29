@@ -1,13 +1,14 @@
 FROM node:20-alpine AS builder
 
 WORKDIR /app
-
+RUN npm install -g typescript
 # Install dependencies
 COPY package*.json ./
-COPY services/admin-service/package*.json ./services/admin-service/
-COPY libs/common/package*.json ./libs/common/
+COPY tsconfig.base.json ./
+COPY libs/common/package.json libs/common/package.json
+COPY services/admin-service/package.json services/admin-service/package.json
 
-RUN npm ci --legacy-peer-deps
+RUN npm install
 
 COPY . .
 
