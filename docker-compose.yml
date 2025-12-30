@@ -154,8 +154,8 @@ services:
         condition: service_healthy
     networks:
       - exchange-network
-    volumes:
-      - user-node-modules:/app/node_modules
+#    volumes:
+#      - user-node-modules:/app/node_modules
 
   auth-service:
     build:
@@ -186,8 +186,8 @@ services:
         condition: service_healthy
     networks:
       - exchange-network
-    volumes:
-      - auth-node-modules:/app/node_modules
+#    volumes:
+#      - auth-node-modules:/app/node_modules
 
   wallet-service:
     build:
@@ -226,8 +226,8 @@ services:
         condition: service_healthy
     networks:
       - exchange-network
-    volumes:
-      - wallet-node-modules:/app/node_modules
+#    volumes:
+#      - wallet-node-modules:/app/node_modules
 
   trading-service:
     build:
@@ -271,8 +271,8 @@ services:
         condition: service_healthy
     networks:
       - exchange-network
-    volumes:
-      - trading-node-modules:/app/node_modules
+#    volumes:
+#      - trading-node-modules:/app/node_modules
 
   market-data-service:
     build:
@@ -374,8 +374,8 @@ services:
         condition: service_healthy
     networks:
       - exchange-network
-    volumes:
-      - notification-node-modules:/app/node_modules
+#    volumes:
+#      - notification-node-modules:/app/node_modules
 
   compliance-service:
     build:
@@ -412,8 +412,8 @@ services:
         condition: service_healthy
     networks:
       - exchange-network
-    volumes:
-      - compliance-node-modules:/app/node_modules
+#    volumes:
+#      - compliance-node-modules:/app/node_modules
 
   security-service:
     build:
@@ -448,8 +448,8 @@ services:
         condition: service_healthy
     networks:
       - exchange-network
-    volumes:
-      - security-node-modules:/app/node_modules
+#    volumes:
+#      - security-node-modules:/app/node_modules
 
   proof-of-reserves-service:
     build:
@@ -487,8 +487,8 @@ services:
         condition: service_healthy
     networks:
       - exchange-network
-    volumes:
-      - proof-of-reserves-node-modules:/app/node_modules
+#    volumes:
+#      - proof-of-reserves-node-modules:/app/node_modules
 
   admin-service:
     build:
@@ -521,8 +521,8 @@ services:
         condition: service_healthy
     networks:
       - exchange-network
-    volumes:
-      - admin-node-modules:/app/node_modules
+#    volumes:
+#      - admin-node-modules:/app/node_modules
 
   # ==================== API Gateway ====================
   api-gateway:
@@ -562,15 +562,15 @@ services:
       - wallet-service
       - trading-service
       - market-data-service
-      # - notification-service
+      - notification-service
       - compliance-service
       - security-service
       - proof-of-reserves-service
       # - admin-service
     networks:
       - exchange-network
-    volumes:
-      - gateway-node-modules:/app/node_modules
+#    volumes:
+#      - gateway-node-modules:/app/node_modules
 
   # ==================== Frontend Services ====================
   marketing:
@@ -620,13 +620,13 @@ volumes:
   rabbitmq_data:
   minio_data:
   exchange_app_dist:
-  wallet-node-modules:
-  user-node-modules:
-  trading-node-modules:
-  security-node-modules:
-  proof-of-reserves-node-modules:
-  notification-node-modules:
-  compliance-node-modules:
-  auth-node-modules:
-  gateway-node-modules:
-  admin-node-modules:
+#  wallet-node-modules:
+#  user-node-modules:
+#  trading-node-modules:
+#  security-node-modules:
+#  proof-of-reserves-node-modules:
+#  notification-node-modules:
+#  compliance-node-modules:
+#  auth-node-modules:
+#  gateway-node-modules:
+#  admin-node-modules:

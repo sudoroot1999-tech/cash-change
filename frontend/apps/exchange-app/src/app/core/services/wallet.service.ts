@@ -1,6 +1,6 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, map, tap } from 'rxjs';
+import { Observable, finalize, map, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface Wallet {
@@ -77,11 +77,9 @@ export class WalletService {
 
     this._isLoading.set(true);
     return this.http.get<{ data: Wallet[] }>(this.API_URL).pipe(
-      map((response) => response.data),
-      tap((wallets) => {
-        this._wallets.set(wallets);
-        this._isLoading.set(false);
-      }),
+      map((res) => res.data),
+      tap((wallets) => this._wallets.set(wallets)),
+      finalize(() => this._isLoading.set(false)),
     );
   }
 

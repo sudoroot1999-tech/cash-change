@@ -1,0 +1,17 @@
+packages:
+  - services/*
+  - libs/*
+  - frontend/apps/*
+  - frontend/packages/*
+
+onlyBuiltDependencies:
+  - '@nestjs/core'
+  - '@parcel/watcher'
+  - '@scarf/scarf'
+  - bcrypt
+  - esbuild
+  - keccak
+  - lmdb
+  - msgpackr-extract
+  - protobufjs
+  - sharp

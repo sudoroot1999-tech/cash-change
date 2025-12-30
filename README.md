@@ -6,7 +6,7 @@ A next-generation cryptocurrency exchange platform with microservices architectu
 
 ### Prerequisites
 - Docker & Docker Compose
-- Node.js 20+ (for local development)
+- Node.js 20+ & pnpm (for local development)
 - Go 1.21+ (for matching engine development)
 
 ### Start Development Environment
@@ -15,13 +15,16 @@ A next-generation cryptocurrency exchange platform with microservices architectu
 # 1. Copy environment file
 cp .env.example .env
 
-# 2. Start all services
+# 2.install deps and create pnpm-lock.yaml file
+pnpm install
+
+# 3. Start all services
 docker compose up -d
 
-# 3. View logs
+# 4. View logs
 docker compose logs -f
 
-# 4. Stop services
+# 5. Stop services
 docker compose down
 ```
 
@@ -40,11 +43,13 @@ docker compose down
 | Security Service | 3008 | Security |
 | Proof Of Reserves Service | 3009 | Proof Of Reserves |
 | Matching Engine | 3010 | Order matching |
+| Admin service | 3011 | Admin |
 | PostgreSQL | 5432 | Main database |
 | TimescaleDB | 5433 | Time-series data |
 | Redis | 6379 | Caching |
 | RabbitMQ | 5672 | Message broker |
 | RabbitMQ UI | 15672 | Management UI |
+| Minio | 9000 | Object storage |
 
 ### API Documentation
 

@@ -4,7 +4,8 @@
     "outDir": "./dist",
     "module": "CommonJS",
     "moduleResolution": "Node",
-    "types": ["node", "multer"]
+    "types": ["multer"],
+    "declaration": false
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.spec.ts", "**/*.test.ts"]

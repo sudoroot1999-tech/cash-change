@@ -13,6 +13,7 @@ CREATE SCHEMA IF NOT EXISTS notifications;
 CREATE SCHEMA IF NOT EXISTS compliance;
 CREATE SCHEMA IF NOT EXISTS security;
 CREATE SCHEMA IF NOT EXISTS reserves;
+CREATE SCHEMA IF NOT EXISTS admin;
 
 -- Grant permissions
 GRANT ALL ON SCHEMA users TO exchange_user;
@@ -22,6 +23,7 @@ GRANT ALL ON SCHEMA notifications TO exchange_user;
 GRANT ALL ON SCHEMA compliance TO exchange_user;
 GRANT ALL ON SCHEMA security TO exchange_user;
 GRANT ALL ON SCHEMA reserves TO exchange_user;
+GRANT ALL ON SCHEMA admin TO exchange_user;
 
 -- Users schema tables
 CREATE TABLE IF NOT EXISTS users.users (

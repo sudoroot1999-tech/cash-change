@@ -1,32 +1,29 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "CommonJS",
-    "moduleResolution": "node",
-    "lib": ["ES2022"],
+    "module": "commonjs",
     "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
     "declaration": true,
-    "declarationMap": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2022",
     "sourceMap": true,
+    "incremental": true,
+    "skipLibCheck": true,
+    "strictNullChecks": false,
+    "noImplicitAny": false,
+    "strictBindCallApply": false,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": false,
     "outDir": "./dist",
     "baseUrl": ".",
     "paths": {
-      "@exchange/common": ["libs/common/src"],
+      // this path commented because we use workspace compiled libs and not path libs
+      // see package.json for each service "@exchange/common": "workspace:*"
+      // "@exchange/common": ["libs/common"],
       "@exchange/contracts": ["libs/contracts/src"]
     },
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "strictNullChecks": true,
-    "noImplicitAny": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "strictPropertyInitialization": false,
-    "types": []
   },
-  "exclude": ["node_modules", "dist", "coverage", "**/*.spec.ts", "**/*.test.ts"]
+  "exclude": ["node_modules"]
 }

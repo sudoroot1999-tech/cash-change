@@ -2,14 +2,10 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "module": "CommonJS",
-    "moduleResolution": "Node",
     "declaration": true,
-    "rootDir": "./src",
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "lib": ["dom", "ES2022"],
-    "skipLibCheck": true,
+    "declarationMap": true,
+    "strict": true,
+    "types": ["reflect-metadata"]
   },
   "include": ["src/**/*"],
   "exclude": [ "dist", "test", "**/*.spec.ts", "**/*.test.ts"]
