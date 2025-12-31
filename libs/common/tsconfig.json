@@ -5,7 +5,7 @@
     "declaration": true,
     "declarationMap": true,
     "strict": true,
-    "types": ["reflect-metadata"]
+    "types": ["reflect-metadata","multer"]
   },
   "include": ["src/**/*"],
   "exclude": [ "dist", "test", "**/*.spec.ts", "**/*.test.ts"]
