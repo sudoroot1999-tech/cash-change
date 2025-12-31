@@ -7,22 +7,25 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/exchange/market-data-service/internal/ticker"
 	"github.com/exchange/market-data-service/internal/websocket"
+	"github.com/exchange/market-data-service/internal/currency"
 	"go.uber.org/zap"
 )
 
 // Handler handles HTTP requests
 type Handler struct {
-	tickerService *ticker.TickerService
-	wsHub         *websocket.Hub
-	logger        *zap.Logger
+	tickerService   *ticker.TickerService
+	currencyService *currency.Service
+	wsHub           *websocket.Hub
+	logger          *zap.Logger
 }
 
 // NewHandler creates a new handler
-func NewHandler(ts *ticker.TickerService, hub *websocket.Hub, logger *zap.Logger) *Handler {
+func NewHandler(ts *ticker.TickerService, cs *currency.Service, hub *websocket.Hub, logger *zap.Logger) *Handler {
 	return &Handler{
-		tickerService: ts,
-		wsHub:         hub,
-		logger:        logger,
+		tickerService:   ts,
+		currencyService: cs,
+		wsHub:           hub,
+		logger:          logger,
 	}
 }
 
@@ -130,4 +133,25 @@ func (h *Handler) GetKlines(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"data": klines})
+}
+
+// SyncCurrencies triggers currency synchronization
+func (h *Handler) SyncCurrencies(c *gin.Context) {
+	if err := h.currencyService.SyncCurrencies(c.Request.Context()); err != nil {
+		h.logger.Error("Failed to sync currencies", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Currencies synced successfully"})
+}
+
+// ListCurrencies returns the list of all currencies
+func (h *Handler) ListCurrencies(c *gin.Context) {
+	currencies, err := h.currencyService.ListCurrencies()
+	if err != nil {
+		h.logger.Error("Failed to list currencies", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": currencies})
 }

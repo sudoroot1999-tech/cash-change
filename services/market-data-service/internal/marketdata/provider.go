@@ -16,7 +16,15 @@ type TickerData struct {
 	QuoteVolume24h     float64
 }
 
+// Currency represents a cryptocurrency asset
+type Currency struct {
+	ID     string `json:"id"`
+	Symbol string `json:"symbol"`
+	Name   string `json:"name"`
+}
+
 // Provider defines the interface for fetching market data
 type Provider interface {
 	GetTickers(ctx context.Context, symbols []string) ([]*TickerData, error)
+	GetCurrencies(ctx context.Context) ([]*Currency, error)
 }

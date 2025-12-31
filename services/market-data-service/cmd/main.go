@@ -17,6 +17,8 @@ import (
 	"github.com/exchange/market-data-service/internal/grpc"
 	"github.com/exchange/market-data-service/internal/ticker"
 	"github.com/exchange/market-data-service/internal/websocket"
+	"github.com/exchange/market-data-service/internal/database"
+	"github.com/exchange/market-data-service/internal/currency"
 	"go.uber.org/zap"
 )
 
@@ -70,9 +72,16 @@ func main() {
 		logger.Fatal("Redis connection failed", zap.Error(err))
 	}
 
+	// Database connection
+	db, err := database.InitDB()
+	if err != nil {
+		logger.Fatal("Database connection failed", zap.Error(err))
+	}
+
 	// Initialize services
 	cgClient := coingecko.NewClient(10 * time.Second)
 	tickerService := ticker.NewTickerService(redisClient, cgClient, logger)
+	currencyService := currency.NewService(db, cgClient, logger)
 	wsHub := websocket.NewHub(logger)
 	go wsHub.Run()
 
@@ -80,7 +89,7 @@ func main() {
 	go tickerService.StartUpdates(wsHub)
 
 	// Initialize handlers
-	handler := handlers.NewHandler(tickerService, wsHub, logger)
+	handler := handlers.NewHandler(tickerService, currencyService, wsHub, logger)
 
 	// Setup router
 	if os.Getenv("NODE_ENV") == "production" {
@@ -104,6 +113,8 @@ func main() {
 		api.GET("/trades/:symbol", handler.GetRecentTrades)
 		api.GET("/klines/:symbol", handler.GetKlines)
 		api.GET("/ticker/24hr", handler.Get24hrStats)
+		api.GET("/currencies", handler.ListCurrencies)
+		api.POST("/currencies/sync", handler.SyncCurrencies)
 	}
 
 	// WebSocket endpoint
@@ -126,7 +137,7 @@ func main() {
 	}()
 
 	// Start gRPC server
-	go grpc.StartGRPCServer(grpcPort, tickerService, logger)
+	go grpc.StartGRPCServer(grpcPort, tickerService, currencyService, logger)
 
 	// Graceful shutdown
 	quit := make(chan os.Signal, 1)

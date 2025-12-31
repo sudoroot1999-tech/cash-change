@@ -155,3 +155,43 @@ func (c *Client) GetTickers(ctx context.Context, symbols []string) ([]*marketdat
 
 	return results, nil
 }
+
+// GetCurrencies fetches all available coins from CoinGecko
+func (c *Client) GetCurrencies(ctx context.Context) ([]*marketdata.Currency, error) {
+	url := fmt.Sprintf("%s/coins/list", baseURL)
+	
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("coingecko api error: status %d", resp.StatusCode)
+	}
+
+	var coins []struct {
+		ID     string `json:"id"`
+		Symbol string `json:"symbol"`
+		Name   string `json:"name"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&coins); err != nil {
+		return nil, err
+	}
+
+	results := make([]*marketdata.Currency, len(coins))
+	for i, coin := range coins {
+		results[i] = &marketdata.Currency{
+			ID:     coin.ID,
+			Symbol: coin.Symbol,
+			Name:   coin.Name,
+		}
+	}
+
+	return results, nil
+}

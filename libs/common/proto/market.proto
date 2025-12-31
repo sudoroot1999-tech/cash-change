@@ -10,6 +10,8 @@ service MarketService {
   rpc GetOrderBook(GetOrderBookRequest) returns (OrderBookResponse);
   rpc GetRecentTrades(GetRecentTradesRequest) returns (RecentTradesResponse);
   rpc GetKlines(GetKlinesRequest) returns (KlinesResponse);
+  rpc SyncCurrencies(Empty) returns (SyncCurrenciesResponse);
+  rpc ListCurrencies(Empty) returns (ListCurrenciesResponse);
 }
 
 message Empty {}
@@ -93,4 +95,19 @@ message Kline {
 
 message KlinesResponse {
   repeated Kline klines = 1;
+}
+
+message Currency {
+  string id = 1;
+  string symbol = 2;
+  string name = 3;
+}
+
+message SyncCurrenciesResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message ListCurrenciesResponse {
+  repeated Currency currencies = 1;
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"strings"
 	"sync"
 	"time"
 
@@ -71,12 +72,13 @@ type Kline struct {
 
 // TickerService manages market data
 type TickerService struct {
-	redis    *redis.Client
-	logger   *zap.Logger
-	provider marketdata.Provider
-	tickers  map[string]*Ticker
-	mu       sync.RWMutex
-	ctx      context.Context
+	redis     *redis.Client
+	logger    *zap.Logger
+	provider  marketdata.Provider
+	tickers   map[string]*Ticker
+	symbolMap map[string]string // Maps normalized (e.g. BTCUSDT) to internal (e.g. BTC/USDT)
+	mu        sync.RWMutex
+	ctx       context.Context
 }
 
 // Default symbols
@@ -85,17 +87,35 @@ var defaultSymbols = []string{"BTC/USDT", "ETH/USDT", "ETH/BTC", "BNB/USDT", "US
 // NewTickerService creates a new ticker service
 func NewTickerService(redis *redis.Client, provider marketdata.Provider, logger *zap.Logger) *TickerService {
 	ts := &TickerService{
-		redis:    redis,
-		logger:   logger,
-		provider: provider,
-		tickers:  make(map[string]*Ticker),
-		ctx:      context.Background(),
+		redis:     redis,
+		logger:    logger,
+		provider:  provider,
+		tickers:   make(map[string]*Ticker),
+		symbolMap: make(map[string]string),
+		ctx:       context.Background(),
 	}
 
 	// Initialize with mock data (or empty, but keep structure for safe start)
 	ts.initializeMockTickers()
 
 	return ts
+}
+
+func (s *TickerService) normalizeSymbol(symbol string) string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	// If it's already a known symbol (e.g. BTC/USDT), return as is
+	if _, ok := s.tickers[symbol]; ok {
+		return symbol
+	}
+
+	// Check mapping (e.g. BTCUSDT -> BTC/USDT)
+	if mapped, ok := s.symbolMap[symbol]; ok {
+		return mapped
+	}
+
+	return symbol
 }
 
 func (s *TickerService) initializeMockTickers() {
@@ -124,6 +144,10 @@ func (s *TickerService) initializeMockTickers() {
 			AskPrice:           fmt.Sprintf("%.8f", price*1.001),
 			Timestamp:          time.Now().UnixMilli(),
 		}
+		
+		// Map normalized version
+		normalized := strings.ReplaceAll(symbol, "/", "")
+		s.symbolMap[normalized] = symbol
 	}
 }
 
@@ -201,9 +225,10 @@ func (s *TickerService) broadcastToHub(hub *websocket.Hub) {
 
 // GetTicker returns ticker for a symbol
 func (s *TickerService) GetTicker(symbol string) *Ticker {
+	normalized := s.normalizeSymbol(symbol)
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return s.tickers[symbol]
+	return s.tickers[normalized]
 }
 
 // GetAllTickers returns all tickers
@@ -220,8 +245,9 @@ func (s *TickerService) GetAllTickers() []*Ticker {
 
 // GetOrderBook returns mock order book for a symbol
 func (s *TickerService) GetOrderBook(symbol string, depth int) *OrderBook {
+	normalized := s.normalizeSymbol(symbol)
 	s.mu.RLock()
-	t := s.tickers[symbol]
+	t := s.tickers[normalized]
 	s.mu.RUnlock()
 
 	if t == nil {
@@ -251,8 +277,9 @@ func (s *TickerService) GetOrderBook(symbol string, depth int) *OrderBook {
 
 // GetRecentTrades returns mock recent trades
 func (s *TickerService) GetRecentTrades(symbol string, limit int) []Trade {
+	normalized := s.normalizeSymbol(symbol)
 	s.mu.RLock()
-	t := s.tickers[symbol]
+	t := s.tickers[normalized]
 	s.mu.RUnlock()
 
 	if t == nil {
@@ -284,8 +311,9 @@ func (s *TickerService) GetRecentTrades(symbol string, limit int) []Trade {
 
 // GetKlines returns mock klines
 func (s *TickerService) GetKlines(symbol, interval string, limit int) []Kline {
+	normalized := s.normalizeSymbol(symbol)
 	s.mu.RLock()
-	t := s.tickers[symbol]
+	t := s.tickers[normalized]
 	s.mu.RUnlock()
 
 	if t == nil {

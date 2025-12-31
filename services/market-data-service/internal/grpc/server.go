@@ -6,20 +6,23 @@ import (
 
 	"github.com/exchange/market-data-service/internal/pb"
 	"github.com/exchange/market-data-service/internal/ticker"
+	"github.com/exchange/market-data-service/internal/currency"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
 type MarketGRPCServer struct {
 	pb.UnimplementedMarketServiceServer
-	tickerService *ticker.TickerService
-	logger        *zap.Logger
+	tickerService   *ticker.TickerService
+	currencyService *currency.Service
+	logger          *zap.Logger
 }
 
-func NewMarketGRPCServer(ts *ticker.TickerService, logger *zap.Logger) *MarketGRPCServer {
+func NewMarketGRPCServer(ts *ticker.TickerService, cs *currency.Service, logger *zap.Logger) *MarketGRPCServer {
 	return &MarketGRPCServer{
-		tickerService: ts,
-		logger:        logger,
+		tickerService:   ts,
+		currencyService: cs,
+		logger:          logger,
 	}
 }
 
@@ -103,6 +106,31 @@ func (s *MarketGRPCServer) GetKlines(ctx context.Context, req *pb.GetKlinesReque
 	return &pb.KlinesResponse{Klines: pbKlines}, nil
 }
 
+func (s *MarketGRPCServer) SyncCurrencies(ctx context.Context, req *pb.Empty) (*pb.SyncCurrenciesResponse, error) {
+	if err := s.currencyService.SyncCurrencies(ctx); err != nil {
+		return &pb.SyncCurrenciesResponse{Success: false, Message: err.Error()}, nil
+	}
+	return &pb.SyncCurrenciesResponse{Success: true, Message: "Currencies synced successfully"}, nil
+}
+
+func (s *MarketGRPCServer) ListCurrencies(ctx context.Context, req *pb.Empty) (*pb.ListCurrenciesResponse, error) {
+	currencies, err := s.currencyService.ListCurrencies()
+	if err != nil {
+		return &pb.ListCurrenciesResponse{}, err
+	}
+
+	pbCurrencies := make([]*pb.Currency, len(currencies))
+	for i, c := range currencies {
+		pbCurrencies[i] = &pb.Currency{
+			Id:     c.ID,
+			Symbol: c.Symbol,
+			Name:   c.Name,
+		}
+	}
+
+	return &pb.ListCurrenciesResponse{Currencies: pbCurrencies}, nil
+}
+
 func mapToPBTicker(t *ticker.Ticker) *pb.TickerResponse {
 	return &pb.TickerResponse{
 		Symbol:             t.Symbol,
@@ -121,14 +149,14 @@ func mapToPBTicker(t *ticker.Ticker) *pb.TickerResponse {
 	}
 }
 
-func StartGRPCServer(port string, ts *ticker.TickerService, logger *zap.Logger) {
+func StartGRPCServer(port string, ts *ticker.TickerService, cs *currency.Service, logger *zap.Logger) {
 	lis, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		logger.Fatal("Failed to listen for gRPC", zap.Error(err))
 	}
 
 	s := grpc.NewServer()
-	pb.RegisterMarketServiceServer(s, NewMarketGRPCServer(ts, logger))
+	pb.RegisterMarketServiceServer(s, NewMarketGRPCServer(ts, cs, logger))
 
 	logger.Info("Starting Market Data gRPC server", zap.String("port", port))
 	if err := s.Serve(lis); err != nil {
