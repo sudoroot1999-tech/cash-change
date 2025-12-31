@@ -18,11 +18,11 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(req).pipe(
     // Retry logic with exponential backoff (only for GET requests)
-    retry({
+ retry({
       count: req.method === 'GET' ? 2 : 0, // Only retry GET requests
       delay: (error, retryCount) => {
-        // Don't retry on 4xx errors (except 429 rate limit)
-        if (error.status >= 400 && error.status < 500 && error.status !== 429) {
+        // Don't retry on 4xx errors (including 429 rate limit)
+        if (error.status >= 400 && error.status < 500) {
           throw error;
         }
         

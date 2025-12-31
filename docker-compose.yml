@@ -1,3 +1,66 @@
+# ==================== Common Configuration Templates ====================
+x-common-env: &common-env
+  NODE_ENV: development
+  JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret}
+  JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
+
+x-postgres-env: &postgres-env
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: 5432
+  POSTGRES_USER: ${POSTGRES_USER:-exchange_user}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-exchange_dev_password}
+  POSTGRES_DB: ${POSTGRES_DB:-exchange}
+
+x-redis-env: &redis-env
+  REDIS_HOST: redis
+  REDIS_PORT: 6379
+  REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_dev_password}
+
+x-rabbitmq-env: &rabbitmq-env
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_PORT: 5672
+  RABBITMQ_USER: ${RABBITMQ_USER:-exchange}
+  RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
+  RABBITMQ_URL: amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
+
+x-timescale-env: &timescale-env
+  TIMESCALE_HOST: timescaledb
+  TIMESCALE_PORT: 5432
+  TIMESCALE_USER: ${POSTGRES_USER:-exchange_user}
+  TIMESCALE_PASSWORD: ${POSTGRES_PASSWORD:-exchange_dev_password}
+  TIMESCALE_DB: market_data
+
+x-minio-env: &minio-env
+  MINIO_HOST: minio
+  MINIO_PORT: 9000
+  MINIO_USE_SSL: false
+  MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio_admin}
+  MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minio_dev_password}
+
+x-service-urls: &service-urls
+  USER_SERVICE_URL: http://user-service:3001
+  USER_SERVICE_GRPC_URL: user-service:5001
+  AUTH_SERVICE_URL: http://auth-service:3002
+  WALLET_SERVICE_URL: http://wallet-service:3003
+  WALLET_SERVICE_GRPC_URL: wallet-service:5003
+  TRADING_SERVICE_URL: http://trading-service:3004
+  MARKET_DATA_URL: http://market-data-service:3005
+  MARKET_DATA_GRPC_URL: market-data-service:5005
+  NOTIFICATION_URL: http://notification-service:3006
+  COMPLIANCE_URL: http://compliance-service:3007
+  SECURITY_URL: http://security-service:3008
+  RESERVES_URL: http://proof-of-reserves-service:3009
+  MATCHING_ENGINE_GRPC_URL: matching-engine:5010
+  ADMIN_URL: http://admin-service:3011
+
+x-common-depends: &common-depends
+  postgres:
+    condition: service_healthy
+  redis:
+    condition: service_healthy
+  rabbitmq:
+    condition: service_healthy
+
 services:
   # ==================== Databases ====================
   postgres:
@@ -5,17 +68,14 @@ services:
     container_name: exchange-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-exchange_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-exchange_dev_password}
-      POSTGRES_DB: ${POSTGRES_DB:-exchange}
+      <<: *postgres-env
     ports:
       - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test:
-        ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-exchange_user} -d ${POSTGRES_DB:-exchange}']
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-exchange_user} -d ${POSTGRES_DB:-exchange}']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -63,9 +123,7 @@ services:
     container_name: exchange-timescaledb
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-exchange_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-exchange_dev_password}
-      POSTGRES_DB: market_data
+      <<: *timescale-env
     ports:
       - '5433:5432'
     volumes:
@@ -73,15 +131,13 @@ services:
     networks:
       - exchange-network
 
-  # ==================== Object Storage ====================
   minio:
     image: minio/minio:latest
     container_name: exchange-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio_admin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minio_dev_password}
+      <<: *minio-env
     ports:
       - '9000:9000'
       - '9001:9001'
@@ -90,7 +146,6 @@ services:
     networks:
       - exchange-network
 
-  # ==================== Message Broker ====================
   rabbitmq:
     image: rabbitmq:3-management-alpine
     container_name: exchange-rabbitmq
@@ -100,7 +155,7 @@ services:
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
     ports:
       - '5672:5672'
-      - '15672:15672' # Management UI
+      - '15672:15672'
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
@@ -119,43 +174,15 @@ services:
     container_name: exchange-user-service
     restart: unless-stopped
     environment:
-      - NODE_ENV=development
-      - PORT=3001
-      - GRPC_PORT=5001
-      - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
-      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
-      - POSTGRES_USER=${POSTGRES_USER:-exchange_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-exchange_dev_password}
-      - POSTGRES_DB=${POSTGRES_DB:-exchange}
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis_dev_password}
-      - REDIS_HOST=${REDIS_HOST:-redis}
-      - REDIS_PORT=${REDIS_PORT:-6379}
-      - MINIO_HOST=${MINIO_HOST:-minio}
-      - MINIO_PORT=${MINIO_PORT:-9000}
-      - MINIO_USE_SSL=${MINIO_USE_SSL:-false}
-      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minio_admin}
-      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minio_dev_password}
-      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
-      - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
-      - RABBITMQ_USER=${RABBITMQ_USER:-exchange}
-      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
-      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret}
-      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-15m}
+      <<: [*common-env, *postgres-env, *redis-env, *rabbitmq-env, *minio-env]
+      PORT: 3001
+      GRPC_PORT: 5001
     ports:
       - '3001:3001'
       - '5001:5001'
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+    depends_on: *common-depends
     networks:
       - exchange-network
-#    volumes:
-#      - user-node-modules:/app/node_modules
 
   auth-service:
     build:
@@ -164,30 +191,14 @@ services:
     container_name: exchange-auth-service
     restart: unless-stopped
     environment:
-      - NODE_ENV=development
-      - PORT=3002
-      - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
-      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
-      - POSTGRES_USER=${POSTGRES_USER:-exchange_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-exchange_dev_password}
-      - POSTGRES_DB=${POSTGRES_DB:-exchange}
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis_dev_password}
-      - REDIS_HOST=${REDIS_HOST:-redis}
-      - REDIS_PORT=${REDIS_PORT:-6379}
-      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret}
-      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-15m}
-      - USER_SERVICE_GRPC_URL=user-service:5001
+      <<: [*common-env, *postgres-env, *redis-env, *service-urls]
+      PORT: 3002
     ports:
       - '3002:3002'
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      <<: *common-depends
     networks:
       - exchange-network
-#    volumes:
-#      - auth-node-modules:/app/node_modules
 
   wallet-service:
     build:
@@ -196,38 +207,15 @@ services:
     container_name: exchange-wallet-service
     restart: unless-stopped
     environment:
-      - NODE_ENV=development
-      - PORT=3003
-      - GRPC_PORT=5003
-      - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
-      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
-      - POSTGRES_USER=${POSTGRES_USER:-exchange_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-exchange_dev_password}
-      - POSTGRES_DB=${POSTGRES_DB:-exchange}
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis_dev_password}
-      - REDIS_HOST=${REDIS_HOST:-redis}
-      - REDIS_PORT=${REDIS_PORT:-6379}
-      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
-      - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
-      - RABBITMQ_USER=${RABBITMQ_USER:-exchange}
-      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
-      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret}
-      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-15m}
+      <<: [*common-env, *postgres-env, *redis-env, *rabbitmq-env]
+      PORT: 3003
+      GRPC_PORT: 5003
     ports:
       - '3003:3003'
       - '5003:5003'
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+    depends_on: *common-depends
     networks:
       - exchange-network
-#    volumes:
-#      - wallet-node-modules:/app/node_modules
 
   trading-service:
     build:
@@ -236,43 +224,13 @@ services:
     container_name: exchange-trading-service
     restart: unless-stopped
     environment:
-      - NODE_ENV=development
-      - PORT=3004
-      - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
-      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
-      - POSTGRES_USER=${POSTGRES_USER:-exchange_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-exchange_dev_password}
-      - POSTGRES_DB=${POSTGRES_DB:-exchange}
-      - TIMESCALE_HOST=${TIMESCALE_HOST:-timescaledb}
-      - TIMESCALE_PORT=${TIMESCALE_PORT:-5432}
-      - TIMESCALE_USER=${TIMESCALE_USER:-exchange_user}
-      - TIMESCALE_PASSWORD=${TIMESCALE_PASSWORD:-exchange_dev_password}
-      - TIMESCALE_DB=${TIMESCALE_DB:-market_data}
-      - REDIS_HOST=${REDIS_HOST:-redis}
-      - REDIS_PORT=${REDIS_PORT:-6379}
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis_dev_password}
-      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
-      - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
-      - RABBITMQ_USER=${RABBITMQ_USER:-exchange}
-      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
-      - MATCHING_ENGINE_GRPC_URL=matching-engine:5010
-      - WALLET_SERVICE_GRPC_URL=wallet-service:5003
-      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret}
-      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-15m}
+      <<: [*common-env, *postgres-env, *redis-env, *rabbitmq-env, *timescale-env, *service-urls]
+      PORT: 3004
     ports:
       - '3004:3004'
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+    depends_on: *common-depends
     networks:
       - exchange-network
-#    volumes:
-#      - trading-node-modules:/app/node_modules
 
   market-data-service:
     build:
@@ -281,23 +239,9 @@ services:
     container_name: exchange-market-data
     restart: unless-stopped
     environment:
-      - PORT=3005
-      - GRPC_PORT=5005
-      - TIMESCALE_HOST=${TIMESCALE_HOST:-timescaledb}
-      - TIMESCALE_PORT=${TIMESCALE_PORT:-5432}
-      - TIMESCALE_USER=${TIMESCALE_USER:-exchange_user}
-      - TIMESCALE_PASSWORD=${TIMESCALE_PASSWORD:-exchange_dev_password}
-      - TIMESCALE_DB=${TIMESCALE_DB:-market_data}
-      - REDIS_HOST=${REDIS_HOST:-redis}
-      - REDIS_PORT=${REDIS_PORT:-6379}
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis_dev_password}
-      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
-      - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
-      - RABBITMQ_USER=${RABBITMQ_USER:-exchange}
-      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
-      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret}
-      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-15m}
+      <<: [*common-env, *redis-env, *rabbitmq-env, *timescale-env]
+      PORT: 3005
+      GRPC_PORT: 5005
     ports:
       - '3005:3005'
       - '5005:5005'
@@ -316,18 +260,9 @@ services:
     container_name: exchange-matching-engine
     restart: unless-stopped
     environment:
-      - PORT=3010
-      - GRPC_PORT=5010
-      - REDIS_HOST=${REDIS_HOST:-redis}
-      - REDIS_PORT=${REDIS_PORT:-6379}
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis_dev_password}
-      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
-      - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
-      - RABBITMQ_USER=${RABBITMQ_USER:-exchange}
-      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
-      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret}
-      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-15m}
+      <<: [*common-env, *redis-env, *rabbitmq-env]
+      PORT: 3010
+      GRPC_PORT: 5010
     ports:
       - '3010:3010'
       - '5010:5010'
@@ -346,36 +281,13 @@ services:
     container_name: exchange-notification
     restart: unless-stopped
     environment:
-      - NODE_ENV=development
-      - PORT=3006
-      - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
-      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
-      - POSTGRES_USER=${POSTGRES_USER:-exchange_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-exchange_dev_password}
-      - POSTGRES_DB=${POSTGRES_DB:-exchange}
-      - REDIS_HOST=${REDIS_HOST:-redis}
-      - REDIS_PORT=${REDIS_PORT:-6379}
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis_dev_password}
-      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
-      - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
-      - RABBITMQ_USER=${RABBITMQ_USER:-exchange}
-      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
-      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret}
-      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-15m}
+      <<: [*common-env, *postgres-env, *redis-env, *rabbitmq-env]
+      PORT: 3006
     ports:
       - '3006:3006'
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+    depends_on: *common-depends
     networks:
       - exchange-network
-#    volumes:
-#      - notification-node-modules:/app/node_modules
 
   compliance-service:
     build:
@@ -384,27 +296,8 @@ services:
     container_name: exchange-compliance
     restart: unless-stopped
     environment:
-      - NODE_ENV=development
-      - PORT=3007
-      - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
-      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
-      - POSTGRES_USER=${POSTGRES_USER:-exchange_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-exchange_dev_password}
-      - POSTGRES_DB=${POSTGRES_DB:-exchange}
-      - MINIO_HOST=${MINIO_HOST:-minio}
-      - MINIO_PORT=${MINIO_PORT:-9000}
-      - MINIO_USE_SSL=${MINIO_USE_SSL:-false}
-      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minio_admin}
-      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minio_dev_password}
-      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
-      - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
-      - RABBITMQ_USER=${RABBITMQ_USER:-exchange}
-      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
-      - USER_SERVICE_URL=http://user-service:3001
-      - USER_SERVICE_GRPC_URL=user-service:5001
-      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret}
-      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-15m}
+      <<: [*common-env, *postgres-env, *minio-env, *rabbitmq-env, *service-urls]
+      PORT: 3007
     ports:
       - '3007:3007'
     depends_on:
@@ -412,8 +305,6 @@ services:
         condition: service_healthy
     networks:
       - exchange-network
-#    volumes:
-#      - compliance-node-modules:/app/node_modules
 
   security-service:
     build:
@@ -422,23 +313,8 @@ services:
     container_name: exchange-security
     restart: unless-stopped
     environment:
-      - NODE_ENV=development
-      - PORT=3008
-      - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
-      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
-      - POSTGRES_USER=${POSTGRES_USER:-exchange_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-exchange_dev_password}
-      - POSTGRES_DB=${POSTGRES_DB:-exchange}
-      - REDIS_HOST=${REDIS_HOST:-redis}
-      - REDIS_PORT=${REDIS_PORT:-6379}
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis_dev_password}
-      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
-      - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
-      - RABBITMQ_USER=${RABBITMQ_USER:-exchange}
-      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
-      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret}
-      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-15m}
+      <<: [*common-env, *postgres-env, *redis-env, *rabbitmq-env]
+      PORT: 3008
     ports:
       - '3008:3008'
     depends_on:
@@ -448,8 +324,6 @@ services:
         condition: service_healthy
     networks:
       - exchange-network
-#    volumes:
-#      - security-node-modules:/app/node_modules
 
   proof-of-reserves-service:
     build:
@@ -458,37 +332,13 @@ services:
     container_name: exchange-proof-of-reserves
     restart: unless-stopped
     environment:
-      - NODE_ENV=development
-      - PORT=3009
-      - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
-      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
-      - POSTGRES_USER=${POSTGRES_USER:-exchange_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-exchange_dev_password}
-      - POSTGRES_DB=${POSTGRES_DB:-exchange}
-      - REDIS_HOST=${REDIS_HOST:-redis}
-      - REDIS_PORT=${REDIS_PORT:-6379}
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis_dev_password}
-      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
-      - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
-      - RABBITMQ_USER=${RABBITMQ_USER:-exchange}
-      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
-      - WALLET_SERVICE_URL=http://wallet-service:3003
-      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret}
-      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-15m}
+      <<: [*common-env, *postgres-env, *redis-env, *rabbitmq-env, *service-urls]
+      PORT: 3009
     ports:
       - '3009:3009'
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+    depends_on: *common-depends
     networks:
       - exchange-network
-#    volumes:
-#      - proof-of-reserves-node-modules:/app/node_modules
 
   admin-service:
     build:
@@ -497,23 +347,8 @@ services:
     container_name: exchange-admin-service
     restart: unless-stopped
     environment:
-      - NODE_ENV=development
-      - PORT=3011
-      - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
-      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
-      - POSTGRES_USER=${POSTGRES_USER:-exchange_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-exchange_dev_password}
-      - POSTGRES_DB=${POSTGRES_DB:-exchange}
-      - USER_SERVICE_URL=http://user-service:3001
-      - USER_SERVICE_GRPC_URL=user-service:5001
-      - TRADING_SERVICE_URL=http://trading-service:3004
-      - WALLET_SERVICE_URL=http://wallet-service:3003
-      - WALLET_SERVICE_GRPC_URL=wallet-service:5003
-      - COMPLIANCE_URL=http://compliance-service:3007
-      - MATCHING_ENGINE_GRPC_URL=matching-engine:5010
-      - MARKET_DATA_GRPC_URL=market-data-service:5005
-      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret}
-      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-15m}
+      <<: [*common-env, *postgres-env, *service-urls]
+      PORT: 3011
     ports:
       - '3011:3011'
     depends_on:
@@ -521,8 +356,6 @@ services:
         condition: service_healthy
     networks:
       - exchange-network
-#    volumes:
-#      - admin-node-modules:/app/node_modules
 
   # ==================== API Gateway ====================
   api-gateway:
@@ -532,28 +365,8 @@ services:
     container_name: exchange-api-gateway
     restart: unless-stopped
     environment:
-      - NODE_ENV=development
-      - PORT=3000
-      - USER_SERVICE_URL=http://user-service:3001
-      - AUTH_SERVICE_URL=http://auth-service:3002
-      - WALLET_SERVICE_URL=http://wallet-service:3003
-      - TRADING_SERVICE_URL=http://trading-service:3004
-      - MARKET_DATA_URL=http://market-data-service:3005
-      - NOTIFICATION_URL=http://notification-service:3006
-      - COMPLIANCE_URL=http://compliance-service:3007
-      - SECURITY_URL=http://security-service:3008
-      - RESERVES_URL=http://proof-of-reserves-service:3009
-      - ADMIN_URL=http://admin-service:3011
-      - REDIS_HOST=${REDIS_HOST:-redis}
-      - REDIS_PORT=${REDIS_PORT:-6379}
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis_dev_password}
-      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
-      - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
-      - RABBITMQ_USER=${RABBITMQ_USER:-exchange}
-      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-rabbitmq_dev_password}
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-exchange}:${RABBITMQ_PASSWORD:-rabbitmq_dev_password}@rabbitmq:5672
-      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret}
-      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-15m}
+      <<: [*common-env, *redis-env, *rabbitmq-env, *service-urls]
+      PORT: 3000
     ports:
       - '3000:3000'
     depends_on:
@@ -566,11 +379,9 @@ services:
       - compliance-service
       - security-service
       - proof-of-reserves-service
-      # - admin-service
+      - admin-service
     networks:
       - exchange-network
-#    volumes:
-#      - gateway-node-modules:/app/node_modules
 
   # ==================== Frontend Services ====================
   marketing:
@@ -620,13 +431,3 @@ volumes:
   rabbitmq_data:
   minio_data:
   exchange_app_dist:
-#  wallet-node-modules:
-#  user-node-modules:
-#  trading-node-modules:
-#  security-node-modules:
-#  proof-of-reserves-node-modules:
-#  notification-node-modules:
-#  compliance-node-modules:
-#  auth-node-modules:
-#  gateway-node-modules:
-#  admin-node-modules:

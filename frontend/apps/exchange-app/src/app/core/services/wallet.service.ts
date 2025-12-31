@@ -1,6 +1,6 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient, HttpParams, HttpErrorResponse } from '@angular/common/http';
-import { Observable, finalize, map, tap, catchError, throwError, timeout, of } from 'rxjs';
+import { Observable, finalize, map, tap, catchError, throwError, timeout, of, shareReplay } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface Wallet {
@@ -66,21 +66,37 @@ export class WalletService {
   readonly isLoading = this._isLoading.asReadonly();
   readonly error = this._error.asReadonly();
 
+  // Cache for in-flight requests to prevent duplicates
+  private walletsRequest$: Observable<Wallet[]> | null = null;
+  private lastFetchTime = 0;
+  private readonly CACHE_DURATION = 10000; // 10 seconds
+
   /**
    * Get all user wallets with balances
+   * Implements request deduplication and caching
    */
   getUserWallets(refresh = false): Observable<Wallet[]> {
-    // Return cached data if available and not refreshing
-    if (!refresh && this._wallets().length > 0) {
+    const now = Date.now();
+    const isCacheValid = (now - this.lastFetchTime) < this.CACHE_DURATION;
+
+    // Return cached data if available and fresh
+    if (!refresh && this._wallets().length > 0 && isCacheValid) {
       console.log('[WalletService] Returning cached wallets');
       return of(this._wallets());
+    }
+
+    // Return in-flight request if one exists
+    if (this.walletsRequest$) {
+      console.log('[WalletService] Returning in-flight request');
+      return this.walletsRequest$;
     }
 
     console.log('[WalletService] Fetching wallets from API...');
     this._isLoading.set(true);
     this._error.set(null);
 
-    return this.http.get<{ data: Wallet[] } | Wallet[]>(this.API_URL).pipe(
+    // Create new request with shareReplay to prevent duplicates
+    this.walletsRequest$ = this.http.get<{ data: Wallet[] } | Wallet[]>(this.API_URL).pipe(
       timeout(10000), // 10 second timeout
       map((response) => {
         console.log('[WalletService] Raw response:', response);
@@ -98,6 +114,7 @@ export class WalletService {
       tap((wallets) => {
         console.log('[WalletService] Processed wallets:', wallets);
         this._wallets.set(wallets);
+        this.lastFetchTime = Date.now();
       }),
       catchError((error: HttpErrorResponse) => {
         const errorMessage = this.getErrorMessage(error);
@@ -109,8 +126,13 @@ export class WalletService {
       finalize(() => {
         console.log('[WalletService] Request completed');
         this._isLoading.set(false);
+        // Clear in-flight request reference
+        this.walletsRequest$ = null;
       }),
+      shareReplay({ bufferSize: 1, refCount: true })
     );
+
+    return this.walletsRequest$;
   }
 
   /**
@@ -159,10 +181,11 @@ export class WalletService {
   }
 
   /**
-   * Refresh wallet balances
+   * Refresh wallet balances (bypasses cache)
    */
   refreshWallets(): Observable<Wallet[]> {
     console.log('[WalletService] Refreshing wallets...');
+    this.lastFetchTime = 0; // Invalidate cache
     return this.getUserWallets(true);
   }
 
@@ -173,6 +196,8 @@ export class WalletService {
     console.log('[WalletService] Clearing cache');
     this._wallets.set([]);
     this._error.set(null);
+    this.lastFetchTime = 0;
+    this.walletsRequest$ = null;
   }
 
   /**
@@ -192,6 +217,8 @@ export class WalletService {
         return 'Access denied.';
       } else if (error.status === 404) {
         return 'Wallets not found.';
+      } else if (error.status === 429) {
+        return 'Too many requests. Please wait a moment and try again.';
       } else if (error.status >= 500) {
         return 'Server error. Please try again later.';
       } else {
