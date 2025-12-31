@@ -5,16 +5,7 @@ import { CardComponent } from '@/components/card/card.component';
 import { ButtonComponent } from '@/components/button/button.component';
 import { BadgeComponent } from '@/components/badge/badge.component';
 import { AuthService } from '../../../../core/services/auth.service';
-import { WalletService, Wallet } from '../../../../core/services/wallet.service';
-
-interface WalletBalance {
-  asset: string;
-  name: string;
-  available: number;
-  locked: number;
-  usdValue: number;
-  change24h: number;
-}
+import { WalletService, Wallet, WalletBalance } from '../../../../core/services/wallet.service';
 
 @Component({
   selector: 'app-wallet-overview',
@@ -22,170 +13,198 @@ interface WalletBalance {
   imports: [CommonModule, DecimalPipe, RouterLink, CardComponent, ButtonComponent, BadgeComponent],
   template: `
     <div class="wallet-page">
-      <!-- Header -->
-      <div class="page-header">
-        <div class="header-content">
-          <h1 class="page-title">Wallet</h1>
-          <p class="page-subtitle">Manage your crypto assets</p>
+      <!-- Loading State -->
+      @if (walletService.isLoading()) {
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <p>Loading wallets...</p>
         </div>
-        <div class="header-actions">
-          <ui-button variant="secondary">Deposit</ui-button>
-          <ui-button variant="secondary">Withdraw</ui-button>
-          <ui-button variant="primary">Transfer</ui-button>
+      }
+
+      <!-- Error State -->
+      @if (walletService.error()) {
+        <div class="error-state">
+          <div class="error-icon">⚠️</div>
+          <p class="error-message">{{ walletService.error() }}</p>
+          <ui-button variant="primary" (click)="retryLoad()">Retry</ui-button>
         </div>
-      </div>
+      }
 
-      <!-- Portfolio Overview -->
-      <div class="portfolio-section">
-        <ui-card variant="elevated">
-          <div class="portfolio-content">
-            <div class="portfolio-main">
-              <span class="portfolio-label">Total Balance</span>
-              <div class="portfolio-value">
-                <span class="currency-symbol">$</span>
-                <span class="value-amount">{{ totalBalance() | number: '1.2-2' }}</span>
-              </div>
-              <div class="portfolio-change positive">
-                <svg class="change-icon" viewBox="0 0 20 20" fill="currentColor">
-                  <path
-                    fill-rule="evenodd"
-                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                    clip-rule="evenodd"
-                    transform="rotate(180 10 10)"
-                  />
-                </svg>
-                +$1,234.56 (2.34%) today
-              </div>
-            </div>
-
-            <div class="portfolio-breakdown">
-              <div class="breakdown-item">
-                <span class="breakdown-label">Available</span>
-                <span class="breakdown-value">{{ availableBalance() | number: '1.2-2' }}</span>
-              </div>
-              <div class="breakdown-item">
-                <span class="breakdown-label">In Orders</span>
-                <span class="breakdown-value">{{ lockedBalance() | number: '1.2-2' }}</span>
-              </div>
-              <div class="breakdown-item">
-                <span class="breakdown-label">Assets</span>
-                <span class="breakdown-value">{{ balances().length }}</span>
-              </div>
-            </div>
+      <!-- Content -->
+      @if (!walletService.isLoading() && !walletService.error()) {
+        <!-- Header -->
+        <div class="page-header">
+          <div class="header-content">
+            <h1 class="page-title">Wallet</h1>
+            <p class="page-subtitle">Manage your crypto assets</p>
           </div>
-        </ui-card>
-      </div>
-
-      <!-- Quick Actions -->
-      <div class="quick-actions">
-        <ui-card variant="interactive">
-          <div class="action-content">
-            <div class="action-icon">💳</div>
-            <div class="action-info">
-              <span class="action-title">Buy Crypto</span>
-              <span class="action-desc">Purchase with card or bank</span>
-            </div>
-          </div>
-        </ui-card>
-        <ui-card variant="interactive">
-          <div class="action-content">
-            <div class="action-icon">🔄</div>
-            <div class="action-info">
-              <span class="action-title">Convert</span>
-              <span class="action-desc">Swap between assets</span>
-            </div>
-          </div>
-        </ui-card>
-        <ui-card variant="interactive">
-          <div class="action-content">
-            <div class="action-icon">📊</div>
-            <div class="action-info">
-              <span class="action-title">Earn</span>
-              <span class="action-desc">Stake and earn rewards</span>
-            </div>
-          </div>
-        </ui-card>
-        <ui-card variant="interactive">
-          <div class="action-content">
-            <div class="action-icon">📜</div>
-            <div class="action-info">
-              <span class="action-title">History</span>
-              <span class="action-desc">View transactions</span>
-            </div>
-          </div>
-        </ui-card>
-      </div>
-
-      <!-- Balances Table -->
-      <ui-card variant="elevated" [noPadding]="true">
-        <div class="table-header">
-          <h2 class="table-title">Your Assets</h2>
-          <div class="table-filters">
-            <label class="hide-small-checkbox">
-              <input
-                type="checkbox"
-                [checked]="hideSmallBalances()"
-                (change)="hideSmallBalances.set(!hideSmallBalances())"
-              />
-              <span>Hide small balances</span>
-            </label>
+          <div class="header-actions">
+            <ui-button variant="secondary">Deposit</ui-button>
+            <ui-button variant="secondary">Withdraw</ui-button>
+            <ui-button variant="primary">Transfer</ui-button>
           </div>
         </div>
 
-        <div class="table-container">
-          <table class="balances-table">
-            <thead>
-              <tr>
-                <th>Asset</th>
-                <th class="text-right">Available</th>
-                <th class="text-right">In Orders</th>
-                <th class="text-right">USD Value</th>
-                <th class="text-right">24h Change</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (balance of filteredBalances(); track balance.asset) {
-                <tr class="balance-row">
-                  <td>
-                    <div class="asset-info">
-                      <div class="asset-icon" [style.background]="getCoinColor(balance.asset)">
-                        {{ balance.asset.charAt(0) }}
-                      </div>
-                      <div class="asset-details">
-                        <span class="asset-name">{{ balance.name }}</span>
-                        <span class="asset-symbol">{{ balance.asset }}</span>
-                      </div>
-                    </div>
-                  </td>
-                  <td class="text-right mono">{{ balance.available | number: '1.4-4' }}</td>
-                  <td class="text-right mono text-muted">{{ balance.locked | number: '1.4-4' }}</td>
-                  <td class="text-right mono">{{ balance.usdValue | number: '1.2-2' }}</td>
-                  <td class="text-right">
-                    <span
-                      class="change"
-                      [class.positive]="balance.change24h >= 0"
-                      [class.negative]="balance.change24h < 0"
-                    >
-                      {{ balance.change24h >= 0 ? '+' : ''
-                      }}{{ balance.change24h | number: '1.2-2' }}%
-                    </span>
-                  </td>
-                  <td class="text-right">
-                    <div class="row-actions">
-                      <a [routerLink]="['/trade', balance.asset + 'USDT']" class="action-link"
-                        >Trade</a
-                      >
-                      <button class="action-link">Deposit</button>
-                      <button class="action-link">Withdraw</button>
-                    </div>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
+        <!-- Portfolio Overview -->
+        <div class="portfolio-section">
+          <ui-card variant="elevated">
+            <div class="portfolio-content">
+              <div class="portfolio-main">
+                <span class="portfolio-label">Total Balance</span>
+                <div class="portfolio-value">
+                  <span class="currency-symbol">$</span>
+                  <span class="value-amount">{{ totalBalance() | number: '1.2-2' }}</span>
+                </div>
+                <div class="portfolio-change positive">
+                  <svg class="change-icon" viewBox="0 0 20 20" fill="currentColor">
+                    <path
+                      fill-rule="evenodd"
+                      d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                      clip-rule="evenodd"
+                      transform="rotate(180 10 10)"
+                    />
+                  </svg>
+                  +$1,234.56 (2.34%) today
+                </div>
+              </div>
+
+              <div class="portfolio-breakdown">
+                <div class="breakdown-item">
+                  <span class="breakdown-label">Available</span>
+                  <span class="breakdown-value">{{ availableBalance() | number: '1.2-2' }}</span>
+                </div>
+                <div class="breakdown-item">
+                  <span class="breakdown-label">In Orders</span>
+                  <span class="breakdown-value">{{ lockedBalance() | number: '1.2-2' }}</span>
+                </div>
+                <div class="breakdown-item">
+                  <span class="breakdown-label">Assets</span>
+                  <span class="breakdown-value">{{ balances().length }}</span>
+                </div>
+              </div>
+            </div>
+          </ui-card>
         </div>
-      </ui-card>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+          <ui-card variant="interactive">
+            <div class="action-content">
+              <div class="action-icon">💳</div>
+              <div class="action-info">
+                <span class="action-title">Buy Crypto</span>
+                <span class="action-desc">Purchase with card or bank</span>
+              </div>
+            </div>
+          </ui-card>
+          <ui-card variant="interactive">
+            <div class="action-content">
+              <div class="action-icon">🔄</div>
+              <div class="action-info">
+                <span class="action-title">Convert</span>
+                <span class="action-desc">Swap between assets</span>
+              </div>
+            </div>
+          </ui-card>
+          <ui-card variant="interactive">
+            <div class="action-content">
+              <div class="action-icon">📊</div>
+              <div class="action-info">
+                <span class="action-title">Earn</span>
+                <span class="action-desc">Stake and earn rewards</span>
+              </div>
+            </div>
+          </ui-card>
+          <ui-card variant="interactive">
+            <div class="action-content">
+              <div class="action-icon">📜</div>
+              <div class="action-info">
+                <span class="action-title">History</span>
+                <span class="action-desc">View transactions</span>
+              </div>
+            </div>
+          </ui-card>
+        </div>
+
+        <!-- Balances Table -->
+        <ui-card variant="elevated" [noPadding]="true">
+          <div class="table-header">
+            <h2 class="table-title">Your Assets</h2>
+            <div class="table-filters">
+              <label class="hide-small-checkbox">
+                <input
+                  type="checkbox"
+                  [checked]="hideSmallBalances()"
+                  (change)="hideSmallBalances.set(!hideSmallBalances())"
+                />
+                <span>Hide small balances</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="table-container">
+            @if (filteredBalances().length === 0) {
+              <div class="empty-state">
+                <div class="empty-icon">💰</div>
+                <p class="empty-message">No assets yet</p>
+                <p class="empty-description">Start by depositing some crypto</p>
+              </div>
+            } @else {
+              <table class="balances-table">
+                <thead>
+                  <tr>
+                    <th>Asset</th>
+                    <th class="text-right">Available</th>
+                    <th class="text-right">In Orders</th>
+                    <th class="text-right">USD Value</th>
+                    <th class="text-right">24h Change</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (balance of filteredBalances(); track balance.asset) {
+                    <tr class="balance-row">
+                      <td>
+                        <div class="asset-info">
+                          <div class="asset-icon" [style.background]="getCoinColor(balance.asset)">
+                            {{ balance.asset.charAt(0) }}
+                          </div>
+                          <div class="asset-details">
+                            <span class="asset-name">{{ balance.name }}</span>
+                            <span class="asset-symbol">{{ balance.asset }}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td class="text-right mono">{{ balance.available | number: '1.4-4' }}</td>
+                      <td class="text-right mono text-muted">{{ balance.locked | number: '1.4-4' }}</td>
+                      <td class="text-right mono">{{ balance.usdValue | number: '1.2-2' }}</td>
+                      <td class="text-right">
+                        <span
+                          class="change"
+                          [class.positive]="balance.change24h >= 0"
+                          [class.negative]="balance.change24h < 0"
+                        >
+                          {{ balance.change24h >= 0 ? '+' : ''
+                          }}{{ balance.change24h | number: '1.2-2' }}%
+                        </span>
+                      </td>
+                      <td class="text-right">
+                        <div class="row-actions">
+                          <a [routerLink]="['/trade', balance.asset + 'USDT']" class="action-link"
+                            >Trade</a
+                          >
+                          <button class="action-link">Deposit</button>
+                          <button class="action-link">Withdraw</button>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            }
+          </div>
+        </ui-card>
+      }
     </div>
   `,
   styles: [
@@ -194,6 +213,69 @@ interface WalletBalance {
         padding: var(--spacing-6);
         max-width: 1440px;
         margin: 0 auto;
+      }
+
+      .loading-state,
+      .error-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 400px;
+        gap: var(--spacing-4);
+      }
+
+      .spinner {
+        width: 48px;
+        height: 48px;
+        border: 4px solid var(--color-border-primary);
+        border-top-color: var(--color-accent-500);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .error-icon {
+        font-size: 48px;
+      }
+
+      .error-message {
+        font-size: var(--font-size-base);
+        color: var(--color-text-secondary);
+        text-align: center;
+        max-width: 400px;
+      }
+
+      .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: var(--spacing-8) var(--spacing-4);
+        gap: var(--spacing-2);
+      }
+
+      .empty-icon {
+        font-size: 48px;
+        margin-bottom: var(--spacing-2);
+      }
+
+      .empty-message {
+        font-size: var(--font-size-lg);
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-text-primary);
+        margin: 0;
+      }
+
+      .empty-description {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-tertiary);
+        margin: 0;
       }
 
       .page-header {
@@ -495,14 +577,11 @@ interface WalletBalance {
 })
 export class WalletOverviewComponent implements OnInit {
   private readonly authService = inject(AuthService);
-  private readonly walletService = inject(WalletService);
+  readonly walletService = inject(WalletService);
 
   hideSmallBalances = signal(false);
-  isLoading = signal(false);
-
-  wallets = signal<Wallet[]>([]);
   balances = signal<WalletBalance[]>([]);
-  
+
   filteredBalances = computed(() => {
     const balances = this.balances();
     if (this.hideSmallBalances()) {
@@ -524,28 +603,36 @@ export class WalletOverviewComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    console.log('[WalletOverviewComponent] Initializing...');
     this.loadWallets();
   }
 
   private loadWallets(): void {
-    this.isLoading.set(true);
+    console.log('[WalletOverviewComponent] Loading wallets...');
+    
     this.walletService.getUserWallets().subscribe({
       next: (wallets) => {
-        this.wallets.set(wallets);
+        console.log('[WalletOverviewComponent] Received wallets:', wallets);
         this.convertWalletsToBalances(wallets);
-        this.isLoading.set(false);
       },
       error: (error) => {
-        console.error('Failed to load wallets:', error);
-        this.isLoading.set(false);
+        console.error('[WalletOverviewComponent] Error loading wallets:', error);
       },
     });
   }
 
+  retryLoad(): void {
+    console.log('[WalletOverviewComponent] Retrying load...');
+    this.walletService.clearCache();
+    this.loadWallets();
+  }
+
   private convertWalletsToBalances(wallets: Wallet[]): void {
+    console.log('[WalletOverviewComponent] Converting wallets to balances...');
+    
     const balances: WalletBalance[] = wallets.map((wallet) => {
-      const available = parseFloat(wallet.availableBalance);
-      const locked = parseFloat(wallet.lockedBalance);
+      const available = parseFloat(wallet.availableBalance) || 0;
+      const locked = parseFloat(wallet.lockedBalance) || 0;
       const price = this.getAssetPrice(wallet.assetId);
       const usdValue = (available + locked) * price;
 
@@ -559,6 +646,7 @@ export class WalletOverviewComponent implements OnInit {
       };
     });
 
+    console.log('[WalletOverviewComponent] Converted balances:', balances);
     this.balances.set(balances);
   }
 
