@@ -191,6 +191,30 @@ CREATE TABLE IF NOT EXISTS notifications.notifications (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Admin schema tables
+CREATE TABLE IF NOT EXISTS admin.admins (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    full_name VARCHAR(255) NOT NULL,
+    role VARCHAR(50) NOT NULL CHECK (role IN ('super_admin', 'finance_admin', 'support_admin', 'compliance_admin', 'marketing_admin', 'risk_manager', 'otc_desk_manager')),
+    is_active BOOLEAN DEFAULT TRUE,
+    last_login_at TIMESTAMP WITH TIME ZONE,
+    last_login_ip VARCHAR(50),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS admin.settings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    key VARCHAR(255) UNIQUE NOT NULL,
+    value TEXT NOT NULL,
+    description TEXT,
+    type VARCHAR(50) DEFAULT 'string' CHECK (type IN ('string', 'number', 'boolean', 'json')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_users_email ON users.users(email);
 CREATE INDEX IF NOT EXISTS idx_users_referral_code ON users.users(referral_code);
@@ -204,6 +228,8 @@ CREATE INDEX IF NOT EXISTS idx_orders_pair_status ON trading.orders(pair_id, sta
 CREATE INDEX IF NOT EXISTS idx_trades_pair_id ON trading.trades(pair_id);
 CREATE INDEX IF NOT EXISTS idx_trades_created_at ON trading.trades(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications.notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_admins_email ON admin.admins(email);
+CREATE INDEX IF NOT EXISTS idx_settings_key ON admin.settings(key);
 
 -- Insert initial assets
 INSERT INTO wallets.assets (symbol, name, network, decimals) VALUES
@@ -232,3 +258,19 @@ SELECT 'ETH/BTC', b.id, q.id, 0.001, 1000, 6, 5
 FROM wallets.assets b, wallets.assets q
 WHERE b.symbol = 'ETH' AND q.symbol = 'BTC'
 ON CONFLICT (symbol) DO NOTHING;
+
+-- Insert default super admin (password: Admin@123456)
+-- Password hash generated with bcrypt rounds=10
+INSERT INTO admin.admins (email, password_hash, full_name, role, is_active) VALUES
+    ('admin@exchange.com', '$2b$10$rW8eXhKqPXfKvQzQ5qQBbOXJ7Z7fHGqZvXKqZvXKqZvXKqZvXKqZve', 'Super Admin', 'super_admin', true)
+ON CONFLICT (email) DO NOTHING;
+
+-- Insert default settings
+INSERT INTO admin.settings (key, value, description, type) VALUES
+    ('maintenance_mode', 'false', 'Enable/disable maintenance mode', 'boolean'),
+    ('trading_enabled', 'true', 'Enable/disable trading', 'boolean'),
+    ('withdrawal_enabled', 'true', 'Enable/disable withdrawals', 'boolean'),
+    ('deposit_enabled', 'true', 'Enable/disable deposits', 'boolean'),
+    ('max_withdrawal_per_day', '100000', 'Maximum withdrawal amount per day in USD', 'number'),
+    ('min_withdrawal_amount', '10', 'Minimum withdrawal amount in USD', 'number')
+ON CONFLICT (key) DO NOTHING;

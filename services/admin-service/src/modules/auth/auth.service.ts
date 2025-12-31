@@ -11,6 +11,7 @@ import { Repository } from 'typeorm';
 import { Admin, AdminRole } from './entities/admin.entity';
 import { AdminLoginDto, AdminLoginResponseDto } from './dto/login.dto';
 import { CreateAdminDto } from './dto/create-admin.dto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AdminAuthService {
@@ -75,9 +76,11 @@ export class AdminAuthService {
       throw new ConflictException('Admin with this email already exists');
     }
 
+    const passwordHash = await bcrypt.hash(dto.password, 10);
+
     const admin = this.adminRepository.create({
       email: dto.email,
-      passwordHash: dto.password,
+      passwordHash,
       fullName: dto.fullName,
       role: dto.role,
       isActive: dto.isActive ?? true,
