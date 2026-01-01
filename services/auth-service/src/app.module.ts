@@ -51,7 +51,7 @@ import {RabbitMQModule,KafkaModule} from "@exchange/common"
 
     KafkaModule.forRoot({
       clientId: 'auth-service',
-      brokers: (process.env.KAFKA_BROKERS || 'localhost:9092').split(','),
+      brokers: (process.env.KAFKA_LISTENERS || 'localhost:29092').split(','),
     }),
 
     AuthModule,
