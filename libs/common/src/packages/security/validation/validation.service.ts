@@ -224,7 +224,7 @@ export class ValidationService {
    * Validate and sanitize file upload
    */
   validateFileUpload(
-    file: Express.Multer.File,
+    file: any, // Using any to avoid multer dependency in common lib
     options: {
       maxSize?: number;
       allowedMimeTypes?: string[];

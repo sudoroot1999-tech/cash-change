@@ -311,7 +311,7 @@ export class ErrorFactory {
       case 'CONFLICT':
         return new ConflictError(message, details);
       case 'VALIDATION_ERROR':
-        return new ValidationError(message || 'Validation failed', details);
+        return new ValidationError(message || 'Validation failed', details as Record<string, string[]>);
       case 'INSUFFICIENT_BALANCE':
         return new InsufficientBalanceError(
           details?.available as number,

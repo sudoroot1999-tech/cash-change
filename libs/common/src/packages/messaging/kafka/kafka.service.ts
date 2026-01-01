@@ -44,7 +44,7 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
         clientId: this.config.clientId,
         brokers: this.config.brokers,
         ssl: this.config.ssl,
-        sasl: this.config.sasl,
+        sasl: this.config.sasl as any,
         connectionTimeout: this.config.connectionTimeout || 30000,
         requestTimeout: this.config.requestTimeout || 30000,
         retry: {
@@ -130,7 +130,7 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
           ],
           acks: options?.acks,
           timeout: options?.timeout,
-          compression: options?.compression,
+          compression: options?.compression as any,
         };
 
         await this.producer.send(record);
@@ -183,7 +183,7 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
         messages: kafkaMessages,
         acks: options?.acks,
         timeout: options?.timeout,
-        compression: options?.compression,
+        compression: options?.compression as any,
       });
 
       this.logger.debug(`Produced ${messages.length} messages to ${topic}`);

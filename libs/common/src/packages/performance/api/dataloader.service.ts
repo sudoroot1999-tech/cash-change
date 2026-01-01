@@ -86,7 +86,7 @@ export class DataLoaderService {
   createTradeCountLoader(
     tradeRepository: any,
   ): DataLoader<number, number> {
-    return this.createLoader(async (userIds: readonly number[]) => {
+    return this.createLoader<number, number>(async (userIds: readonly number[]): Promise<number[]> => {
       const counts = await tradeRepository
         .createQueryBuilder('trade')
         .select('trade.userId', 'userId')
@@ -95,7 +95,7 @@ export class DataLoaderService {
         .groupBy('trade.userId')
         .getRawMany();
       
-      const countMap = new Map(counts.map(c => [c.userId, parseInt(c.count)]));
+      const countMap = new Map<number, number>(counts.map((c: any) => [c.userId, parseInt(c.count, 10)]));
       return userIds.map(id => countMap.get(id) || 0);
     });
   }
