@@ -7,9 +7,12 @@ import {
   computed,
   inject,
   effect,
+  untracked,
+  DestroyRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ButtonComponent } from '@/components/button/button.component';
 import { InputComponent } from '@/components/input/input.component';
 import { WalletService } from '../../../../core/services/wallet.service';
@@ -354,6 +357,7 @@ export class TradeFormComponent {
   orderSubmit = output<OrderData>();
 
   private readonly walletService = inject(WalletService);
+  private readonly destroyRef = inject(DestroyRef);
 
   orderType = signal<'limit' | 'market'>('limit');
   side = signal<'buy' | 'sell'>('buy');
@@ -366,11 +370,22 @@ export class TradeFormComponent {
   quoteBalance = signal<number>(0);
   baseBalance = signal<number>(0);
 
+  // Track the last loaded pair to prevent duplicate loads
+  private lastLoadedPair: string | null = null;
+
   constructor() {
-    // Reload balances when pair changes
+    // Reload balances when pair changes - use untracked to prevent loop
     effect(() => {
-      this.pair();
-      this.loadBalances();
+      const currentPair = this.pair();
+      const pairKey = `${currentPair.baseAsset}-${currentPair.quoteAsset}`;
+      
+      // Only load if pair actually changed
+      untracked(() => {
+        if (this.lastLoadedPair !== pairKey) {
+          this.lastLoadedPair = pairKey;
+          this.loadBalances();
+        }
+      });
     });
   }
 
@@ -379,8 +394,10 @@ export class TradeFormComponent {
     const baseAsset = pair.baseAsset;
     const quoteAsset = pair.quoteAsset;
 
-    // Load base asset balance
-    this.walletService.getBalance(baseAsset).subscribe({
+    // Load base asset balance with proper cleanup
+    this.walletService.getBalance(baseAsset).pipe(
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe({
       next: (balance) => {
         this.baseBalance.set(parseFloat(balance.available));
       },
@@ -389,8 +406,10 @@ export class TradeFormComponent {
       },
     });
 
-    // Load quote asset balance
-    this.walletService.getBalance(quoteAsset).subscribe({
+    // Load quote asset balance with proper cleanup
+    this.walletService.getBalance(quoteAsset).pipe(
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe({
       next: (balance) => {
         this.quoteBalance.set(parseFloat(balance.available));
       },

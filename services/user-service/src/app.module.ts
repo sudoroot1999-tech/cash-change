@@ -5,7 +5,8 @@ import { UsersModule } from './modules/users/users.module';
 import { ProfilesModule } from './modules/profiles/profiles.module';
 import { HealthModule } from './modules/health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
-import { StorageModule } from '@exchange/common';
+import { KafkaModule, RabbitMQModule, StorageModule } from '@exchange/common';
+import { UserEventsService } from './user-events.service';
 
 @Module({
   imports: [
@@ -46,11 +47,24 @@ import { StorageModule } from '@exchange/common';
       }),
     }),
 
+    RabbitMQModule.forRoot({
+      url: process.env.RABBITMQ_URL || 'amqp://guest:guest@localhost:5672/',
+      connectionName: 'user-service',
+      prefetch: 10,
+    }),
+    
+    KafkaModule.forRoot({
+      clientId: 'user-service',
+      brokers: (process.env.KAFKA_BROKERS || 'localhost:29092').split(','),
+    }),
+
     // Feature Modules
     UsersModule,
     ProfilesModule,
     HealthModule,
     AuthModule,
   ],
-})
+  providers:[UserEventsService]
+}
+)
 export class AppModule {}

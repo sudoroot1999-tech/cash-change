@@ -120,16 +120,19 @@ export class WalletService {
         const errorMessage = this.getErrorMessage(error);
         console.error('[WalletService] Error loading wallets:', errorMessage, error);
         this._error.set(errorMessage);
-        this._wallets.set([]);
-        return throwError(() => new Error(errorMessage));
+        // Don't clear wallets on error - keep stale data
+        return of(this._wallets().length > 0 ? this._wallets() : []);
       }),
       finalize(() => {
         console.log('[WalletService] Request completed');
         this._isLoading.set(false);
-        // Clear in-flight request reference
-        this.walletsRequest$ = null;
+        // Clear in-flight request reference after a small delay
+        // This prevents race conditions with multiple subscribers
+        setTimeout(() => {
+          this.walletsRequest$ = null;
+        }, 100);
       }),
-      shareReplay({ bufferSize: 1, refCount: true })
+      shareReplay({ bufferSize: 1, refCount: false }) // refCount: false keeps the replay active
     );
 
     return this.walletsRequest$;

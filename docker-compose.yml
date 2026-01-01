@@ -418,10 +418,10 @@ services:
       - trading-service
       - market-data-service
       - notification-service
-      - compliance-service
-      - security-service
-      - proof-of-reserves-service
-      - admin-service
+      # - compliance-service
+      # - security-service
+      # - proof-of-reserves-service
+      # - admin-service
     networks:
       - exchange-network
 
