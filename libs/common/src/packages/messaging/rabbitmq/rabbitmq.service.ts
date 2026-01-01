@@ -88,22 +88,15 @@ export class RabbitMQService implements OnModuleDestroy {
         this.logger.debug(`Exchange asserted: ${exchange}`);
       }
 
-      // Setup all queues with default options
-      const queues = Object.values(QUEUES);
+      // Setup all queues with default options (excluding DLX queue)
+      const queues = Object.values(QUEUES).filter(q => q !== QUEUES.DLX_QUEUE);
       for (const queue of queues) {
-        await channel.assertQueue(queue, {
-          durable: true,
-          arguments: {
-            'x-dead-letter-exchange': EXCHANGES.DLX,
-            'x-message-ttl': 86400000, // 24 hours
-            'x-max-priority': 10,
-          },
-        });
+        await channel.assertQueue(queue, this.getQueueOptions(queue));
         this.logger.debug(`Queue asserted: ${queue}`);
       }
 
-      // Setup Dead Letter Queue
-      await channel.assertQueue(QUEUES.DLX_QUEUE, { durable: true });
+      // Setup Dead Letter Queue (separate config - no dead letter exchange for DLX itself)
+      await channel.assertQueue(QUEUES.DLX_QUEUE, this.getQueueOptions(QUEUES.DLX_QUEUE));
       await channel.bindQueue(QUEUES.DLX_QUEUE, EXCHANGES.DLX, '#');
       this.logger.log('✅ RabbitMQ infrastructure setup completed');
     } catch (error) {
@@ -177,6 +170,28 @@ export class RabbitMQService implements OnModuleDestroy {
   }
 
   /**
+   * Get queue options based on queue name
+   */
+  private getQueueOptions(queue: string): object {
+    if (queue === QUEUES.DLX_QUEUE) {
+      return {
+        durable: true,
+        arguments: {
+          'x-message-ttl': 86400000, // 24 hours
+        },
+      };
+    }
+    return {
+      durable: true,
+      arguments: {
+        'x-dead-letter-exchange': EXCHANGES.DLX,
+        'x-message-ttl': 86400000, // 24 hours
+        'x-max-priority': 10,
+      },
+    };
+  }
+
+  /**
    * Subscribe to a queue
    * @param queue Queue name
    * @param handler Message handler
@@ -189,8 +204,8 @@ export class RabbitMQService implements OnModuleDestroy {
   ): Promise<void> {
     try {
       await this.channelWrapper.addSetup(async (channel: ConfirmChannel) => {
-        // Ensure queue exists
-        await channel.assertQueue(queue, { durable: true });
+        // Ensure queue exists with correct options
+        await channel.assertQueue(queue, this.getQueueOptions(queue));
 
         await channel.consume(
           queue,
@@ -282,7 +297,7 @@ export class RabbitMQService implements OnModuleDestroy {
   async bindQueue(queue: string, exchange: string, routingKey: string): Promise<void> {
     try {
       await this.channelWrapper.addSetup(async (channel: ConfirmChannel) => {
-        await channel.assertQueue(queue, { durable: true });
+        await channel.assertQueue(queue, this.getQueueOptions(queue));
         await channel.assertExchange(exchange, 'topic', { durable: true });
         await channel.bindQueue(queue, exchange, routingKey);
       });

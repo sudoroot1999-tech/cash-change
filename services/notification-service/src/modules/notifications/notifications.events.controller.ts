@@ -1,6 +1,6 @@
 import { Controller, Logger } from '@nestjs/common';
-import { EventPattern, Payload } from '@nestjs/microservices';
-import { RABBITMQ } from '@exchange/common';
+import { Ctx, EventPattern, Payload, RmqContext } from '@nestjs/microservices';
+import { QUEUES } from '@exchange/common';
 import { NotificationsService } from './notifications.service';
 import { NotificationChannel, NotificationPriority } from './entities/notification.entity';
 
@@ -10,13 +10,15 @@ export class NotificationsEventsController {
 
   constructor(private readonly notificationsService: NotificationsService) {}
 
-  @EventPattern(RABBITMQ.QUEUES.USER_CREATED)
-  async handleUserCreated(@Payload() data: any): Promise<void> {
+  @EventPattern(QUEUES.USER_REGISTERED)
+  async handleUserCreated(
+    @Payload() data: any,
+    @Ctx() context: RmqContext,
+  ): Promise<void> {
     this.logger.log(`Received user created event for: ${data.email}`);
     
-    // Acknowledge message manually if needed, but usually auto-ack is default in NestJS RMQ unless noAck: false
-    // const channel = context.getChannelRef();
-    // const originalMsg = context.getMessage();
+    const channel = context.getChannelRef();
+    const originalMsg = context.getMessage();
     
     try {
       await this.notificationsService.send({
@@ -28,14 +30,14 @@ export class NotificationsEventsController {
         priority: NotificationPriority.HIGH,
       });
       
-      // channel.ack(originalMsg);
+      channel.ack(originalMsg);
     } catch (error) {
       this.logger.error('Error handling user created event', error);
-      // channel.nack(originalMsg);
+      channel.nack(originalMsg);
     }
   }
 
-  @EventPattern(RABBITMQ.QUEUES.KYC_UPDATED)
+  @EventPattern(QUEUES.KYC_APPROVE)
   async handleKycUpdated(@Payload() data: any): Promise<void> {
       this.logger.log(`Received KYC updated event for user: ${data.userId}`);
       

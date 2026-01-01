@@ -20,6 +20,12 @@ import {
   TwoFactorSetupDto,
 } from './dto/auth.dto';
 import { RegisterDto } from './dto/register.dto';
+import {
+  SendVerificationCodeDto,
+  VerifyCodeDto,
+  LoginWithEmailCodeDto,
+  VerificationCodeResponseDto,
+} from './dto/verification.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -123,5 +129,63 @@ export class AuthController {
       throw new Error('No token provided');
     }
     return this.authService.validateToken(token);
+  }
+
+  @Public()
+  @Post('send-login-code')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Send login verification code to email' })
+  @ApiResponse({ status: 200, type: VerificationCodeResponseDto })
+  async sendLoginCode(@Body() loginDto: LoginDto): Promise<VerificationCodeResponseDto> {
+    const result = await this.authService.sendLoginCode(loginDto.email, loginDto.password);
+    return {
+      success: true,
+      message: 'Verification code sent to your email',
+      expiresInMinutes: result.expiresInMinutes,
+    };
+  }
+
+  @Public()
+  @Post('login-with-code')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Login with email verification code' })
+  @ApiResponse({ status: 200, type: TokenResponseDto })
+  async loginWithCode(@Body() loginDto: LoginWithEmailCodeDto, @Req() req: Request): Promise<TokenResponseDto> {
+    const deviceInfo = {
+      userAgent: req.headers['user-agent'],
+      platform: req.headers['sec-ch-ua-platform'],
+    };
+    const ipAddress = req.ip || req.socket.remoteAddress;
+
+    const result = await this.authService.loginWithEmailCode(
+      loginDto.email,
+      loginDto.password,
+      loginDto.emailCode,
+    );
+
+    return result;
+  }
+
+  @Public()
+  @Post('complete-registration')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Complete registration with email verification code' })
+  @ApiResponse({ status: 200, type: TokenResponseDto })
+  async completeRegistration(@Body() verifyDto: VerifyCodeDto): Promise<TokenResponseDto> {
+    return this.authService.completeRegistration(verifyDto.email, verifyDto.code);
+  }
+
+  @Public()
+  @Post('resend-registration-code')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Resend registration verification code' })
+  @ApiResponse({ status: 200, type: VerificationCodeResponseDto })
+  async resendRegistrationCode(@Body() dto: { email: string }): Promise<VerificationCodeResponseDto> {
+    const result = await this.authService.resendRegistrationCode(dto.email);
+    return {
+      success: true,
+      message: 'Verification code sent to your email',
+      expiresInMinutes: result.expiresInMinutes,
+    };
   }
 }
