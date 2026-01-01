@@ -15,6 +15,7 @@ export const ROUTING_KEYS = {
   EMAIL_VERIFIED: 'auth.email.verified',
   ACCOUNT_LOCKED: 'auth.account.locked',
   ACCOUNT_UNLOCKED: 'auth.account.unlocked',
+  EMAIL_VERIFICATION_REQUESTED: 'auth.email.verification.requested',
   
   // User Events
   PROFILE_UPDATED: 'user.profile.updated',

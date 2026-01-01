@@ -5,7 +5,7 @@ import { Notification } from './entities/notification.entity';
 import { NotificationsService } from './notifications.service';
 import { NotificationsController } from './notifications.controller';
 import { NotificationsProcessor } from './notifications.processor';
-import { NotificationsMessageController } from './notifications.message-controller';
+
 import { NotificationsEventsController } from './notifications.events.controller';
 
 @Module({
@@ -13,7 +13,7 @@ import { NotificationsEventsController } from './notifications.events.controller
     TypeOrmModule.forFeature([Notification]),
     BullModule.registerQueue({ name: 'notifications' }),
   ],
-  controllers: [NotificationsController, NotificationsEventsController, NotificationsMessageController],
+  controllers: [NotificationsController, NotificationsEventsController],
   providers: [NotificationsService, NotificationsProcessor],
   exports: [NotificationsService],
 })

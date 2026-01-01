@@ -8,6 +8,8 @@ export interface UserRegisteredEvent extends BaseEvent {
   email: string;
   name?: string;
   referralCode?: string;
+  username:string,
+  registeredAt?:Date
 }
 
 /**
@@ -15,11 +17,15 @@ export interface UserRegisteredEvent extends BaseEvent {
  */
 export interface UserLoginEvent extends BaseEvent {
   userId: string;
-  ip: string;
+  ip?: string;
   userAgent: string;
-  success: boolean;
+  success?: boolean;
   failureReason?: string;
   country?: string;
+  email:string;
+  ipAddress?:string,
+  deviceId?:string,
+  loginAt?: Date,
 }
 
 /**
@@ -28,6 +34,9 @@ export interface UserLoginEvent extends BaseEvent {
 export interface UserLogoutEvent extends BaseEvent {
   userId: string;
   sessionId?: string;
+  email:string;
+  reason?:string;
+  logoutAt?:Date;
 }
 
 /**
@@ -36,8 +45,10 @@ export interface UserLogoutEvent extends BaseEvent {
 export interface PasswordResetRequestedEvent extends BaseEvent {
   userId: string;
   email: string;
-  resetToken: string;
-  expiresAt: Date;
+  resetToken?: string;
+  expiresAt?: Date;
+  ipAddress?:string;
+  requestedAt?:Date
 }
 
 /**
@@ -46,6 +57,8 @@ export interface PasswordResetRequestedEvent extends BaseEvent {
 export interface PasswordChangedEvent extends BaseEvent {
   userId: string;
   changedAt: Date;
+  email:string;
+  changedBy?:'user' | 'admin' | 'reset'
 }
 
 /**
@@ -54,6 +67,8 @@ export interface PasswordChangedEvent extends BaseEvent {
 export interface TwoFactorEnabledEvent extends BaseEvent {
   userId: string;
   method: 'totp' | 'sms' | 'email';
+  email:string;
+  enabledAt?:Date
 }
 
 /**
@@ -61,6 +76,8 @@ export interface TwoFactorEnabledEvent extends BaseEvent {
  */
 export interface TwoFactorDisabledEvent extends BaseEvent {
   userId: string;
+  email:string;
+  disabledAt?:Date
 }
 
 /**
@@ -86,7 +103,8 @@ export interface AccountUnlockedEvent extends BaseEvent {
 export interface EmailVerificationRequestedEvent extends BaseEvent {
   userId: string;
   email: string;
-  verificationToken: string;
+  verificationToken?: string;
+  requestedAt?:Date
 }
 
 /**

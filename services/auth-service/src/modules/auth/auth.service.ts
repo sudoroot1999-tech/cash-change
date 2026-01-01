@@ -13,8 +13,7 @@ import { Repository } from 'typeorm';
 import { authenticator } from '@otplib/preset-default';
 import * as qrcode from 'qrcode';
 import { Session } from '../sessions/entities/session.entity';
-import { EmailVerificationService } from './services/email-verification.service';
-import { VerificationCodeType } from './entities/verification-code.entity';
+import { AuthEventsService } from './services/auth-events.service';
 
 // User entity reference (shared from user-service schema)
 interface User {
@@ -50,7 +49,7 @@ export class AuthService implements OnModuleInit {
     @InjectRepository(Session)
     private readonly sessionRepository: Repository<Session>,
     @Inject('USER_PACKAGE') private readonly client: ClientGrpc,
-    private readonly emailVerificationService: EmailVerificationService,
+     private readonly authEvents: AuthEventsService,
   ) {}
 
   private userGrpcService: UserGrpcService;
@@ -76,20 +75,56 @@ export class AuthService implements OnModuleInit {
 
       const user = this.mapGrpcUserToInternal(grpcUser);
 
-      // Send email verification code for registration
-      await this.emailVerificationService.sendVerificationCode(
+      await this.authEvents.publishUserRegistered(
         user.id,
         user.email,
-        VerificationCodeType.REGISTRATION_VERIFICATION,
+        user.username,
       );
 
-      // Return user info without tokens - require email verification first
-      return {
-        message: 'Registration successful. Please check your email for verification code.',
-        email: user.email,
-        requiresEmailVerification: true,
-      };
+      // Auto-login: Generate tokens
+      return this.generateTokens(user);
     } catch (error: any) {
+      if (error?.details?.includes('already registered')) {
+        // Check specifically for conflict
+        throw new BadRequestException('Email already registered');
+      }
+      throw error;
+    }
+  }
+
+    /**
+   * Login user
+   */
+  async Login(dto: any): Promise<any> {
+    try {
+      const user = await this.validateUser(dto.email, dto.password);
+      if (!user) {
+        throw new Error('Invalid credentials');
+      }
+
+      // Check 2FA if enabled
+      if (user.twoFactorEnabled) {
+        if (!dto.twoFactorCode) {
+          throw new Error('2FA code required');
+        }
+        const isValid = this.verify2FACode(
+          user.twoFactorSecret!,
+          dto.twoFactorCode,
+        );
+        if (!isValid) {
+          throw new Error('Invalid 2FA code');
+        }
+      }
+      
+      await this.authEvents.publishUserLogin(
+        user.id,
+        user.email
+      );
+      
+      return this.generateTokens(user);
+    
+    } 
+    catch (error: any) {
       if (error?.details?.includes('already registered')) {
         // Check specifically for conflict
         throw new BadRequestException('Email already registered');
@@ -135,6 +170,7 @@ export class AuthService implements OnModuleInit {
 
     // Store session
     await this.createSession(user.id, refreshToken, deviceInfo, ipAddress);
+    await this.authEvents.publishUserLogin(user.id,user.email)
 
     return {
       accessToken,
@@ -224,96 +260,6 @@ export class AuthService implements OnModuleInit {
     }
   }
 
-  /**
-   * Login with email verification code
-   */
-  async loginWithEmailCode(email: string, password: string, emailCode: string): Promise<any> {
-    // First validate user credentials
-    const user = await this.validateUser(email, password);
-    if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    // Verify email code
-    const verification = await this.emailVerificationService.verifyCode(
-      email,
-      emailCode,
-      VerificationCodeType.LOGIN_VERIFICATION,
-    );
-
-    if (!verification.valid) {
-      throw new UnauthorizedException('Invalid or expired verification code');
-    }
-
-    // Generate tokens
-    return this.generateTokens(user);
-  }
-
-  /**
-   * Complete registration with email verification
-   */
-  async completeRegistration(email: string, code: string): Promise<any> {
-    // Verify email code
-    const verification = await this.emailVerificationService.verifyCode(
-      email,
-      code,
-      VerificationCodeType.REGISTRATION_VERIFICATION,
-    );
-
-    if (!verification.valid) {
-      throw new UnauthorizedException('Invalid or expired verification code');
-    }
-
-    // Get user and generate tokens
-    const user = await this.findUserByEmail(email);
-    if (!user) {
-      throw new BadRequestException('User not found');
-    }
-
-    // Generate tokens for successful registration completion
-    return this.generateTokens(user);
-  }
-
-  /**
-   * Send login verification code
-   */
-  async sendLoginCode(email: string, password: string): Promise<{ expiresInMinutes: number }> {
-    // First validate credentials
-    const user = await this.validateUser(email, password);
-    if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    // Send verification code
-    return this.emailVerificationService.sendVerificationCode(
-      user.id,
-      user.email,
-      VerificationCodeType.LOGIN_VERIFICATION,
-    );
-  }
-
-  /**
-   * Resend registration verification code
-   */
-  async resendRegistrationCode(email: string): Promise<{ expiresInMinutes: number }> {
-    // Find user by email
-    const user = await this.findUserByEmail(email);
-    if (!user) {
-      throw new BadRequestException('User not found');
-    }
-
-    // Only allow resend for pending users
-    if (user.status !== 'pending') {
-      throw new BadRequestException('User is already verified');
-    }
-
-    return this.emailVerificationService.sendVerificationCode(
-      user.id,
-      user.email,
-      VerificationCodeType.REGISTRATION_VERIFICATION,
-    );
-  }
-
   // Helper methods
   private generateRefreshToken(): string {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -361,14 +307,14 @@ export class AuthService implements OnModuleInit {
   }
 
   // Placeholder methods - in production these would call user-service
-  private async findUserByEmail(email: string): Promise<User | null> {
-    try {
-      const response = await this.userGrpcService.findByEmail({ email }).toPromise();
-      return this.mapGrpcUserToInternal(response);
-    } catch (error) {
-      return null;
-    }
-  }
+  // private async findUserByEmail(email: string): Promise<User | null> {
+  //   try {
+  //     const response = await this.userGrpcService.findByEmail({ email }).toPromise();
+  //     return this.mapGrpcUserToInternal(response);
+  //   } catch (error) {
+  //     return null;
+  //   }
+  // }
 
   private async findUserById(id: string): Promise<User | null> {
     try {

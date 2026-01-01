@@ -26,15 +26,4 @@ export class NotificationsProcessor {
       }
     }
   }
-
-  @Process('send_email_direct')
-  async handleSendEmailDirect(job: Job<{
-    email: string;
-    subject: string;
-    content: string;
-    metadata: Record<string, unknown>;
-  }>) {
-    this.logger.debug(`Processing direct email to: ${job.data.email}`);
-    await this.notificationsService.processDirectEmail(job.data);
-  }
 }

@@ -99,31 +99,6 @@ export class NotificationsService {
   }
 
   /**
-   * Send email directly without user ID (for verification codes)
-   */
-  async sendEmailDirect(dto: {
-    email: string;
-    subject: string;
-    content: string;
-    priority: NotificationPriority;
-    metadata: Record<string, unknown>;
-  }): Promise<void> {
-    // Add directly to queue for immediate processing
-    await this.notificationQueue.add(
-      'send_email_direct',
-      {
-        email: dto.email,
-        subject: dto.subject,
-        content: dto.content,
-        metadata: dto.metadata,
-      },
-      { priority: dto.priority },
-    );
-
-    this.logger.log(`Direct email queued for: ${dto.email}`);
-  }
-
-  /**
    * Get user notifications
    */
   async getUserNotifications(
@@ -274,31 +249,5 @@ export class NotificationsService {
   private async sendTelegram(notification: Notification): Promise<void> {
     // Would use Telegram Bot API here
     this.logger.debug(`Sending Telegram to user ${notification.userId}`);
-  }
-
-  /**
-   * Process direct email (for verification codes)
-   */
-  async processDirectEmail(data: {
-    email: string;
-    subject: string;
-    content: string;
-    metadata: Record<string, unknown>;
-  }): Promise<void> {
-    try {
-      // Here you would integrate with your email service (nodemailer, SendGrid, etc.)
-      // For now, we'll just log it
-      this.logger.log(`Sending verification email to: ${data.email}`);
-      this.logger.debug(`Subject: ${data.subject}`);
-      this.logger.debug(`Content: ${data.content}`);
-      
-      // Simulate email sending
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      this.logger.log(`Verification email sent successfully to: ${data.email}`);
-    } catch (error) {
-      this.logger.error(`Failed to send verification email to ${data.email}:`, error);
-      throw error;
-    }
   }
 }
