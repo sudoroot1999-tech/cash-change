@@ -42,24 +42,6 @@ export class AuthController {
   @ApiResponse({ status: 200, type: TokenResponseDto })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(@Body() loginDto: LoginDto, @Req() req: Request): Promise<TokenResponseDto> {
-    const user = await this.authService.validateUser(loginDto.email, loginDto.password);
-    if (!user) {
-      throw new Error('Invalid credentials');
-    }
-
-    // Check 2FA if enabled
-    if (user.twoFactorEnabled) {
-      if (!loginDto.twoFactorCode) {
-        throw new Error('2FA code required');
-      }
-      const isValid = this.authService.verify2FACode(
-        user.twoFactorSecret!,
-        loginDto.twoFactorCode,
-      );
-      if (!isValid) {
-        throw new Error('Invalid 2FA code');
-      }
-    }
 
     const deviceInfo = {
       userAgent: req.headers['user-agent'],
@@ -67,7 +49,7 @@ export class AuthController {
     };
     const ipAddress = req.ip || req.socket.remoteAddress;
 
-    return this.authService.generateTokens(user, deviceInfo, ipAddress);
+    return this.authService.login(loginDto, ipAddress,deviceInfo);
   }
 
   @Post('refresh')

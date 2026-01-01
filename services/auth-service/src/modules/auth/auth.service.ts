@@ -95,7 +95,7 @@ export class AuthService implements OnModuleInit {
     /**
    * Login user
    */
-  async Login(dto: any): Promise<any> {
+  async login(dto: any,ipAddress:string,deviceInfo:any): Promise<any> {
     try {
       const user = await this.validateUser(dto.email, dto.password);
       if (!user) {
@@ -118,7 +118,8 @@ export class AuthService implements OnModuleInit {
       
       await this.authEvents.publishUserLogin(
         user.id,
-        user.email
+        user.email,
+        ipAddress
       );
       
       return this.generateTokens(user);
