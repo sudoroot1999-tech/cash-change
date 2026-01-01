@@ -1,9 +1,7 @@
+import { RewardType } from 'libs/common/src/types';
 import { BaseEvent } from './base.event';
 
-/**
- * Reward type
- */
-export type RewardType = 'xp' | 'coins' | 'token' | 'badge' | 'discount' | 'cashback';
+
 
 /**
  * XP earned event

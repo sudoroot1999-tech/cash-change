@@ -5,6 +5,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthModule } from './modules/auth/auth.module';
 import { SessionsModule } from './modules/sessions/sessions.module';
+import {RabbitMQModule,KafkaModule} from "@exchange/common"
 
 @Module({
   imports: [
@@ -40,6 +41,17 @@ import { SessionsModule } from './modules/sessions/sessions.module';
           expiresIn: configService.get('JWT_EXPIRES_IN', '15m'),
         },
       }),
+    }),
+
+    RabbitMQModule.forRoot({
+      url: process.env.RABBITMQ_URL || 'amqp://guest:guest@localhost:5672/',
+      connectionName: 'auth-service',
+      prefetch: 10,
+    }),
+
+    KafkaModule.forRoot({
+      clientId: 'auth-service',
+      brokers: (process.env.KAFKA_BROKERS || 'localhost:9092').split(','),
     }),
 
     AuthModule,

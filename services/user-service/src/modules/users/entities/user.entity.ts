@@ -13,6 +13,7 @@ export enum UserStatus {
   ACTIVE = 'active',
   SUSPENDED = 'suspended',
   BANNED = 'banned',
+  DELETED = 'deleted'
 }
 
 export enum UserTier {
@@ -68,7 +69,7 @@ export class User {
   @Column({ name: 'referred_by', type: 'uuid', nullable: true })
   referredBy!: string | null;
 
-  @Column({ name: 'two_factor_enabled', type: 'boolean', default: false })
+  @Column({ name: 'two_factor_enabled', type: 'boolean', default: true })
   twoFactorEnabled!: boolean;
 
   @Column({ name: 'two_factor_secret', type: 'varchar', length: 255, nullable: true })

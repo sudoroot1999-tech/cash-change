@@ -1,17 +1,4 @@
-/**
- * Enhanced logging utility for messaging package
- */
-
-export enum LogLevel {
-  DEBUG = 0,
-  INFO = 1,
-  WARN = 2,
-  ERROR = 3,
-}
-
-export interface LogContext {
-  [key: string]: any;
-}
+import { LogContext, LogLevel } from "../../shared";
 
 export interface LoggerOptions {
   /**

@@ -1,9 +1,6 @@
+import { NotificationPriority } from 'libs/common/src/types';
 import { BaseEvent } from './base.event';
 
-/**
- * Notification priority
- */
-export type NotificationPriority = 'low' | 'medium' | 'high' | 'urgent';
 
 /**
  * Send email event

@@ -1,19 +1,6 @@
+import { DocumentType, KycLevel } from 'libs/common/src/types';
 import { BaseEvent } from './base.event';
 
-/**
- * KYC level type
- */
-export type KycLevel = 0 | 1 | 2 | 3;
-
-/**
- * KYC status
- */
-export type KycStatus = 'pending' | 'under_review' | 'approved' | 'rejected' | 'expired';
-
-/**
- * Document type
- */
-export type DocumentType = 'passport' | 'id_card' | 'driver_license' | 'proof_of_address' | 'selfie';
 
 /**
  * KYC submitted event

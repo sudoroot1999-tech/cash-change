@@ -8,18 +8,28 @@ import {
   TRANSACTION_TYPES,
   TRANSACTION_STATUS,
   NOTIFICATION_CHANNELS,
+  NOTIFICATION_PRIORITY,
+  REWARD_TYPES,
+  KYC_LEVELS,
+  KYC_STATUS,
+  DOCUMENT_TYPE
 } from '../constants';
 
 // Extract types from constants
 export type UserStatus = (typeof USER_STATUS)[keyof typeof USER_STATUS];
 export type UserTier = (typeof USER_TIERS)[keyof typeof USER_TIERS];
+export type KycStatus = (typeof KYC_STATUS)[keyof typeof KYC_STATUS];
+export type KycLevel = (typeof KYC_LEVELS)[keyof typeof KYC_LEVELS];
+export type DocumentType = (typeof DOCUMENT_TYPE)[keyof typeof DOCUMENT_TYPE];
 export type OrderType = (typeof ORDER_TYPES)[keyof typeof ORDER_TYPES];
+export type RewardType = (typeof REWARD_TYPES)[keyof typeof REWARD_TYPES];
 export type OrderSide = (typeof ORDER_SIDES)[keyof typeof ORDER_SIDES];
 export type OrderStatus = (typeof ORDER_STATUS)[keyof typeof ORDER_STATUS];
 export type TimeInForce = (typeof TIME_IN_FORCE)[keyof typeof TIME_IN_FORCE];
 export type TransactionType = (typeof TRANSACTION_TYPES)[keyof typeof TRANSACTION_TYPES];
 export type TransactionStatus = (typeof TRANSACTION_STATUS)[keyof typeof TRANSACTION_STATUS];
 export type NotificationChannel = (typeof NOTIFICATION_CHANNELS)[keyof typeof NOTIFICATION_CHANNELS];
+export type NotificationPriority = (typeof NOTIFICATION_PRIORITY)[keyof typeof NOTIFICATION_PRIORITY];
 
 // User Types
 export interface User {
@@ -220,12 +230,25 @@ export interface ApiResponse<T> {
 }
 
 export interface PaginatedResponse<T> {
-  items: T[];
+  data: T[];
   meta: {
-    page: number;
+    page?: number;
     limit: number;
     total: number;
-    totalPages: number;
+    totalPages?: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+}
+
+export interface CursorPaginatedResponse<T> {
+  data: T[];
+  meta: {
+    limit: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+    nextCursor?: string;
+    prevCursor?: string;
   };
 }
 
@@ -240,45 +263,4 @@ export interface WsMessage<T = unknown> {
 export interface WsSubscription {
   channel: string;
   params?: Record<string, string>;
-}
-
-// Event Types (for message queue)
-export interface OrderCreatedEvent {
-  orderId: string;
-  userId: string;
-  pairId: string;
-  side: OrderSide;
-  type: OrderType;
-  price?: string;
-  quantity: string;
-  timestamp: number;
-}
-
-export interface TradeExecutedEvent {
-  tradeId: string;
-  pairId: string;
-  price: string;
-  quantity: string;
-  buyerId: string;
-  sellerId: string;
-  isBuyerMaker: boolean;
-  timestamp: number;
-}
-
-export interface DepositDetectedEvent {
-  userId: string;
-  assetId: string;
-  amount: string;
-  txHash: string;
-  confirmations: number;
-  timestamp: number;
-}
-
-export interface NotificationEvent {
-  userId: string;
-  channel: NotificationChannel;
-  templateId?: string;
-  subject?: string;
-  content: Record<string, unknown>;
-  priority: number;
 }

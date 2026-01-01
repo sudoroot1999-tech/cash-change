@@ -4,6 +4,7 @@ export const USER_STATUS = {
   ACTIVE: 'active',
   SUSPENDED: 'suspended',
   BANNED: 'banned',
+
 } as const;
 
 // User Tiers
@@ -22,6 +23,24 @@ export const KYC_LEVELS = {
   BASIC: 1,
   INTERMEDIATE: 2,
   ADVANCED: 3,
+} as const;
+
+// KYC Status
+export const KYC_STATUS = {
+  PENDING: 'pending',
+  UNDER_REVIEW: 'under_review',
+  APPROVED: 'approved',
+  REJECTED: 'rejected',
+  EXPIRED : 'expired'
+} as const;
+
+// KYC Documents
+export const DOCUMENT_TYPE = {
+  PASSPORT: 'passport',
+  ID_CARD: 'id_card',
+  DRIVER_LICENSE: 'driver_license',
+  PROOF_OF_ADDRESS: 'proof_of_address',
+  SELFIE : 'selfie'
 } as const;
 
 // Order Types
@@ -47,6 +66,7 @@ export const ORDER_STATUS = {
   FILLED: 'filled',
   CANCELLED: 'cancelled',
   REJECTED: 'rejected',
+  EXPIRED : 'expired'
 } as const;
 
 // Time in Force
@@ -54,6 +74,7 @@ export const TIME_IN_FORCE = {
   GTC: 'GTC', // Good Till Cancelled
   IOC: 'IOC', // Immediate or Cancel
   FOK: 'FOK', // Fill or Kill
+  GTD: 'GTD'
 } as const;
 
 // Transaction Types
@@ -76,6 +97,16 @@ export const TRANSACTION_STATUS = {
   CANCELLED: 'cancelled',
 } as const;
 
+// Reward types
+export const REWARD_TYPES = {
+  XP: 'xp',
+  COINS: 'coins',
+  TOKEN: 'token',
+  BADGE: 'badge',
+  DISCOUNT: 'discount',
+  CASHBACK: 'cashback'
+} as const;
+
 // Notification Channels
 export const NOTIFICATION_CHANNELS = {
   EMAIL: 'email',
@@ -85,6 +116,7 @@ export const NOTIFICATION_CHANNELS = {
   TELEGRAM: 'telegram',
   DISCORD: 'discord',
 } as const;
+
 
 // Notification Priority
 export const NOTIFICATION_PRIORITY = {
@@ -135,24 +167,4 @@ export const REDIS_KEYS = {
   NOTIFICATION_QUEUE: 'notification:queue:',
 } as const;
 
-// RabbitMQ Exchanges/Queues
-export const RABBITMQ = {
-  EXCHANGES: {
-    ORDERS: 'orders.exchange',
-    TRADES: 'trades.exchange',
-    NOTIFICATIONS: 'notifications.exchange',
-    WALLETS: 'wallets.exchange',
-    USERS: 'users.exchange',
-    COMPLIANCE: 'compliance.exchange',
-  },
-  QUEUES: {
-    ORDER_CREATED: 'orders.created',
-    ORDER_CANCELLED: 'orders.cancelled',
-    TRADE_EXECUTED: 'trades.executed',
-    DEPOSIT_DETECTED: 'wallets.deposit',
-    WITHDRAWAL_REQUEST: 'wallets.withdrawal',
-    NOTIFICATION_SEND: 'notifications.send',
-    USER_CREATED: 'users.created',
-    KYC_UPDATED: 'compliance.kyc_updated',
-  },
-} as const;
+

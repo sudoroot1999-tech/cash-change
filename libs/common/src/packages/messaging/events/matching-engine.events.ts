@@ -1,5 +1,6 @@
+import { OrderSide, OrderType } from 'libs/common/src/types';
 import { BaseEvent } from './base.event';
-import { OrderSide, OrderType } from './trading.events';
+
 
 /**
  * Matching engine specific events

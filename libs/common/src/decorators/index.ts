@@ -41,12 +41,12 @@ export function RequireTier(...tiers: string[]): MethodDecorator {
 /**
  * Decorator for rate limiting
  */
-export function RateLimit(limit: number, windowMs: number): MethodDecorator {
-  return (_target: unknown, _propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
-    Reflect.defineMetadata('rateLimit', { limit, windowMs }, descriptor.value);
-    return descriptor;
-  };
-}
+// export function RateLimit(limit: number, windowMs: number): MethodDecorator {
+//   return (_target: unknown, _propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
+//     Reflect.defineMetadata('rateLimit', { limit, windowMs }, descriptor.value);
+//     return descriptor;
+//   };
+// }
 
 /**
  * Decorator to log method execution time

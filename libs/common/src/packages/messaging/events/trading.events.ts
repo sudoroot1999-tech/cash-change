@@ -1,24 +1,7 @@
+import { OrderSide, OrderStatus, OrderType, TimeInForce } from 'libs/common/src/types';
 import { BaseEvent } from './base.event';
 
-/**
- * Order side type
- */
-export type OrderSide = 'buy' | 'sell';
 
-/**
- * Order type
- */
-export type OrderType = 'market' | 'limit' | 'stop-loss' | 'stop-limit';
-
-/**
- * Order status
- */
-export type OrderStatus = 'pending' | 'open' | 'partially_filled' | 'filled' | 'cancelled' | 'rejected' | 'expired';
-
-/**
- * Time in force
- */
-export type TimeInForce = 'GTC' | 'IOC' | 'FOK' | 'GTD';
 
 /**
  * Order created event

@@ -1,4 +1,5 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+import { CursorPaginatedResponse, PaginatedResponse } from 'libs/common/src/types';
 
 export interface PaginationParams {
   page: number;
@@ -48,31 +49,7 @@ export const CursorPagination = createParamDecorator(
   },
 );
 
-/**
- * Pagination response wrapper
- */
-export interface PaginatedResponse<T> {
-  data: T[];
-  meta: {
-    page?: number;
-    limit: number;
-    total: number;
-    totalPages?: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-  };
-}
 
-export interface CursorPaginatedResponse<T> {
-  data: T[];
-  meta: {
-    limit: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-    nextCursor?: string;
-    prevCursor?: string;
-  };
-}
 
 /**
  * Helper function to create paginated response
