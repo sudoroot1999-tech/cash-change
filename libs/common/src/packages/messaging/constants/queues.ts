@@ -7,10 +7,16 @@ export const QUEUES = {
   // Auth Service Queues
   USER_REGISTERED: 'auth.user.registered',
   USER_LOGIN: 'auth.user.login',
-  EMAIL_VERIFICATION: 'auth.email.verification',
-  PASSWORD_RESET: 'auth.password.reset',
+  USER_CODE_REQUESTED:'auth.code.request',
+  PASSWORD_RESET_REQUESTED: 'auth.password.reset',
+  PASSWORD_CHANGED:'auth.password.change',
   TWO_FACTOR_SETUP: 'auth.2fa.setup',
-  
+  TWO_FACTOR_ENABLED: 'auth.2fa.enable',
+  TWO_FACTOR_DISABLED: 'auth.2fa.disable',
+  EMAIL_VERIFICATION_REQUESTED: 'auth.email.verification',
+  EMAIL_VERIFIED : 'auth.email.verified',
+  ACCOUNT_LOCKED : 'auth.account.locked',
+
   // User Service Queues
   PROFILE_UPDATE: 'user.profile.update',
   AVATAR_UPLOAD: 'user.avatar.upload',
@@ -22,6 +28,10 @@ export const QUEUES = {
   WITHDRAWAL_REQUEST: 'wallet.withdrawal.request',
   WITHDRAWAL_PROCESS: 'wallet.withdrawal.process',
   WITHDRAWAL_APPROVED: 'wallet.withdrawal.approved',
+  WITHDRAWAL_REJECTED: 'wallet.withdrawal.rejected',
+  WITHDRAWAL_FAILED: 'wallet.withdrawal.failed',
+  WITHDRAWAL_COMPLETED: 'wallet.withdrawal.completed',
+  WITHDRAWAL_CANCELLED: 'wallet.withdrawal.cancelled',
   BALANCE_UPDATE: 'wallet.balance.update',
   INTERNAL_TRANSFER: 'wallet.transfer.internal',
   

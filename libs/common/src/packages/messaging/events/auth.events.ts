@@ -86,7 +86,10 @@ export interface TwoFactorDisabledEvent extends BaseEvent {
 export interface AccountLockedEvent extends BaseEvent {
   userId: string;
   reason: string;
+  email?:string
+  lockedAt?:Date;
   lockedUntil?: Date;
+
 }
 
 /**

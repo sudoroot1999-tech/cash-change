@@ -4,10 +4,15 @@ packages:
   - frontend/apps/*
   - frontend/packages/*
 
+ignoredBuiltDependencies:
+  - argon2
+
 onlyBuiltDependencies:
+  - '@firebase/util'
   - '@nestjs/core'
   - '@parcel/watcher'
   - '@scarf/scarf'
+  - aws-sdk
   - bcrypt
   - esbuild
   - keccak

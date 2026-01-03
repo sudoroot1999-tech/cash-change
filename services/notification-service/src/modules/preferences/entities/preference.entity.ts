@@ -1,66 +1,51 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-  Index,
-} from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
+import { NotificationChannel, NotificationType } from '../../notifications/entities/notification.entity';
 
 @Entity('notification_preferences')
-export class NotificationPreference {
+@Index(['userId'])
+export class UserNotificationPreference {
   @PrimaryGeneratedColumn('uuid')
-  id!: string;
+  id: string;
 
-  @Index({ unique: true })
-  @Column({ name: 'user_id', type: 'uuid' })
-  userId!: string;
+  @Column()
+  userId: string;
 
-  @Column({ name: 'email_enabled', type: 'boolean', default: true })
-  emailEnabled!: boolean;
+  @Column({ type: 'enum', enum: NotificationType })
+  notificationType: NotificationType;
 
-  @Column({ name: 'sms_enabled', type: 'boolean', default: false })
-  smsEnabled!: boolean;
+  @Column({ type: 'enum', enum: NotificationChannel, array: true })
+  enabledChannels: NotificationChannel[];
 
-  @Column({ name: 'push_enabled', type: 'boolean', default: true })
-  pushEnabled!: boolean;
+  @Column({ default: true })
+  isEnabled: boolean;
 
-  @Column({ name: 'in_app_enabled', type: 'boolean', default: true })
-  inAppEnabled!: boolean;
+  @Column({ nullable: true })
+  email: string;
 
-  @Column({ name: 'telegram_enabled', type: 'boolean', default: false })
-  telegramEnabled!: boolean;
+  @Column({ nullable: true })
+  phoneNumber: string;
 
-  @Column({ name: 'telegram_chat_id', type: 'varchar', length: 100, nullable: true })
-  telegramChatId!: string | null;
+  @Column({ nullable: true })
+  telegramChatId: string;
 
-  @Column({ name: 'discord_enabled', type: 'boolean', default: false })
-  discordEnabled!: boolean;
+  @Column({ nullable: true })
+  whatsappNumber: string;
 
-  @Column({ name: 'discord_webhook', type: 'text', nullable: true })
-  discordWebhook!: string | null;
+  @Column({ type: 'time', nullable: true })
+  quietHoursStart: string;
 
-  @Column({ name: 'price_alerts', type: 'boolean', default: true })
-  priceAlerts!: boolean;
+  @Column({ type: 'time', nullable: true })
+  quietHoursEnd: string;
 
-  @Column({ name: 'trade_alerts', type: 'boolean', default: true })
-  tradeAlerts!: boolean;
+  @Column({ type: 'varchar', length: 10, default: 'UTC' })
+  timezone: string;
 
-  @Column({ name: 'deposit_alerts', type: 'boolean', default: true })
-  depositAlerts!: boolean;
+  @Column({ type: 'jsonb', nullable: true })
+  customPreferences: Record<string, any>;
 
-  @Column({ name: 'withdrawal_alerts', type: 'boolean', default: true })
-  withdrawalAlerts!: boolean;
+  @CreateDateColumn()
+  createdAt: Date;
 
-  @Column({ name: 'security_alerts', type: 'boolean', default: true })
-  securityAlerts!: boolean;
-
-  @Column({ name: 'marketing_alerts', type: 'boolean', default: false })
-  marketingAlerts!: boolean;
-
-  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
-  createdAt!: Date;
-
-  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
-  updatedAt!: Date;
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

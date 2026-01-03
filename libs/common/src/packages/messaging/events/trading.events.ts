@@ -83,6 +83,7 @@ export interface OrderFilledEvent extends BaseEvent {
   totalValue: string;
   fee: string;
   filledAt: Date;
+  totalCost:string
 }
 
 /**

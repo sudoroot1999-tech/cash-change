@@ -9,14 +9,28 @@ export enum NotificationChannel {
   IN_APP = 'in_app',
   TELEGRAM = 'telegram',
   DISCORD = 'discord',
+  WHATSAPP= 'whatsapp'
 }
 
 export enum NotificationStatus {
   PENDING = 'pending',
-  QUEUED = 'queued',
+  PROCESSING = 'processing',
   SENT = 'sent',
   DELIVERED = 'delivered',
   FAILED = 'failed',
+  CANCELLED = 'cancelled',
+}
+
+export enum NotificationType {
+  TRANSACTIONAL = 'transactional',
+  SECURITY = 'security',
+  MARKETING = 'marketing',
+  PRICE_ALERT = 'price_alert',
+  TRADING_SIGNAL = 'trading_signal',
+  KYC_UPDATE = 'kyc_update',
+  NEWS = 'news',
+  COMMON = 'common',
+  INFO = 'info'
 }
 
 export enum NotificationPriority {

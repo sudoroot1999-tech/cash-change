@@ -1,77 +1,188 @@
 import {
-  Controller, Get, Post, Patch, Delete, Body, Param, Query, HttpCode, HttpStatus, ParseUUIDPipe,
+  Controller,
+  Post,
+  Get,
+  Body,
+  Query,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
-import { NotificationsService } from './notifications.service';
-import { SendNotificationDto, BulkNotificationDto } from './dto/notification.dto';
-import { NotificationChannel } from './entities/notification.entity';
-import { RequireAuth, CurrentUser, AuthenticatedUser } from '@exchange/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { NotificationCoreService } from './notifications.service';
+import { SendNotificationDto, RegisterPushTokenDto } from './dto/notification.dto';
+import { NotificationType, NotificationChannel } from './entities';
 
 @ApiTags('Notifications')
-@Controller('notifications')
-@RequireAuth()
-export class NotificationsController {
-  constructor(private readonly notificationsService: NotificationsService) {}
+@Controller('notification')
+export class NotificationController {
+  constructor(
+    private readonly notificationService: NotificationCoreService
+  ) {}
 
-  @Post()
-  @HttpCode(HttpStatus.CREATED)
+  @Post('send')
   @ApiOperation({ summary: 'Send a notification' })
-  async send(@Body() dto: SendNotificationDto) {
-    return this.notificationsService.send(dto);
-  }
-
-  @Post('bulk')
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Send bulk notifications' })
-  async sendBulk(@Body() dto: BulkNotificationDto) {
-    return this.notificationsService.sendBulk(dto);
-  }
-
-  @Get()
-  @ApiOperation({ summary: 'Get user notifications' })
-  @ApiQuery({ name: 'channel', enum: NotificationChannel, required: false })
-  @ApiQuery({ name: 'unreadOnly', type: Boolean, required: false })
-  @ApiQuery({ name: 'page', type: Number, required: false })
-  @ApiQuery({ name: 'limit', type: Number, required: false })
-  async getNotifications(
-    @CurrentUser() user: AuthenticatedUser,
-    @Query('channel') channel?: NotificationChannel,
-    @Query('unreadOnly') unreadOnly?: boolean,
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
-  ) {
-    const result = await this.notificationsService.getUserNotifications(user.userId, {
-      channel,
-      unreadOnly: unreadOnly === true,
-      page: page || 1,
-      limit: limit || 20,
+  @ApiResponse({ status: 201, description: 'Notification queued successfully' })
+  async sendNotification(@Body() dto: SendNotificationDto) {
+    const queueIds = await this.notificationService.sendNotification({
+      userId: dto.userId,
+      type: dto.type,
+      channels: dto.channels,
+      templateId: dto.templateId,
+      subject: dto.subject,
+      content: dto.content,
+      data: dto.data,
+      scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : undefined,
+      metadata: dto.metadata,
     });
-    return { data: result.items, meta: { total: result.total, page: page || 1, limit: limit || 20 } };
+
+    return {
+      success: true,
+      queueIds,
+      message: 'Notification(s) queued successfully',
+    };
+  }
+
+  @Post('send-bulk')
+  @ApiOperation({ summary: 'Send notifications to multiple users' })
+  @ApiResponse({ status: 201, description: 'Notifications queued successfully' })
+  async sendBulkNotification(
+    @Body() dto: { userIds: string[]; notification: Omit<SendNotificationDto, 'userId'> },
+  ) {
+    const results = await Promise.all(
+      dto.userIds.map(userId =>
+        this.notificationService.sendNotification({
+          userId,
+          ...dto.notification,
+          scheduledAt: dto.notification.scheduledAt ? new Date(dto.notification.scheduledAt) : undefined,
+        }),
+      ),
+    );
+
+    return {
+      success: true,
+      totalQueued: results.flat().length,
+      message: 'Bulk notifications queued successfully',
+    };
+  }
+
+  @Get('history')
+  @ApiOperation({ summary: 'Get notification history' })
+  @ApiResponse({ status: 200, description: 'Notification history retrieved' })
+  async getHistory(
+    @Query('userId') userId: string,
+    @Query('type') type?: NotificationType,
+    @Query('channel') channel?: NotificationChannel,
+    @Query('limit') limit?: number,
+    @Query('offset') offset?: number,
+  ) {
+    const history = await this.notificationService.getHistory(userId, {
+      type,
+      channel,
+      limit: limit || 50,
+      offset: offset || 0,
+    });
+
+    return {
+      success: true,
+      data: history.items,
+      total: history.total,
+    };
+  }
+
+  @Post('mark-read')
+  @ApiOperation({ summary: 'Mark notifications as read' })
+  @HttpCode(HttpStatus.OK)
+  async markAsRead(@Body() body: { userId: string; notificationIds: string[] }) {
+    await this.notificationService.markAsRead(body.userId, body.notificationIds);
+    return {
+      success: true,
+      message: 'Notifications marked as read',
+    };
   }
 
   @Get('unread-count')
   @ApiOperation({ summary: 'Get unread notification count' })
-  async getUnreadCount(@CurrentUser() user: AuthenticatedUser) {
-    const count = await this.notificationsService.getUnreadCount(user.userId);
-    return { count };
+  async getUnreadCount(@Query('userId') userId: string) {
+    const count = await this.notificationService.getUnreadCount(userId);
+    return {
+      success: true,
+      count,
+    };
   }
 
-  @Patch(':id/read')
-  @ApiOperation({ summary: 'Mark notification as read' })
-  async markAsRead(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthenticatedUser) {
-    return this.notificationsService.markAsRead(user.userId, id);
+  @Post('push-token/register')
+  @ApiOperation({ summary: 'Register push notification token' })
+  @ApiResponse({ status: 201, description: 'Token registered successfully' })
+  async registerPushToken(
+    @Query('userId') userId: string,
+    @Body() dto: RegisterPushTokenDto,
+  ) {
+    const token = await this.notificationService.registerPushToken(userId, dto);
+    return {
+      success: true,
+      data: token,
+      message: 'Push token registered successfully',
+    };
   }
 
-  @Patch('read-all')
-  @ApiOperation({ summary: 'Mark all notifications as read' })
-  async markAllAsRead(@CurrentUser() user: AuthenticatedUser) {
-    return this.notificationsService.markAllAsRead(user.userId);
+  @Post('push-token/unregister')
+  @ApiOperation({ summary: 'Unregister push notification token' })
+  @HttpCode(HttpStatus.OK)
+  async unregisterPushToken(@Body() body: { token: string }) {
+    await this.notificationService.unregisterPushToken(body.token);
+    return {
+      success: true,
+      message: 'Push token unregistered successfully',
+    };
   }
 
-  @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Delete notification' })
-  async delete(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthenticatedUser) {
-    await this.notificationsService.delete(user.userId, id);
+  @Post('test')
+  @ApiOperation({ summary: 'Send test notification' })
+  @ApiResponse({ status: 200, description: 'Test notification sent' })
+  async testNotification(
+    @Body()
+    body: {
+      userId: string;
+      channel: NotificationChannel;
+      message: string;
+    },
+  ) {
+    const queueIds = await this.notificationService.sendNotification({
+      userId: body.userId,
+      type: NotificationType.NEWS,
+      channels: [body.channel],
+      content: body.message,
+      subject: 'Test Notification',
+    });
+
+    return {
+      success: true,
+      queueIds,
+      message: 'Test notification sent',
+    };
+  }
+
+    @Get('queue/stats')
+  @ApiOperation({ summary: 'Get queue statistics' })
+  async getQueueStats() {
+    // const stats = await Promise.all([
+    //   this.rabbitMQService.getQueueStats('notification.email.send'),
+    //   this.rabbitMQService.getQueueStats('notification.sms.send'),
+    //   this.rabbitMQService.getQueueStats('notification.push.send'),
+    //   this.rabbitMQService.getQueueStats('notification.telegram.send'),
+    //   this.rabbitMQService.getQueueStats('notification.whatsapp.send'),
+    // ]);
+
+    return {
+      success: true,
+      data: {
+        
+        // email: stats[0],
+        // sms: stats[1],
+        // push: stats[2],
+        // telegram: stats[3],
+        // whatsapp: stats[4],
+      },
+    };
   }
 }

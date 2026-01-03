@@ -6,6 +6,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { TemplatesModule } from './modules/templates/templates.module';
 import { PreferencesModule } from './modules/preferences/preferences.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { KafkaModule, PerformanceModule, RabbitMQModule } from '@exchange/common';
 
 @Module({
   imports: [
@@ -59,6 +60,18 @@ import { AuthModule } from './modules/auth/auth.module';
       },
     }),
 
+    RabbitMQModule.forRoot({
+      url: process.env.RABBITMQ_URL || 'amqp://guest:guest@localhost:5672/',
+      connectionName: 'notification-service',
+      prefetch: 10,
+    }),
+
+    KafkaModule.forRoot({
+      clientId: 'notification-service',
+      brokers: (process.env.KAFKA_LISTENERS || 'localhost:29092').split(','),
+    }),
+
+    PerformanceModule,
     NotificationsModule,
     TemplatesModule,
     PreferencesModule,

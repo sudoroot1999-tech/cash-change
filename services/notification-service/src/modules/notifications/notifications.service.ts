@@ -1,253 +1,452 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
-import { InjectQueue } from '@nestjs/bull';
-import { Queue } from 'bull';
-import * as Handlebars from 'handlebars';
+import { Repository, LessThanOrEqual, In } from 'typeorm';
 import {
-  Notification,
-  NotificationChannel,
+  NotificationQueue,
+  NotificationHistory,
   NotificationStatus,
-  NotificationPriority,
-} from './entities/notification.entity';
-import { SendNotificationDto, BulkNotificationDto } from './dto/notification.dto';
+  DeliveryStatus,
+  NotificationChannel,
+  NotificationType,
+  PushToken,
+} from './entities';
+import { EmailProvider, SmsProvider, PushProvider, TelegramProvider, WhatsAppProvider } from '../../providers';
+import { TemplateService } from '../templates/templates.service';
+import {  PreferenceService } from '../preferences/preferences.service';
+import { QueueNames, QueueService } from '@exchange/common';
+
+export interface SendNotificationOptions {
+  userId: string;
+  type: NotificationType;
+  channels?: NotificationChannel[];
+  templateId?: string;
+  subject?: string;
+  content: string;
+  data?: Record<string, any>;
+  scheduledAt?: Date;
+  metadata?: Record<string, any>;
+  priority?: number;
+}
 
 @Injectable()
-export class NotificationsService {
-  private readonly logger = new Logger(NotificationsService.name);
+export class NotificationCoreService {
+  private readonly logger = new Logger(NotificationCoreService.name);
 
   constructor(
-    @InjectRepository(Notification)
-    private readonly notificationRepository: Repository<Notification>,
-    @InjectQueue('notifications')
-    private readonly notificationQueue: Queue,
+    @InjectRepository(NotificationQueue)
+    private queueRepository: Repository<NotificationQueue>,
+    @InjectRepository(NotificationHistory)
+    private historyRepository: Repository<NotificationHistory>,
+    @InjectRepository(PushToken)
+    private pushTokenRepository: Repository<PushToken>,
+    private queueService:QueueService,
+    private emailProvider: EmailProvider,
+    private smsProvider: SmsProvider,
+    private pushProvider: PushProvider,
+    private telegramProvider: TelegramProvider,
+    private whatsappProvider: WhatsAppProvider,
+    private templateService: TemplateService,
+    private preferenceService: PreferenceService,
   ) {}
 
-  /**
-   * Send a notification
-   */
-  async send(dto: SendNotificationDto): Promise<Notification> {
-    // Compile template if variables provided
-    let content = dto.content;
-    if (dto.variables) {
-      const template = Handlebars.compile(dto.content);
-      content = template(dto.variables);
+  async sendNotification(options: SendNotificationOptions): Promise<string[]> {
+    const queueIds: string[] = [];
+
+    // Get user's enabled channels
+    let channels = options.channels;
+    if (!channels || channels.length === 0) {
+      channels = await this.preferenceService.getEnabledChannels(options.userId, options.type);
     }
 
-    // Create notification record
-    const notification = this.notificationRepository.create({
-      userId: dto.userId,
-      channel: dto.channel,
-      templateId: dto.templateId || null,
-      subject: dto.subject || null,
-      content,
-      priority: dto.priority ?? NotificationPriority.MEDIUM,
-      metadata: dto.metadata || {},
+    if (channels.length === 0) {
+      this.logger.warn(`No enabled channels for user ${options.userId} and type ${options.type}`);
+      return queueIds;
+    }
+
+    // Prepare content for each channel
+    let content = options.content;
+    let subject = options.subject;
+
+    if (options.templateId) {
+      for (const channel of channels) {
+        const rendered = await this.templateService.renderTemplate(
+          options.templateId,
+          options.data || {},
+          this.getChannelType(channel),
+        );
+        content = rendered.content;
+        subject = rendered.subject || subject;
+
+        const queueItem = await this.addToQueue({
+          ...options,
+          channel,
+          content,
+          subject,
+        });
+        queueIds.push(queueItem.id);
+      }
+    } else {
+      for (const channel of channels) {
+        const queueItem = await this.addToQueue({
+          ...options,
+          channel,
+          content,
+          subject,
+        });
+        queueIds.push(queueItem.id);
+      }
+    }
+
+    return queueIds;
+  }
+
+  private getChannelType(channel: NotificationChannel): 'email' | 'sms' | 'push' {
+    switch (channel) {
+      case NotificationChannel.EMAIL:
+        return 'email';
+      case NotificationChannel.SMS:
+      case NotificationChannel.TELEGRAM:
+      case NotificationChannel.WHATSAPP:
+        return 'sms';
+      case NotificationChannel.PUSH:
+      case NotificationChannel.IN_APP:
+        return 'push';
+      default:
+        return 'email';
+    }
+  }
+
+  private async addToQueue(
+    options: SendNotificationOptions & { channel: NotificationChannel },
+  ): Promise<NotificationQueue> {
+    const queueItem = this.queueRepository.create({
+      userId: options.userId,
+      type: options.type,
+      channel: options.channel,
+      templateId: options.templateId,
+      subject: options.subject,
+      content: options.content,
+      data: options.data,
+      scheduledAt: options.scheduledAt || new Date(),
+      metadata: options.metadata,
+      priority: options.priority || 5,
       status: NotificationStatus.PENDING,
     });
 
-    const saved = await this.notificationRepository.save(notification);
+    const saved = await this.queueRepository.save(queueItem);
 
-    // Add to queue for processing
-    await this.notificationQueue.add(
-      'send',
-      { notificationId: saved.id },
-      { priority: dto.priority ?? NotificationPriority.MEDIUM },
-    );
+    await this.queueService.addJob(
+  QueueNames.NOTIFICATION,
+  'send',
+  { notificationId: saved.id },
+  {
+    priority: saved.priority,
+    attempts: saved.maxRetries,
+    backoff: { type: 'exponential', delay: 2000 },
+  },
+);
 
-    this.logger.log(`Notification queued: ${saved.id} for user ${dto.userId}`);
+    this.logger.log(`Notification queued: ${saved.id} for user ${options.userId} via ${options.channel}`);
     return saved;
   }
 
-  /**
-   * Send bulk notifications
-   */
-  async sendBulk(dto: BulkNotificationDto): Promise<{ queued: number }> {
-    const notifications: Notification[] = [];
-
-    for (const userId of dto.userIds) {
-      let content = dto.content;
-      if (dto.variables) {
-        const template = Handlebars.compile(dto.content);
-        content = template(dto.variables);
-      }
-
-      const notification = this.notificationRepository.create({
-        userId,
-        channel: dto.channel,
-        templateId: dto.templateId || null,
-        subject: dto.subject || null,
-        content,
-        priority: dto.priority ?? NotificationPriority.MEDIUM,
+  async processQueue(): Promise<void> {
+    const pendingNotifications = await this.queueRepository.find({
+      where: {
         status: NotificationStatus.PENDING,
-      });
-      notifications.push(notification);
+        scheduledAt: LessThanOrEqual(new Date()),
+      },
+      order: {
+        priority: 'DESC',
+        createdAt: 'ASC',
+      },
+      take: 100,
+    });
+
+    this.logger.log(`Processing ${pendingNotifications.length} pending notifications`);
+
+    for (const notification of pendingNotifications) {
+      await this.processNotification(notification);
     }
-
-    const saved = await this.notificationRepository.save(notifications);
-
-    // Queue all notifications
-    const jobs = saved.map((n) => ({
-      name: 'send',
-      data: { notificationId: n.id },
-      opts: { priority: dto.priority ?? NotificationPriority.MEDIUM },
-    }));
-    await this.notificationQueue.addBulk(jobs);
-
-    this.logger.log(`Bulk notifications queued: ${saved.length}`);
-    return { queued: saved.length };
   }
 
-  /**
-   * Get user notifications
-   */
-  async getUserNotifications(
+  async processNotification(notification: NotificationQueue): Promise<void> {
+    try {
+      // Update status to processing
+      notification.status = NotificationStatus.PROCESSING;
+      await this.queueRepository.save(notification);
+
+      // Get user preferences for recipient info
+      const preferences = await this.preferenceService.getUserPreferencesByType(
+        notification.userId,
+        notification.type,
+      );
+
+      let result: { success: boolean; messageId?: string; error?: string };
+
+      switch (notification.channel) {
+        case NotificationChannel.EMAIL:
+          result = await this.sendEmail(notification, preferences?.email);
+          break;
+        case NotificationChannel.SMS:
+          result = await this.sendSms(notification, preferences?.phoneNumber);
+          break;
+        case NotificationChannel.PUSH:
+          result = await this.sendPush(notification);
+          break;
+        case NotificationChannel.TELEGRAM:
+          result = await this.sendTelegram(notification, preferences?.telegramChatId);
+          break;
+        case NotificationChannel.WHATSAPP:
+          result = await this.sendWhatsApp(notification, preferences?.whatsappNumber);
+          break;
+        case NotificationChannel.IN_APP:
+          result = await this.saveInApp(notification);
+          break;
+        default:
+          throw new Error(`Unknown channel: ${notification.channel}`);
+      }
+
+      if (result.success) {
+        notification.status = NotificationStatus.SENT;
+        notification.sentAt = new Date();
+        await this.queueRepository.save(notification);
+
+        // Save to history
+        await this.saveToHistory(notification, DeliveryStatus.SENT, result.messageId);
+      } else {
+        await this.handleFailure(notification, result.error);
+      }
+    } catch (error:any) {
+      this.logger.error(`Failed to process notification ${notification.id}: ${error.message}`, error.stack);
+      await this.handleFailure(notification, error.message);
+    }
+  }
+
+  async processNotificationById(id: string) {
+    const notification = await this.queueRepository.findOneBy({ id });
+    if (!notification) return;
+    return this.processNotification(notification);
+  }
+
+  private async sendEmail(
+    notification: NotificationQueue,
+    email?: string,
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    if (!email) {
+      return { success: false, error: 'Email address not configured' };
+    }
+
+    return this.emailProvider.send({
+      to: email,
+      subject: notification.subject || 'Notification',
+      html: notification.content,
+      text: notification.content.replace(/<[^>]*>/g, ''),
+    });
+  }
+
+  private async sendSms(
+    notification: NotificationQueue,
+    phoneNumber?: string,
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    if (!phoneNumber) {
+      return { success: false, error: 'Phone number not configured' };
+    }
+
+    return this.smsProvider.send({
+      to: phoneNumber,
+      message: notification.content,
+    });
+  }
+
+  private async sendPush(
+    notification: NotificationQueue,
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    const tokens = await this.pushTokenRepository.find({
+      where: { userId: notification.userId, isActive: true },
+    });
+
+    if (tokens.length === 0) {
+      return { success: false, error: 'No push tokens found' };
+    }
+
+    const results = await Promise.all(
+      tokens.map(token =>
+        this.pushProvider.send({
+          token: token.token,
+          title: notification.subject || 'Notification',
+          body: notification.content,
+          data: notification.data,
+          platform: token.platform,
+        }),
+      ),
+    );
+
+    const successCount = results.filter(r => r.success).length;
+    return {
+      success: successCount > 0,
+      messageId: results.find(r => r.messageId)?.messageId,
+      error: successCount === 0 ? 'All push notifications failed' : undefined,
+    };
+  }
+
+  private async sendTelegram(
+    notification: NotificationQueue,
+    chatId?: string,
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    if (!chatId) {
+      return { success: false, error: 'Telegram chat ID not configured' };
+    }
+
+    const result = await this.telegramProvider.send({
+      chatId,
+      message: notification.content,
+      parseMode: 'HTML',
+    });
+
+    return {
+      success: result.success,
+      messageId: result.messageId?.toString(),
+      error: result.error,
+    };
+  }
+
+  private async sendWhatsApp(
+    notification: NotificationQueue,
+    whatsappNumber?: string,
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    if (!whatsappNumber) {
+      return { success: false, error: 'WhatsApp number not configured' };
+    }
+
+    return this.whatsappProvider.send({
+      to: whatsappNumber,
+      message: notification.content,
+    });
+  }
+
+  private async saveInApp(
+    notification: NotificationQueue,
+  ): Promise<{ success: boolean; messageId?: string }> {
+    // In-app notifications are saved directly to history
+    return { success: true, messageId: notification.id };
+  }
+
+  private async handleFailure(notification: NotificationQueue, errorMessage: string): Promise<void> {
+    notification.retryCount += 1;
+    notification.errorMessage = errorMessage;
+
+    if (notification.retryCount >= notification.maxRetries) {
+      notification.status = NotificationStatus.FAILED;
+      await this.saveToHistory(notification, DeliveryStatus.FAILED);
+      this.logger.error(`Notification ${notification.id} failed after ${notification.retryCount} attempts`);
+    } else {
+      notification.status = NotificationStatus.PENDING;
+      this.logger.warn(
+        `Notification ${notification.id} failed, will retry (${notification.retryCount}/${notification.maxRetries})`,
+      );
+    }
+
+    await this.queueRepository.save(notification);
+  }
+
+  private async saveToHistory(
+    notification: NotificationQueue,
+    status: DeliveryStatus,
+    externalId?: string,
+  ): Promise<void> {
+    const history = this.historyRepository.create({
+      userId: notification.userId,
+      type: notification.type,
+      channel: notification.channel,
+      templateId: notification.templateId,
+      queueId: notification.id,
+      subject: notification.subject,
+      content: notification.content,
+      status,
+      externalId,
+      metadata: notification.metadata,
+      sentAt: notification.sentAt,
+      isRead: notification.channel === NotificationChannel.IN_APP ? false : undefined,
+    });
+
+    await this.historyRepository.save(history);
+  }
+
+  async getHistory(
     userId: string,
-    options: { channel?: NotificationChannel; unreadOnly?: boolean; page?: number; limit?: number },
-  ): Promise<{ items: Notification[]; total: number }> {
-    const { channel, unreadOnly, page = 1, limit = 20 } = options;
+    options?: {
+      type?: NotificationType;
+      channel?: NotificationChannel;
+      limit?: number;
+      offset?: number;
+    },
+  ): Promise<{ items: NotificationHistory[]; total: number }> {
+    const where: any = { userId };
+    if (options?.type) where.type = options.type;
+    if (options?.channel) where.channel = options.channel;
 
-    const query = this.notificationRepository
-      .createQueryBuilder('n')
-      .where('n.user_id = :userId', { userId })
-      .orderBy('n.created_at', 'DESC')
-      .skip((page - 1) * limit)
-      .take(limit);
+    const [items, total] = await this.historyRepository.findAndCount({
+      where,
+      order: { createdAt: 'DESC' },
+      take: options?.limit || 50,
+      skip: options?.offset || 0,
+    });
 
-    if (channel) {
-      query.andWhere('n.channel = :channel', { channel });
-    }
-
-    if (unreadOnly) {
-      query.andWhere('n.read_at IS NULL');
-    }
-
-    const [items, total] = await query.getManyAndCount();
     return { items, total };
   }
 
-  /**
-   * Mark notification as read
-   */
-  async markAsRead(userId: string, notificationId: string): Promise<Notification | null> {
-    const notification = await this.notificationRepository.findOne({
-      where: { id: notificationId, userId },
-    });
-
-    if (notification && !notification.readAt) {
-      notification.readAt = new Date();
-      return this.notificationRepository.save(notification);
-    }
-
-    return notification;
+  async markAsRead(userId: string, notificationIds: string[]): Promise<void> {
+    await this.historyRepository.update(
+      {
+        userId,
+        id: In(notificationIds),
+      },
+      { isRead: true },
+    );
   }
 
-  /**
-   * Mark all notifications as read
-   */
-  async markAllAsRead(userId: string): Promise<{ updated: number }> {
-    const result = await this.notificationRepository
-      .createQueryBuilder()
-      .update()
-      .set({ readAt: new Date() })
-      .where('user_id = :userId AND read_at IS NULL', { userId })
-      .execute();
-
-    return { updated: result.affected || 0 };
-  }
-
-  /**
-   * Get unread count
-   */
   async getUnreadCount(userId: string): Promise<number> {
-    return this.notificationRepository.count({
-      where: { userId, readAt: IsNull() },
+    return this.historyRepository.count({
+      where: {
+        userId,
+        channel: NotificationChannel.IN_APP,
+        isRead: false,
+      },
     });
   }
 
-  /**
-   * Delete notification
-   */
-  async delete(userId: string, notificationId: string): Promise<boolean> {
-    const result = await this.notificationRepository.delete({
-      id: notificationId,
+  async registerPushToken(
+    userId: string,
+    tokenData: Partial<PushToken>,
+  ): Promise<PushToken> {
+    // Check if token already exists
+    const existing = await this.pushTokenRepository.findOne({
+      where: { token: tokenData.token },
+    });
+
+    if (existing) {
+      existing.userId = userId;
+      existing.isActive = true;
+      existing.lastUsedAt = new Date();
+      Object.assign(existing, tokenData);
+      return this.pushTokenRepository.save(existing);
+    }
+
+    const token = this.pushTokenRepository.create({
       userId,
-    });
-    return (result.affected || 0) > 0;
-  }
-
-  /**
-   * Process notification (called by queue processor)
-   */
-  async processNotification(notificationId: string): Promise<void> {
-    const notification = await this.notificationRepository.findOne({
-      where: { id: notificationId },
+      ...tokenData,
+      isActive: true,
+      lastUsedAt: new Date(),
     });
 
-    if (!notification) {
-      this.logger.warn(`Notification not found: ${notificationId}`);
-      return;
-    }
-
-    try {
-      // Update status to queued
-      notification.status = NotificationStatus.QUEUED;
-      await this.notificationRepository.save(notification);
-
-      // Send based on channel
-      switch (notification.channel) {
-        case NotificationChannel.EMAIL:
-          await this.sendEmail(notification);
-          break;
-        case NotificationChannel.SMS:
-          await this.sendSms(notification);
-          break;
-        case NotificationChannel.PUSH:
-          await this.sendPush(notification);
-          break;
-        case NotificationChannel.IN_APP:
-          // In-app notifications are already saved, just mark as sent
-          break;
-        case NotificationChannel.TELEGRAM:
-          await this.sendTelegram(notification);
-          break;
-        default:
-          this.logger.warn(`Unknown channel: ${notification.channel}`);
-      }
-
-      // Mark as sent
-      notification.status = NotificationStatus.SENT;
-      notification.sentAt = new Date();
-      await this.notificationRepository.save(notification);
-
-      this.logger.log(`Notification sent: ${notificationId}`);
-    } catch (error: any) {
-      this.logger.error(`Failed to send notification: ${notificationId}`, error);
-      notification.status = NotificationStatus.FAILED;
-      notification.errorMessage = error.message;
-      await this.notificationRepository.save(notification);
-      throw error;
-    }
+    return this.pushTokenRepository.save(token);
   }
 
-  // Channel-specific send methods (placeholders)
-  private async sendEmail(notification: Notification): Promise<void> {
-    // Would use nodemailer here
-    this.logger.debug(`Sending email to user ${notification.userId}`);
-  }
-
-  private async sendSms(notification: Notification): Promise<void> {
-    // Would use Twilio/AWS SNS here
-    this.logger.debug(`Sending SMS to user ${notification.userId}`);
-  }
-
-  private async sendPush(notification: Notification): Promise<void> {
-    // Would use Firebase/APNS here
-    this.logger.debug(`Sending push to user ${notification.userId}`);
-  }
-
-  private async sendTelegram(notification: Notification): Promise<void> {
-    // Would use Telegram Bot API here
-    this.logger.debug(`Sending Telegram to user ${notification.userId}`);
+  async unregisterPushToken(token: string): Promise<void> {
+    await this.pushTokenRepository.update(
+      { token },
+      { isActive: false },
+    );
   }
 }

@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { NotificationPreference } from './entities/preference.entity';
-import { PreferencesService } from './preferences.service';
+import { UserNotificationPreference } from './entities/preference.entity';
+import { PreferenceService } from './preferences.service';
 import { PreferencesController } from './preferences.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([NotificationPreference])],
+  imports: [TypeOrmModule.forFeature([UserNotificationPreference])],
   controllers: [PreferencesController],
-  providers: [PreferencesService],
-  exports: [PreferencesService],
+  providers: [PreferenceService],
+  exports: [PreferenceService],
 })
 export class PreferencesModule {}

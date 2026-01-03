@@ -1,20 +1,19 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { BullModule } from '@nestjs/bull';
 import { Notification } from './entities/notification.entity';
-import { NotificationsService } from './notifications.service';
-import { NotificationsController } from './notifications.controller';
-import { NotificationsProcessor } from './notifications.processor';
-
-import { NotificationsEventsController } from './notifications.events.controller';
+import {NotificationCoreService as NotificationsService } from './notifications.service';
+import { NotificationController } from './notifications.controller';
+import { NotificationWorker } from './notifications.worker';
+import { AuthEventsConsumer } from '../../consumers/auth-events.consumer';
+import { NotificationHistory, NotificationQueue, PushToken } from './entities';
+import { QueueService } from '@exchange/common';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Notification]),
-    BullModule.registerQueue({ name: 'notifications' }),
+    TypeOrmModule.forFeature([Notification,NotificationHistory,NotificationQueue,PushToken]),
   ],
-  controllers: [NotificationsController, NotificationsEventsController],
-  providers: [NotificationsService, NotificationsProcessor],
+  controllers: [NotificationController],
+  providers: [NotificationsService,NotificationWorker,AuthEventsConsumer,QueueService],
   exports: [NotificationsService],
 })
-export class NotificationsModule {}
+export class NotificationsModule { }

@@ -1,24 +1,63 @@
-import { Controller, Get, Put, Body } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Controller, Get, Put, Body, Post, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { RequireAuth, CurrentUser, AuthenticatedUser } from '@exchange/common';
-import { PreferencesService } from './preferences.service';
-import { NotificationPreference } from './entities/preference.entity';
+import { PreferenceService } from './preferences.service';
+import { NotificationChannel, NotificationType } from '../notifications/entities';
+import { UpdatePreferencesDto } from './dto/update-preferences.dto';
 
 @ApiTags('Preferences')
 @Controller('preferences')
 @RequireAuth()
 export class PreferencesController {
-  constructor(private readonly preferencesService: PreferencesService) {}
+  constructor(private readonly preferenceService: PreferenceService) {}
 
-  @Get()
-  @ApiOperation({ summary: 'Get notification preferences' })
-  async get(@CurrentUser() user: AuthenticatedUser) {
-    return this.preferencesService.getOrCreate(user.userId);
+  @Get('preferences')
+  @ApiOperation({ summary: 'Get user notification preferences' })
+  @ApiResponse({ status: 200, description: 'User preferences retrieved' })
+  async getPreferences(@Query('userId') userId: string) {
+    const preferences = await this.preferenceService.getUserPreferences(userId);
+    return { success: true, data: preferences };
   }
 
-  @Put()
-  @ApiOperation({ summary: 'Update notification preferences' })
-  async update(@CurrentUser() user: AuthenticatedUser, @Body() data: Partial<NotificationPreference>) {
-    return this.preferencesService.update(user.userId, data);
+  @Put('preferences')
+  @ApiOperation({ summary: 'Update user notification preferences' })
+  @ApiResponse({ status: 200, description: 'Preferences updated' })
+  async updatePreferences(
+    @Query('userId') userId: string,
+    @Body() dto: UpdatePreferencesDto & { notificationType: NotificationType },
+  ) {
+    const preference = await this.preferenceService.updatePreference(
+      userId,
+      dto.notificationType,
+      dto,
+    );
+
+    return {
+      success: true,
+      data: preference,
+      message: 'Preferences updated successfully',
+    };
+  }
+
+  @Post('preferences/unsubscribe')
+  @ApiOperation({ summary: 'Unsubscribe from notification type' })
+  @HttpCode(HttpStatus.OK)
+  async unsubscribe(
+    @Body() body: { userId: string; notificationType: NotificationType; channel?: NotificationChannel },
+  ) {
+    if (body.channel) {
+      await this.preferenceService.unsubscribeFromChannel(
+        body.userId,
+        body.notificationType,
+        body.channel,
+      );
+    } else {
+      await this.preferenceService.unsubscribeFromType(body.userId, body.notificationType);
+    }
+
+    return {
+      success: true,
+      message: 'Unsubscribed successfully',
+    };
   }
 }

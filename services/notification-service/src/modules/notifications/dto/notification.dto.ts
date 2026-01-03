@@ -1,21 +1,30 @@
 import {
   IsString, IsEnum, IsOptional, IsUUID, IsObject, IsNumber, Max, Min,
+  IsDateString,
+  IsArray,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { NotificationChannel, NotificationPriority } from '../entities/notification.entity';
+import { NotificationChannel, NotificationPriority, NotificationType } from '../entities/notification.entity';
+import { DevicePlatform } from '../entities';
 
 export class SendNotificationDto {
-  @ApiProperty()
-  @IsUUID()
-  userId!: string;
+   @ApiProperty({ description: 'User ID to send notification to' })
+  @IsString()
+  userId: string;
 
-  @ApiProperty({ enum: NotificationChannel })
-  @IsEnum(NotificationChannel)
-  channel!: NotificationChannel;
+  @ApiProperty({ enum: NotificationType })
+  @IsEnum(NotificationType)
+  type: NotificationType;
+
+  @ApiPropertyOptional({ enum: NotificationChannel, isArray: true })
+  @IsOptional()
+  @IsArray()
+  @IsEnum(NotificationChannel, { each: true })
+  channels?: NotificationChannel[];
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsString()
+  @IsUUID()
   templateId?: string;
 
   @ApiPropertyOptional()
@@ -25,24 +34,22 @@ export class SendNotificationDto {
 
   @ApiProperty()
   @IsString()
-  content!: string;
-
-  @ApiPropertyOptional({ default: 2 })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Max(3)
-  priority?: NotificationPriority;
+  content: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsObject()
-  variables?: Record<string, string>;
+  data?: Record<string, any>;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsDateString()
+  scheduledAt?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsObject()
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export class BulkNotificationDto {
@@ -112,3 +119,34 @@ export class NotificationResponseDto {
   @ApiProperty()
   createdAt!: Date;
 }
+
+export class RegisterPushTokenDto {
+  @ApiProperty()
+  @IsString()
+  token: string;
+
+  @ApiProperty({ enum: DevicePlatform })
+  @IsEnum(DevicePlatform)
+  platform: DevicePlatform;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  deviceId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  deviceName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  appVersion?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsObject()
+  metadata?: Record<string, any>;
+}
+
