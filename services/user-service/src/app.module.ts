@@ -2,11 +2,9 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from './modules/users/users.module';
-import { ProfilesModule } from './modules/profiles/profiles.module';
 import { HealthModule } from './modules/health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
-import { KafkaModule, RabbitMQModule, StorageModule } from '@exchange/common';
-import { UserEventsService } from './user-events.service';
+import { KafkaModule, PerformanceModule, RabbitMQModule, StorageModule } from '@exchange/common';
 
 @Module({
   imports: [
@@ -60,11 +58,10 @@ import { UserEventsService } from './user-events.service';
 
     // Feature Modules
     UsersModule,
-    ProfilesModule,
+    PerformanceModule,
     HealthModule,
     AuthModule,
-  ],
-  providers:[UserEventsService]
+  ]
 }
 )
 export class AppModule {}

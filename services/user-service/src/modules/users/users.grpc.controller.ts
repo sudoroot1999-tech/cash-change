@@ -2,10 +2,11 @@ import { Controller } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import { UsersService } from './users.service';
 import { User } from './entities/user.entity';
+import { UserProfile } from './entities/profile.entity';
 
 @Controller()
 export class UsersGrpcController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   @GrpcMethod('UserService', 'FindById')
   async findById(data: { id: string }) {
@@ -28,13 +29,16 @@ export class UsersGrpcController {
 
   @GrpcMethod('UserService', 'Create')
   async create(data: { email: string; password?: string; username?: string; referral_code?: string }) {
-    const user = await this.usersService.create({
+    const { user, profile } = await this.usersService.create({
       email: data.email,
       password: data.password || '', // Password might be hashed or handled by service
       username: data.username,
       referralCode: data.referral_code,
     });
-    return this.mapUserToResponse(user);
+    return {
+      user: this.mapUserToResponse(user),
+      profile: this.mapProfileToResponse(profile),
+    };
   }
 
   @GrpcMethod('UserService', 'Validate')
@@ -54,6 +58,24 @@ export class UsersGrpcController {
       kyc_level: user.kycLevel,
       two_factor_enabled: user.twoFactorEnabled,
       password_hash: user.passwordHash,
+    };
+  }
+
+  private mapProfileToResponse(profile: UserProfile) {
+    return {
+      id: profile.id,
+      user_id: profile.userId,
+      first_name: profile.firstName || undefined,
+      last_name: profile.lastName || undefined,
+      date_of_birth: profile.dateOfBirth ? profile.dateOfBirth.toISOString() : undefined,
+      country: profile.country || undefined,
+      city: profile.city || undefined,
+      address: profile.address || undefined,
+      postal_code: profile.postalCode || undefined,
+      avatar_url: profile.avatarUrl || undefined,
+      bio: profile.bio || undefined,
+      created_at: profile.createdAt.toISOString(),
+      updated_at: profile.updatedAt.toISOString(),
     };
   }
 }

@@ -10,13 +10,19 @@ import {
   ParseUUIDPipe,
   HttpCode,
   HttpStatus,
+  Req,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
-import { RequireAuth, Public, CurrentUser } from '@exchange/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody, ApiConsumes } from '@nestjs/swagger';
+import { RequireAuth, Public, CurrentUser, BadRequestError } from '@exchange/common';
 import { AuthenticatedUser } from '@exchange/common';
 import { UsersService } from './users.service';
 import { CreateUserDto, UpdateUserDto, UserResponseDto, PaginationQueryDto } from './dto/user.dto';
 import { User } from './entities/user.entity';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { UploadAvatarResponseDto } from './dto/upload-avatar.dto';
+import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 
 @ApiTags('Users')
 @Controller('users')
@@ -24,16 +30,16 @@ import { User } from './entities/user.entity';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Post()
-  @Public()
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Register a new user' })
-  @ApiResponse({ status: 201, description: 'User created successfully', type: UserResponseDto })
-  @ApiResponse({ status: 409, description: 'Email or phone already registered' })
-  async create(@Body() createUserDto: CreateUserDto): Promise<UserResponseDto> {
-    const user = await this.usersService.create(createUserDto);
-    return this.toResponseDto(user);
-  }
+  // @Post()
+  // @Public()
+  // @HttpCode(HttpStatus.CREATED)
+  // @ApiOperation({ summary: 'Register a new user' })
+  // @ApiResponse({ status: 201, description: 'User created successfully', type: UserResponseDto })
+  // @ApiResponse({ status: 409, description: 'Email or phone already registered' })
+  // async create(@Body() createUserDto: CreateUserDto): Promise<UserResponseDto> {
+  //   const user = await this.usersService.create(createUserDto);
+  //   return this.toResponseDto(user);
+  // }
 
   @Get()
   @ApiBearerAuth()
@@ -56,38 +62,18 @@ export class UsersController {
     return this.toResponseDto(user);
   }
 
-  @Put(':id')
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update user' })
-  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
-  @ApiResponse({ status: 200, type: UserResponseDto })
-  async update(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() updateUserDto: UpdateUserDto,
-  ): Promise<UserResponseDto> {
-    const user = await this.usersService.update(id, updateUserDto);
-    return this.toResponseDto(user);
-  }
-
-  @Patch(':id/verify-email')
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Mark email as verified' })
-  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
-  @ApiResponse({ status: 200, type: UserResponseDto })
-  async verifyEmail(@Param('id', ParseUUIDPipe) id: string): Promise<UserResponseDto> {
-    const user = await this.usersService.verifyEmail(id);
-    return this.toResponseDto(user);
-  }
-
-  @Patch(':id/verify-phone')
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Mark phone as verified' })
-  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
-  @ApiResponse({ status: 200, type: UserResponseDto })
-  async verifyPhone(@Param('id', ParseUUIDPipe) id: string): Promise<UserResponseDto> {
-    const user = await this.usersService.verifyPhone(id);
-    return this.toResponseDto(user);
-  }
+  // @Put(':id')
+  // @ApiBearerAuth()
+  // @ApiOperation({ summary: 'Update user' })
+  // @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  // @ApiResponse({ status: 200, type: UserResponseDto })
+  // async update(
+  //   @Param('id', ParseUUIDPipe) id: string,
+  //   @Body() updateUserDto: UpdateUserDto,
+  // ): Promise<UserResponseDto> {
+  //   const user = await this.usersService.update(id, updateUserDto);
+  //   return this.toResponseDto(user);
+  // }
 
   @Get(':id/referrals')
   @ApiBearerAuth()
@@ -117,6 +103,137 @@ export class UsersController {
     return { valid: !!user };
   }
 
+
+  @Get()
+  @ApiOperation({ summary: 'Get user profile' })
+  @ApiParam({ name: 'userId', type: 'string', format: 'uuid' })
+  async getProfile(@Param('userId', ParseUUIDPipe) userId: string) {
+    return this.usersService.getUserProfile(userId);
+  }
+
+  @Put()
+  @ApiOperation({ summary: 'Update user profile' })
+  @ApiParam({ name: 'userId', type: 'string', format: 'uuid' })
+  async updateProfile(
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Body() updateDto: UpdateUserDto,
+  ) {
+    return this.usersService.update(userId, updateDto);
+  }
+
+  @Get('preferences')
+  @ApiOperation({ summary: 'Get user preferences' })
+  @ApiResponse({ status: 200, description: 'Preferences retrieved successfully' })
+  async getPreferences(@Req() req: any) {
+    const userId = req.user.id;
+    const profile = await this.usersService.getUserProfile(userId);
+    return {
+      success: true,
+      data: profile.preferences,
+    };
+  }
+
+  @Patch('preferences')
+  @ApiOperation({ summary: 'Update user preferences' })
+  @ApiParam({ name: 'userId', type: 'string', format: 'uuid' })
+  async updatePreferences(
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Body() preferences: Record<string, unknown>,
+  ) {
+    return this.usersService.updateUserPreferences(userId, preferences);
+  }
+
+  @Post('upload-avatar')
+  @ApiOperation({ summary: 'Upload user avatar' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Avatar uploaded successfully', type: UploadAvatarResponseDto })
+  @ApiResponse({ status: 400, description: 'Invalid file' })
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({ summary: 'Upload avatar' })
+  @ApiParam({ name: 'userId', type: 'string', format: 'uuid' })
+  async uploadAvatar(
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: any,
+  ) {
+        const userID = req.user.id;
+
+  if (!file) {
+    throw new BadRequestError('No file uploaded');
+  }
+
+  const result = await this.usersService.uploadAvatar(
+    userID,
+    file,
+    file.mimetype
+  );
+
+  return {
+    success: true,
+    message: 'Avatar uploaded successfully',
+    data: result,
+  };
+  }
+
+  @Get('limits')
+  @ApiOperation({ summary: 'Get user limits based on KYC level' })
+  @ApiResponse({ status: 200, description: 'Limits retrieved successfully' })
+  async getLimits(@Req() req: any) {
+    const userId = req.user.id;
+    const limits = await this.usersService.getUserLimits(userId);
+    return {
+      success: true,
+      data: limits,
+    };
+  }
+
+  @Post('limits/check')
+  @ApiOperation({ summary: 'Check if user can perform an action based on limits' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        limitType: {
+          type: 'string',
+          enum: ['withdrawal', 'deposit', 'trade'],
+        },
+        amount: {
+          type: 'number',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Limit check completed' })
+  async checkLimit(
+    @Req() req: any,
+    @Body() body: { limitType: 'withdrawal' | 'deposit' | 'trade'; amount: number },
+  ) {
+    const userId = req.user.id;
+    const result = await this.usersService.checkLimit(
+      userId,
+      body.limitType,
+      body.amount,
+    );
+
+    return {
+      success: true,
+      data: result,
+    };
+  }
+
+
+
   /**
    * Transform User entity to Response DTO
    */
@@ -133,6 +250,10 @@ export class UsersController {
       twoFactorEnabled: user.twoFactorEnabled,
       emailVerified: user.emailVerified,
       phoneVerified: user.phoneVerified,
+      email_verification_token:user.email_verification_token,
+      anti_phishing_code:user.anti_phishing_code,
+      last_login_at:user.last_login_at,
+      last_login_ip:user.last_login_ip,
       createdAt: user.createdAt,
     };
   }

@@ -38,3 +38,6 @@ export * from './middleware/security.middleware';
 
 // Guards
 export * from './guards/permissions.guard';
+
+// Hash
+export * from "./hash/password.service"

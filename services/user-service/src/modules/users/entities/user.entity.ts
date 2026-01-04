@@ -7,23 +7,8 @@ import {
   Index,
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
+import {UserStatus,USER_STATUS,UserTier,USER_TIERS} from "@exchange/common"
 
-export enum UserStatus {
-  PENDING = 'pending',
-  ACTIVE = 'active',
-  SUSPENDED = 'suspended',
-  BANNED = 'banned',
-  DELETED = 'deleted'
-}
-
-export enum UserTier {
-  BASIC = 'basic',
-  INTERMEDIATE = 'intermediate',
-  ADVANCED = 'advanced',
-  VIP = 'vip',
-  ULTRA_VIP = 'ultra_vip',
-  INSTITUTIONAL = 'institutional',
-}
 
 @Entity('users')
 export class User {
@@ -47,15 +32,15 @@ export class User {
 
   @Column({
     type: 'enum',
-    enum: UserStatus,
-    default: UserStatus.PENDING,
+    enum: USER_STATUS,
+    default: USER_STATUS.PENDING,
   })
   status!: UserStatus;
 
   @Column({
     type: 'enum',
-    enum: UserTier,
-    default: UserTier.BASIC,
+    enum: USER_TIERS,
+    default: USER_TIERS.BASIC,
   })
   tier!: UserTier;
 
@@ -81,6 +66,18 @@ export class User {
 
   @Column({ name: 'phone_verified', type: 'boolean', default: false })
   phoneVerified!: boolean;
+
+  @Column({ nullable: true })
+  emailVerificationToken: string;
+
+  @Column({ nullable: true })
+  antiPhishingCode: string;
+
+  @Column({ nullable: true })
+  lastLoginAt: Date;
+
+  @Column({ nullable: true })
+  last_login_ip: string;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;

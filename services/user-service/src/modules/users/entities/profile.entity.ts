@@ -6,15 +6,17 @@ import {
   UpdateDateColumn,
   OneToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
 @Entity('user_profiles')
+@Index(['userId'], { unique: true })
 export class UserProfile {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ name: 'user_id', type: 'uuid' })
+  @Column({ name: 'user_id', type: 'uuid' , unique: true })
   userId!: string;
 
   @OneToOne(() => User)
@@ -47,9 +49,6 @@ export class UserProfile {
 
   @Column({ type: 'text', nullable: true })
   bio!: string | null;
-
-  @Column({ type: 'jsonb', default: {} })
-  preferences!: Record<string, unknown>;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;

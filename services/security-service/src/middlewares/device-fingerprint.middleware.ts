@@ -1,6 +1,6 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
-import { DeviceFingerprintService } from '../services/device-fingerprint.service';
+import { DeviceFingerprintService } from '../modules/security/services/device-fingerprint.service';
 
 @Injectable()
 export class DeviceFingerprintMiddleware implements NestMiddleware {

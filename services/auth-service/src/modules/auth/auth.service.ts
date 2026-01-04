@@ -14,6 +14,7 @@ import { authenticator } from '@otplib/preset-default';
 import * as qrcode from 'qrcode';
 import { Session } from '../sessions/entities/session.entity';
 import { AuthEventsService } from './services/auth-events.service';
+import { UserProfile } from '@exchange/common';
 
 // User entity reference (shared from user-service schema)
 interface User {
@@ -338,6 +339,24 @@ export class AuthService implements OnModuleInit {
       twoFactorEnabled: grpcUser.two_factor_enabled,
       two_factor_enabled: grpcUser.two_factor_enabled,
       twoFactorSecret: null,
+    };
+  }
+
+  private mapGrpcProfileToInternal(grpcProfile: any): UserProfile {
+    return {
+      id: grpcProfile.id,
+      userId: grpcProfile.user_id,
+      firstName: grpcProfile.first_name || null,
+      lastName: grpcProfile.last_name || null,
+      dateOfBirth: grpcProfile.date_of_birth || null,
+      country: grpcProfile.country || null,
+      city: grpcProfile.city || null,
+      address: grpcProfile.address || null,
+      postalCode: grpcProfile.postal_code || null,
+      avatarUrl: grpcProfile.avatar_url || null,
+      bio: grpcProfile.bio || null,
+      createdAt: grpcProfile.created_at,
+      updatedAt: grpcProfile.updated_at,
     };
   }
 }

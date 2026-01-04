@@ -63,7 +63,8 @@ export interface UserProfile {
   postalCode?: string;
   avatarUrl?: string;
   bio?: string;
-  preferences: Record<string, unknown>;
+  createdAt?:Date,
+  updatedAt?:Date
 }
 
 // Auth Types

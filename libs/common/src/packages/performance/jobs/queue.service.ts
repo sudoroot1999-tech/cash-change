@@ -268,4 +268,5 @@ export enum QueueNames {
   DATA_EXPORT = 'data-export',
   CACHE_WARMING = 'cache-warming',
   SECURITY = 'security',
+  PROFILE_SYNC = 'profile-sync',
 }

@@ -91,6 +91,18 @@ export class UserResponseDto {
   phoneVerified!: boolean;
 
   @ApiProperty()
+  email_verification_token: string;
+  
+  @ApiProperty()
+  anti_phishing_code: string;
+  
+   @ApiProperty()
+  last_login_at?: Date;
+
+  @ApiProperty()
+  last_login_ip?: string;
+
+  @ApiProperty()
   createdAt!: Date;
 }
 

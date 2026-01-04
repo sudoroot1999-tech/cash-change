@@ -4,6 +4,7 @@ export const USER_STATUS = {
   ACTIVE: 'active',
   SUSPENDED: 'suspended',
   BANNED: 'banned',
+  DELETED: 'deleted'
 
 } as const;
 

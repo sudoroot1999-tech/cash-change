@@ -45,3 +45,24 @@ message UserResponse {
   bool two_factor_enabled = 7;
   optional string password_hash = 8;
 }
+
+message UserProfile {
+  string id = 1;
+  string user_id = 2;
+  optional string first_name = 3;
+  optional string last_name = 4;
+  optional string date_of_birth = 5;
+  optional string country = 6;
+  optional string city = 7;
+  optional string address = 8;
+  optional string postal_code = 9;
+  optional string avatar_url = 10;
+  optional string bio = 11;
+  string created_at = 12;
+  string updated_at = 13;
+}
+
+message CreateUserResponse {
+  UserResponse user = 1;
+  UserProfile profile = 2;
+}
