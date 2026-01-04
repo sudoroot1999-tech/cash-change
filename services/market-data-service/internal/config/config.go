@@ -83,7 +83,7 @@ func Load() *Config {
 		RabbitMQURL: getEnv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/"),
 
 		// Kafka
-		KafkaBrokers:       strings.Split(getEnv("KAFKA_BROKERS", "localhost:9092"), ","),
+		KafkaBrokers:       strings.Split(getEnv("KAFKA_BROKERS", "localhost:29092"), ","),
 		KafkaConsumerGroup: getEnv("KAFKA_CONSUMER_GROUP", "market-data-service"),
 
 		// gRPC Services
