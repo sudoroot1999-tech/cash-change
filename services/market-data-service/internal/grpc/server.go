@@ -2,164 +2,258 @@ package grpc
 
 import (
 	"context"
+	"fmt"
 	"net"
 
-	"github.com/exchange/market-data-service/internal/pb"
-	"github.com/exchange/market-data-service/internal/ticker"
-	"github.com/exchange/market-data-service/internal/currency"
+	"github.com/trading-platform/market-data-service/internal/services"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
-type MarketGRPCServer struct {
-	pb.UnimplementedMarketServiceServer
-	tickerService   *ticker.TickerService
-	currencyService *currency.Service
-	logger          *zap.Logger
+// Server is the gRPC server
+type Server struct {
+	service    *services.MarketDataService
+	grpcServer *grpc.Server
+	logger     *zap.Logger
 }
 
-func NewMarketGRPCServer(ts *ticker.TickerService, cs *currency.Service, logger *zap.Logger) *MarketGRPCServer {
-	return &MarketGRPCServer{
-		tickerService:   ts,
-		currencyService: cs,
-		logger:          logger,
+// NewServer creates a new gRPC server
+func NewServer(service *services.MarketDataService, logger *zap.Logger) *Server {
+	grpcServer := grpc.NewServer(
+		grpc.MaxRecvMsgSize(10*1024*1024),
+		grpc.MaxSendMsgSize(10*1024*1024),
+	)
+
+	server := &Server{
+		service:    service,
+		grpcServer: grpcServer,
+		logger:     logger,
 	}
+
+	// Register the service
+	RegisterMarketDataServiceServer(grpcServer, server)
+
+	// Enable reflection for debugging
+	reflection.Register(grpcServer)
+
+	return server
 }
 
-func (s *MarketGRPCServer) GetTicker(ctx context.Context, req *pb.GetTickerRequest) (*pb.TickerResponse, error) {
-	t := s.tickerService.GetTicker(req.Symbol)
-	if t == nil {
-		return &pb.TickerResponse{}, nil
+// Start starts the gRPC server
+func (s *Server) Start(port string) error {
+	lis, err := net.Listen("tcp", ":"+port)
+	if err != nil {
+		return fmt.Errorf("failed to listen: %w", err)
 	}
 
-	return mapToPBTicker(t), nil
+	s.logger.Info("✅ gRPC server starting", zap.String("port", port))
+	return s.grpcServer.Serve(lis)
 }
 
-func (s *MarketGRPCServer) GetAllTickers(ctx context.Context, req *pb.Empty) (*pb.AllTickersResponse, error) {
-	tickers := s.tickerService.GetAllTickers()
-	pbTickers := make([]*pb.TickerResponse, len(tickers))
-	for i, t := range tickers {
-		pbTickers[i] = mapToPBTicker(t)
-	}
-
-	return &pb.AllTickersResponse{Tickers: pbTickers}, nil
+// Stop stops the gRPC server
+func (s *Server) Stop() {
+	s.grpcServer.GracefulStop()
 }
 
-func (s *MarketGRPCServer) GetOrderBook(ctx context.Context, req *pb.GetOrderBookRequest) (*pb.OrderBookResponse, error) {
-	ob := s.tickerService.GetOrderBook(req.Symbol, int(req.Depth))
-	if ob == nil {
-		return &pb.OrderBookResponse{}, nil
+// GetTicker implements the gRPC GetTicker method
+func (s *Server) GetTicker(ctx context.Context, req *GetTickerRequest) (*TickerResponse, error) {
+	ticker, err := s.service.GetTicker(ctx, req.TradingPair)
+	if err != nil {
+		return nil, err
 	}
 
-	bids := make([]*pb.OrderBookLevel, len(ob.Bids))
-	for i, l := range ob.Bids {
-		bids[i] = &pb.OrderBookLevel{Price: l.Price, Quantity: l.Quantity}
-	}
-
-	asks := make([]*pb.OrderBookLevel, len(ob.Asks))
-	for i, l := range ob.Asks {
-		asks[i] = &pb.OrderBookLevel{Price: l.Price, Quantity: l.Quantity}
-	}
-
-	return &pb.OrderBookResponse{
-		Symbol:    ob.Symbol,
-		Bids:      bids,
-		Asks:      asks,
-		Timestamp: ob.Timestamp,
+	return &TickerResponse{
+		Symbol:         ticker.Symbol,
+		TradingPair:    ticker.TradingPair,
+		Price:          ticker.Price.String(),
+		PriceChange:    ticker.PriceChange.String(),
+		PriceChangePct: ticker.PriceChangePct.String(),
+		High_24H:       ticker.High24h.String(),
+		Low_24H:        ticker.Low24h.String(),
+		Volume_24H:     ticker.Volume24h.String(),
+		QuoteVolume:    ticker.QuoteVolume.String(),
+		BidPrice:       ticker.BidPrice.String(),
+		AskPrice:       ticker.AskPrice.String(),
+		Source:         string(ticker.Source),
+		Timestamp:      ticker.Timestamp.Unix(),
 	}, nil
 }
 
-func (s *MarketGRPCServer) GetRecentTrades(ctx context.Context, req *pb.GetRecentTradesRequest) (*pb.RecentTradesResponse, error) {
-	trades := s.tickerService.GetRecentTrades(req.Symbol, int(req.Limit))
-	pbTrades := make([]*pb.Trade, len(trades))
-	for i, t := range trades {
-		pbTrades[i] = &pb.Trade{
-			Id:        t.ID,
-			Symbol:    t.Symbol,
-			Price:     t.Price,
-			Quantity:  t.Quantity,
-			Side:      t.Side,
-			Timestamp: t.Timestamp,
-		}
-	}
 
-	return &pb.RecentTradesResponse{Trades: pbTrades}, nil
-}
-
-func (s *MarketGRPCServer) GetKlines(ctx context.Context, req *pb.GetKlinesRequest) (*pb.KlinesResponse, error) {
-	klines := s.tickerService.GetKlines(req.Symbol, req.Interval, int(req.Limit))
-	pbKlines := make([]*pb.Kline, len(klines))
-	for i, k := range klines {
-		pbKlines[i] = &pb.Kline{
-			OpenTime:    k.OpenTime,
-			Open:        k.Open,
-			High:        k.High,
-			Low:         k.Low,
-			Close:       k.Close,
-			Volume:      k.Volume,
-			CloseTime:   k.CloseTime,
-			QuoteVolume: k.QuoteVolume,
-			Trades:      int32(k.Trades),
-		}
-	}
-
-	return &pb.KlinesResponse{Klines: pbKlines}, nil
-}
-
-func (s *MarketGRPCServer) SyncCurrencies(ctx context.Context, req *pb.Empty) (*pb.SyncCurrenciesResponse, error) {
-	if err := s.currencyService.SyncCurrencies(ctx); err != nil {
-		return &pb.SyncCurrenciesResponse{Success: false, Message: err.Error()}, nil
-	}
-	return &pb.SyncCurrenciesResponse{Success: true, Message: "Currencies synced successfully"}, nil
-}
-
-func (s *MarketGRPCServer) ListCurrencies(ctx context.Context, req *pb.Empty) (*pb.ListCurrenciesResponse, error) {
-	currencies, err := s.currencyService.ListCurrencies()
+// GetTickers implements the gRPC GetTickers method
+func (s *Server) GetTickers(ctx context.Context, req *GetTickersRequest) (*TickersResponse, error) {
+	tickers, err := s.service.GetTickers(ctx, req.TradingPairs)
 	if err != nil {
-		return &pb.ListCurrenciesResponse{}, err
+		return nil, err
 	}
 
-	pbCurrencies := make([]*pb.Currency, len(currencies))
-	for i, c := range currencies {
-		pbCurrencies[i] = &pb.Currency{
-			Id:     c.ID,
-			Symbol: c.Symbol,
-			Name:   c.Name,
+	response := &TickersResponse{
+		Tickers: make([]*TickerResponse, len(tickers)),
+	}
+
+	for i, ticker := range tickers {
+		response.Tickers[i] = &TickerResponse{
+			Symbol:         ticker.Symbol,
+			TradingPair:    ticker.TradingPair,
+			Price:          ticker.Price.String(),
+			PriceChange:    ticker.PriceChange.String(),
+			PriceChangePct: ticker.PriceChangePct.String(),
+			High_24H:       ticker.High24h.String(),
+			Low_24H:        ticker.Low24h.String(),
+			Volume_24H:     ticker.Volume24h.String(),
+			QuoteVolume:    ticker.QuoteVolume.String(),
+			BidPrice:       ticker.BidPrice.String(),
+			AskPrice:       ticker.AskPrice.String(),
+			Source:         string(ticker.Source),
+			Timestamp:      ticker.Timestamp.Unix(),
 		}
 	}
 
-	return &pb.ListCurrenciesResponse{Currencies: pbCurrencies}, nil
+	return response, nil
 }
 
-func mapToPBTicker(t *ticker.Ticker) *pb.TickerResponse {
-	return &pb.TickerResponse{
-		Symbol:             t.Symbol,
-		LastPrice:          t.LastPrice,
-		PriceChange:        t.PriceChange,
-		PriceChangePercent: t.PriceChangePercent,
-		High_24H:           t.High24h,
-		Low_24H:            t.Low24h,
-		Volume_24H:         t.Volume24h,
-		QuoteVolume_24H:    t.QuoteVolume24h,
-		OpenPrice:          t.OpenPrice,
-		ClosePrice:         t.ClosePrice,
-		BidPrice:           t.BidPrice,
-		AskPrice:           t.AskPrice,
-		Timestamp:          t.Timestamp,
-	}
-}
-
-func StartGRPCServer(port string, ts *ticker.TickerService, cs *currency.Service, logger *zap.Logger) {
-	lis, err := net.Listen("tcp", ":"+port)
+// GetOrderbook implements the gRPC GetOrderbook method
+func (s *Server) GetOrderbook(ctx context.Context, req *GetOrderbookRequest) (*OrderbookResponse, error) {
+	orderbook, err := s.service.GetOrderbook(ctx, req.TradingPair, int(req.Limit))
 	if err != nil {
-		logger.Fatal("Failed to listen for gRPC", zap.Error(err))
+		return nil, err
 	}
 
-	s := grpc.NewServer()
-	pb.RegisterMarketServiceServer(s, NewMarketGRPCServer(ts, cs, logger))
-
-	logger.Info("Starting Market Data gRPC server", zap.String("port", port))
-	if err := s.Serve(lis); err != nil {
-		logger.Fatal("Failed to serve gRPC", zap.Error(err))
+	bids := make([]*PriceLevel, len(orderbook.Bids))
+	for i, bid := range orderbook.Bids {
+		bids[i] = &PriceLevel{
+			Price:    bid.Price.String(),
+			Quantity: bid.Quantity.String(),
+		}
 	}
+
+	asks := make([]*PriceLevel, len(orderbook.Asks))
+	for i, ask := range orderbook.Asks {
+		asks[i] = &PriceLevel{
+			Price:    ask.Price.String(),
+			Quantity: ask.Quantity.String(),
+		}
+	}
+
+	return &OrderbookResponse{
+		TradingPair:  orderbook.TradingPair,
+		Bids:         bids,
+		Asks:         asks,
+		LastUpdateId: orderbook.LastUpdateID,
+		Source:       string(orderbook.Source),
+		Timestamp:    orderbook.Timestamp.Unix(),
+	}, nil
 }
+
+// GetKlines implements the gRPC GetKlines method
+func (s *Server) GetKlines(ctx context.Context, req *GetKlinesRequest) (*KlinesResponse, error) {
+	klines, err := s.service.GetKlines(ctx, req.TradingPair, req.Interval, int(req.Limit))
+	if err != nil {
+		return nil, err
+	}
+
+	response := &KlinesResponse{
+		Klines: make([]*Kline, len(klines)),
+	}
+
+	for i, kline := range klines {
+		response.Klines[i] = &Kline{
+			TradingPair: kline.TradingPair,
+			Interval:    kline.Interval,
+			OpenTime:    kline.OpenTime.Unix(),
+			CloseTime:   kline.CloseTime.Unix(),
+			Open:        kline.Open.String(),
+			High:        kline.High.String(),
+			Low:         kline.Low.String(),
+			Close:       kline.Close.String(),
+			Volume:      kline.Volume.String(),
+			QuoteVolume: kline.QuoteVolume.String(),
+			TradeCount:  kline.TradeCount,
+			Source:      string(kline.Source),
+		}
+	}
+
+	return response, nil
+}
+
+// GetRecentTrades implements the gRPC GetRecentTrades method
+func (s *Server) GetRecentTrades(ctx context.Context, req *GetRecentTradesRequest) (*TradesResponse, error) {
+	trades, err := s.service.GetRecentTrades(ctx, req.TradingPair, int(req.Limit))
+	if err != nil {
+		return nil, err
+	}
+
+	response := &TradesResponse{
+		Trades: make([]*Trade, len(trades)),
+	}
+
+	for i, trade := range trades {
+		response.Trades[i] = &Trade{
+			Id:          trade.ID,
+			TradingPair: trade.TradingPair,
+			Price:       trade.Price.String(),
+			Quantity:    trade.Quantity.String(),
+			Side:        trade.Side,
+			Timestamp:   trade.Timestamp.Unix(),
+			Source:      string(trade.Source),
+		}
+	}
+
+	return response, nil
+}
+
+// GetMarketInfo implements the gRPC GetMarketInfo method
+func (s *Server) GetMarketInfo(ctx context.Context, req *GetMarketInfoRequest) (*MarketInfoResponse, error) {
+	info, err := s.service.GetMarketInfo(ctx, req.Symbol)
+	if err != nil {
+		return nil, err
+	}
+
+	return &MarketInfoResponse{
+		Symbol:            info.Symbol,
+		Name:              info.Name,
+		AssetType:         string(info.AssetType),
+		MarketCap:         info.MarketCap.String(),
+		MarketCapRank:     int32(info.MarketCapRank),
+		CirculatingSupply: info.CirculatingSupply.String(),
+		TotalSupply:       info.TotalSupply.String(),
+		MaxSupply:         info.MaxSupply.String(),
+		Ath:               info.ATH.String(),
+		AthDate:           info.ATHDate.Unix(),
+		Atl:               info.ATL.String(),
+		AtlDate:           info.ATLDate.Unix(),
+		LastUpdated:       info.LastUpdated.Unix(),
+	}, nil
+}
+
+// StreamTicker implements the gRPC StreamTicker method
+func (s *Server) StreamTicker(req *StreamTickerRequest, stream MarketDataService_StreamTickerServer) error {
+	// This would be implemented with WebSocket subscription
+	// For now, return unimplemented
+	return fmt.Errorf("streaming not implemented yet")
+}
+
+// StreamOrderbook implements the gRPC StreamOrderbook method
+func (s *Server) StreamOrderbook(req *StreamOrderbookRequest, stream MarketDataService_StreamOrderbookServer) error {
+	// This would be implemented with WebSocket subscription
+	return fmt.Errorf("streaming not implemented yet")
+}
+
+// HealthCheck implements the gRPC HealthCheck method
+func (s *Server) HealthCheck(ctx context.Context, req *HealthCheckRequest) (*HealthCheckResponse, error) {
+	health := s.service.HealthCheck(ctx)
+
+	details := make(map[string]string)
+	for k, v := range health {
+		details[k] = fmt.Sprintf("%v", v)
+	}
+
+	return &HealthCheckResponse{
+		Healthy: true,
+		Details: details,
+	}, nil
+}
+
+// mustEmbedUnimplementedMarketDataServiceServer implements the interface
+func (s *Server) mustEmbedUnimplementedMarketDataServiceServer() {}

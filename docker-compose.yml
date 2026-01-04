@@ -10,11 +10,13 @@ x-postgres-env: &postgres-env
   POSTGRES_USER: ${POSTGRES_USER:-exchange_user}
   POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-exchange_dev_password}
   POSTGRES_DB: ${POSTGRES_DB:-exchange}
+  DATABASE_URL: postgres://${POSTGRES_USER:-exchange_user}:${POSTGRES_PASSWORD:-exchange_dev_password}@postgres:5432/${POSTGRES_DB:-exchange}?sslmode=disable
 
 x-redis-env: &redis-env
   REDIS_HOST: redis
   REDIS_PORT: 6379
   REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_dev_password}
+  REDIS_URL: redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}
 
 x-rabbitmq-env: &rabbitmq-env
   RABBITMQ_HOST: rabbitmq
@@ -37,6 +39,7 @@ x-kafka-env: &kafka-env
   KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
   KAFKA_NUM_PARTITIONS: 1
   KAFKA_LOG_RETENTION_HOURS: 168
+  KAFKA_BROKERS: kafka:9092
 
 x-timescale-env: &timescale-env
   TIMESCALE_HOST: timescaledb
@@ -44,6 +47,7 @@ x-timescale-env: &timescale-env
   TIMESCALE_USER: ${POSTGRES_USER:-exchange_user}
   TIMESCALE_PASSWORD: ${POSTGRES_PASSWORD:-exchange_dev_password}
   TIMESCALE_DB: market_data
+  DATABASE_URL: postgres://${POSTGRES_USER:-exchange_user}:${POSTGRES_PASSWORD:-exchange_dev_password}@postgres:5432/${POSTGRES_DB:-exchange}?sslmode=disable
 
 x-minio-env: &minio-env
   MINIO_HOST: minio
@@ -216,7 +220,7 @@ services:
     container_name: exchange-user-service
     restart: unless-stopped
     environment:
-      <<: [*common-env, *postgres-env, *redis-env, *rabbitmq-env, *minio-env]
+      <<: [*common-env, *postgres-env, *redis-env, *rabbitmq-env, *minio-env, *kafka-env]
       PORT: 3001
       GRPC_PORT: 5001
     ports:
@@ -281,12 +285,42 @@ services:
     container_name: exchange-market-data
     restart: unless-stopped
     environment:
-      <<: [*common-env, *redis-env, *rabbitmq-env, *timescale-env]
-      PORT: 3005
+      <<: [*common-env, *redis-env, *rabbitmq-env, *timescale-env, *kafka-env]
+      HTTP_PORT: 3005
       GRPC_PORT: 5005
+      WEBSOCKET_PORT: 6005
+      KAFKA_CONSUMER_GROUP: market-data-service
+      MATCHING_ENGINE_GRPC: matching-engine:5010
+      TRADING_GRPC: trading-service:5004
+      # Instance
+      INSTANCE_ID: market-data-1
+      # Data Providers
+      COINGECKO_API_URL: https://api.coingecko.com/api/v3
+      COINGECKO_API_KEY:
+      BINANCE_API_URL: https://api.binance.com
+      BINANCE_WS_URL: wss://stream.binance.com:9443/ws
+      # Cache TTL (seconds)
+      CACHE_TTL_TICKER: 5
+      CACHE_TTL_ORDERBOOK: 1
+      CACHE_TTL_KLINE: 60
+      CACHE_TTL_MARKET_CAP: 300
+      # Workers
+      TICKER_WORKERS: 5
+      KLINE_WORKERS: 3
+      ORDERBOOK_WORKERS: 5
+      # Sync Intervals (seconds)
+      TICKER_SYNC_INTERVAL: 5
+      KLINE_SYNC_INTERVAL: 60
+      MARKET_CAP_SYNC_INTERVAL: 300
+      # Feature Flags
+      ENABLE_BINANCE: true
+      ENABLE_COINGECKO: true
+      ENABLE_NFT_DATA: false
+      ENABLE_RWA_DATA: false
     ports:
       - '3005:3005'
       - '5005:5005'
+      - '6005:6005'
     depends_on:
       redis:
         condition: service_healthy
@@ -323,8 +357,44 @@ services:
     container_name: exchange-notification
     restart: unless-stopped
     environment:
-      <<: [*common-env, *postgres-env, *redis-env, *rabbitmq-env]
+      <<: [*common-env, *postgres-env, *redis-env, *rabbitmq-env, *kafka-env]
       PORT: 3006
+      # Email Configuration - SendGrid
+      SENDGRID_API_KEY: your-sendgrid-api-key
+      SENDGRID_FROM_EMAI: noreply@yourcompany.com
+      SENDGRID_FROM_NAME: Your Company
+      # Email Configuration - AWS SES
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: your-aws-access-key
+      AWS_SECRET_ACCESS_KEY: your-aws-secret-key
+      AWS_SES_FROM_EMAIL: noreply@yourcompany.com
+      # SMS Configuration - Twilio
+      TWILIO_ACCOUNT_SID: your-twilio-account-sid
+      TWILIO_AUTH_TOKEN: your-twilio-auth-token
+      TWILIO_PHONE_NUMBER: +1234567890
+      # SMS Configuration - Kavenegar (Iran)
+      KAVENEGAR_API_KEY: your-kavenegar-api-key
+      KAVENEGAR_SENDER: your-kavenegar-sender
+      # Firebase Cloud Messaging (Push Notifications)
+      FCM_PROJECT_ID: your-firebase-project-id
+      FCM_PRIVATE_KEY: your-firebase-private-key
+      FCM_CLIENT_EMAIL: your-firebase-client-email
+      # Apple Push Notification Service
+      APNS_KEY_ID: your-apns-key-id
+      APNS_TEAM_ID: your-apns-team-id
+      APNS_BUNDLE_ID: com.yourcompany.app
+      APNS_PRIVATE_KEY_PATH: /path/to/AuthKey.p8
+      APNS_PRODUCTION: false
+      # Telegram Bot
+      TELEGRAM_BOT_TOKEN: your-telegram-bot-token
+      # WhatsApp Business API
+      WHATSAPP_API_URL: https://api.whatsapp.com
+      WHATSAPP_API_TOKEN: your-whatsapp-api-token
+      WHATSAPP_PHONE_NUMBER_ID: your-phone-number-id
+      # Notification Settings
+      MAX_RETRY_ATTEMPTS: 3
+      RETRY_DELAY_MS: 5000
+      BATCH_SIZE: 100
     ports:
       - '3006:3006'
     depends_on: *common-depends
@@ -357,6 +427,14 @@ services:
     environment:
       <<: [*common-env, *postgres-env, *redis-env, *rabbitmq-env]
       PORT: 3008
+      # Security email 
+      CRITICAL_ALERT_EMAILS: security@exchange.com,admin@exchange.com
+      # Security service features
+      ENABLE_ANTI_PHISHING: true
+      ENABLE_DEVICE_FINGERPRINTING: true
+      ENABLE_TRANSACTION_MONITORING: true
+      ENABLE_BUG_BOUNTY: true
+      ENABLE_PROOF_OF_RESERVES: true
     ports:
       - '3008:3008'
     depends_on:
@@ -364,21 +442,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    networks:
-      - exchange-network
-
-  proof-of-reserves-service:
-    build:
-      context: .
-      dockerfile: services/proof-of-reserves-service/Dockerfile
-    container_name: exchange-proof-of-reserves
-    restart: unless-stopped
-    environment:
-      <<: [*common-env, *postgres-env, *redis-env, *rabbitmq-env, *service-urls]
-      PORT: 3009
-    ports:
-      - '3009:3009'
-    depends_on: *common-depends
     networks:
       - exchange-network
 
