@@ -1,577 +1,619 @@
 package engine
 
 import (
+	"context"
+	"fmt"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
+	"github.com/trading-platform/matching-engine/internal/kafka"
+	"github.com/trading-platform/matching-engine/internal/repository"
+	"github.com/trading-platform/matching-engine/internal/types"
+	"github.com/trading-platform/matching-engine/internal/websocket"
 	"go.uber.org/zap"
 )
 
-// OrderSide represents buy or sell
-type OrderSide string
-
-const (
-	Buy  OrderSide = "buy"
-	Sell OrderSide = "sell"
-)
-
-// OrderType represents the order type
-type OrderType string
-
-const (
-	Market    OrderType = "market"
-	Limit     OrderType = "limit"
-	StopLoss  OrderType = "stop_loss"
-	StopLimit OrderType = "stop_limit"
-)
-
-// OrderStatus represents the order status
-type OrderStatus string
-
-const (
-	Pending   OrderStatus = "pending"
-	Open      OrderStatus = "open"
-	Partial   OrderStatus = "partial"
-	Filled    OrderStatus = "filled"
-	Cancelled OrderStatus = "cancelled"
-)
-
-// Order represents a trading order
-type Order struct {
-	ID               string          `json:"id"`
-	UserID           string          `json:"userId"`
-	Symbol           string          `json:"symbol"`
-	Side             OrderSide       `json:"side"`
-	Type             OrderType       `json:"type"`
-	Status           OrderStatus     `json:"status"`
-	Price            decimal.Decimal `json:"price"`
-	Quantity         decimal.Decimal `json:"quantity"`
-	FilledQuantity   decimal.Decimal `json:"filledQuantity"`
-	RemainingQty     decimal.Decimal `json:"remainingQuantity"`
-	StopPrice        decimal.Decimal `json:"stopPrice,omitempty"`
-	TimeInForce      string          `json:"timeInForce"`
-	ClientOrderID    string          `json:"clientOrderId,omitempty"`
-	CreatedAt        time.Time       `json:"createdAt"`
-	UpdatedAt        time.Time       `json:"updatedAt"`
-}
-
-// Trade represents an executed trade
-type Trade struct {
-	ID            string          `json:"id"`
-	Symbol        string          `json:"symbol"`
-	BuyerOrderID  string          `json:"buyerOrderId"`
-	SellerOrderID string          `json:"sellerOrderId"`
-	BuyerID       string          `json:"buyerId"`
-	SellerID      string          `json:"sellerId"`
-	Price         decimal.Decimal `json:"price"`
-	Quantity      decimal.Decimal `json:"quantity"`
-	IsBuyerMaker  bool            `json:"isBuyerMaker"`
-	CreatedAt     time.Time       `json:"createdAt"`
-}
-
-// PriceLevel represents a price level in the order book
-type PriceLevel struct {
-	Price    decimal.Decimal `json:"price"`
-	Quantity decimal.Decimal `json:"quantity"`
-	Orders   []*Order        `json:"-"`
-}
-
-// OrderBook represents the order book for a trading pair
-type OrderBook struct {
-	Symbol      string                      `json:"symbol"`
-	Bids        map[string]*PriceLevel      // price -> level (sorted desc)
-	Asks        map[string]*PriceLevel      // price -> level (sorted asc)
-	bidLevels   []decimal.Decimal           // sorted bid prices (desc)
-	askLevels   []decimal.Decimal           // sorted ask prices (asc)
-	orders      map[string]*Order           // orderId -> order
-	mu          sync.RWMutex
-}
-
-// MatchingEngine is the core order matching engine
 type MatchingEngine struct {
-	orderBooks   map[string]*OrderBook
-	trades       map[string][]*Trade
-	mu           sync.RWMutex
-	logger       *zap.Logger
-	tradeHandler func(*Trade)
-	stats        *EngineStats
+	mu            sync.RWMutex
+	orderBooks    map[string]*OrderBook
+	stopOrders    map[string][]*types.Order
+	trailingStops map[uuid.UUID]*TrailingStopTracker
+	positions     map[string]*types.Position
+	repository    repository.Repository
+	kafkaProducer *kafka.Producer
+	wsHub         *websocket.Hub
+	logger        *zap.Logger
+	orderQueue    chan *types.Order
+	cancelQueue   chan uuid.UUID
+	metrics       *Metrics
 }
 
-// EngineStats tracks engine performance
-type EngineStats struct {
-	OrdersProcessed   int64     `json:"ordersProcessed"`
-	TradesExecuted    int64     `json:"tradesExecuted"`
-	OrdersCancelled   int64     `json:"ordersCancelled"`
-	AvgMatchTimeNs    int64     `json:"avgMatchTimeNs"`
-	LastMatchTimeNs   int64     `json:"lastMatchTimeNs"`
-	StartedAt         time.Time `json:"startedAt"`
-	mu                sync.Mutex
+type TrailingStopTracker struct {
+	Order        *types.Order
+	HighestPrice decimal.Decimal
+	LowestPrice  decimal.Decimal
 }
 
-// NewMatchingEngine creates a new matching engine
-func NewMatchingEngine(logger *zap.Logger) *MatchingEngine {
+type Metrics struct {
+	OrdersProcessed   int64
+	OrdersMatched     int64
+	TradesExecuted    int64
+	AverageLatency    time.Duration
+	OrdersPerSecond   float64
+	lastUpdate        time.Time
+}
+
+func NewMatchingEngine(
+	repo repository.Repository,
+	kafkaProducer *kafka.Producer,
+	wsHub *websocket.Hub,
+	logger *zap.Logger,
+) *MatchingEngine {
 	return &MatchingEngine{
-		orderBooks: make(map[string]*OrderBook),
-		trades:     make(map[string][]*Trade),
-		logger:     logger,
-		stats: &EngineStats{
-			StartedAt: time.Now(),
-		},
+		orderBooks:    make(map[string]*OrderBook),
+		stopOrders:    make(map[string][]*types.Order),
+		trailingStops: make(map[uuid.UUID]*TrailingStopTracker),
+		positions:     make(map[string]*types.Position),
+		repository:    repo,
+		kafkaProducer: kafkaProducer,
+		wsHub:         wsHub,
+		logger:        logger,
+		orderQueue:    make(chan *types.Order, 100000),
+		cancelQueue:   make(chan uuid.UUID, 10000),
+		metrics:       &Metrics{lastUpdate: time.Now()},
 	}
 }
 
-// SetTradeHandler sets the callback for executed trades
-func (e *MatchingEngine) SetTradeHandler(handler func(*Trade)) {
-	e.tradeHandler = handler
+func (me *MatchingEngine) Start(ctx context.Context) {
+	me.logger.Info("Starting matching engine")
+
+	// Start metrics reporter
+	go me.reportMetrics(ctx)
+
+	// Start multiple workers for parallel processing
+	numWorkers := 10
+	for i := 0; i < numWorkers; i++ {
+		go me.processOrders(ctx)
+	}
+
+	// Process cancellations
+	go me.processCancellations(ctx)
+
+	<-ctx.Done()
+	me.logger.Info("Matching engine stopped")
 }
 
-// GetOrCreateOrderBook gets or creates an order book for a symbol
-func (e *MatchingEngine) GetOrCreateOrderBook(symbol string) *OrderBook {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-
-	if ob, exists := e.orderBooks[symbol]; exists {
-		return ob
-	}
-
-	ob := &OrderBook{
-		Symbol:    symbol,
-		Bids:      make(map[string]*PriceLevel),
-		Asks:      make(map[string]*PriceLevel),
-		bidLevels: []decimal.Decimal{},
-		askLevels: []decimal.Decimal{},
-		orders:    make(map[string]*Order),
-	}
-	e.orderBooks[symbol] = ob
-	return ob
-}
-
-// SubmitOrder submits an order to the matching engine
-func (e *MatchingEngine) SubmitOrder(order *Order) ([]*Trade, error) {
-	start := time.Now()
-	defer func() {
-		e.stats.mu.Lock()
-		e.stats.OrdersProcessed++
-		e.stats.LastMatchTimeNs = time.Since(start).Nanoseconds()
-		e.stats.mu.Unlock()
-	}()
-
-	if order.ID == "" {
-		order.ID = uuid.New().String()
-	}
-	order.CreatedAt = time.Now()
-	order.UpdatedAt = order.CreatedAt
-	order.RemainingQty = order.Quantity
-	order.FilledQuantity = decimal.Zero
-	order.Status = Open
-
-	ob := e.GetOrCreateOrderBook(order.Symbol)
-	
-	var trades []*Trade
-
-	if order.Type == Market {
-		trades = e.matchMarketOrder(ob, order)
-	} else if order.Type == Limit {
-		trades = e.matchLimitOrder(ob, order)
-	}
-
-	// If order still has remaining quantity, add to book
-	if order.RemainingQty.GreaterThan(decimal.Zero) && order.Type == Limit {
-		e.addToOrderBook(ob, order)
-	}
-
-	// Update stats
-	e.stats.mu.Lock()
-	e.stats.TradesExecuted += int64(len(trades))
-	e.stats.mu.Unlock()
-
-	// Store and notify trades
-	if len(trades) > 0 {
-		e.mu.Lock()
-		e.trades[order.Symbol] = append(e.trades[order.Symbol], trades...)
-		// Keep only last 1000 trades
-		if len(e.trades[order.Symbol]) > 1000 {
-			e.trades[order.Symbol] = e.trades[order.Symbol][len(e.trades[order.Symbol])-1000:]
+func (me *MatchingEngine) processOrders(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case order := <-me.orderQueue:
+			startTime := time.Now()
+			me.ProcessOrder(order)
+			latency := time.Since(startTime)
+			me.updateMetrics(latency)
 		}
-		e.mu.Unlock()
+	}
+}
 
-		for _, trade := range trades {
-			if e.tradeHandler != nil {
-				e.tradeHandler(trade)
+func (me *MatchingEngine) processCancellations(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case orderID := <-me.cancelQueue:
+			me.CancelOrder(orderID)
+		}
+	}
+}
+
+func (me *MatchingEngine) ProcessOrder(order *types.Order) error {
+	me.mu.Lock()
+	orderBook, exists := me.orderBooks[order.TradingPair]
+	if !exists {
+		orderBook = NewOrderBook(order.TradingPair)
+		me.orderBooks[order.TradingPair] = orderBook
+	}
+	me.mu.Unlock()
+
+	// Validate order
+	if err := me.validateOrder(order); err != nil {
+		order.Status = types.OrderStatusRejected
+		me.repository.UpdateOrder(order)
+		me.publishOrderEvent(order, "order.rejected")
+		return err
+	}
+
+	// Handle different order types
+	switch order.Type {
+	case types.OrderTypeMarket:
+		return me.processMarketOrder(order, orderBook)
+	case types.OrderTypeLimit:
+		return me.processLimitOrder(order, orderBook)
+	case types.OrderTypeStopLoss, types.OrderTypeStopLimit:
+		return me.processStopOrder(order, orderBook)
+	case types.OrderTypeTrailingStop:
+		return me.processTrailingStopOrder(order, orderBook)
+	case types.OrderTypeIceberg:
+		return me.processIcebergOrder(order, orderBook)
+	default:
+		return fmt.Errorf("unsupported order type: %s", order.Type)
+	}
+}
+
+func (me *MatchingEngine) processMarketOrder(order *types.Order, ob *OrderBook) error {
+	order.Status = types.OrderStatusOpen
+
+	trades := me.matchOrder(order, ob)
+
+	if order.RemainingQuantity.IsZero() {
+		order.Status = types.OrderStatusFilled
+	} else if order.FilledQuantity.IsPositive() {
+		order.Status = types.OrderStatusPartiallyFilled
+		
+		// Market orders with IOC or FOK should be cancelled if not fully filled
+		if order.TimeInForce == types.TimeInForceIOC || order.TimeInForce == types.TimeInForceFOK {
+			order.Status = types.OrderStatusCancelled
+		}
+	} else {
+		order.Status = types.OrderStatusCancelled
+	}
+
+	me.repository.UpdateOrder(order)
+	me.publishOrderEvent(order, "order.processed")
+
+	for _, trade := range trades {
+		me.executeTrade(trade)
+	}
+
+	return nil
+}
+
+func (me *MatchingEngine) processLimitOrder(order *types.Order, ob *OrderBook) error {
+	order.Status = types.OrderStatusOpen
+
+	// Try to match immediately
+	trades := me.matchOrder(order, ob)
+
+	if order.RemainingQuantity.IsZero() {
+		order.Status = types.OrderStatusFilled
+	} else if order.FilledQuantity.IsPositive() {
+		order.Status = types.OrderStatusPartiallyFilled
+		
+		// Handle time in force
+		if order.TimeInForce == types.TimeInForceIOC || order.TimeInForce == types.TimeInForceFOK {
+			order.Status = types.OrderStatusCancelled
+		} else {
+			// Add remaining to order book
+			ob.AddOrder(order)
+		}
+	} else {
+		// No match, add to order book
+		ob.AddOrder(order)
+	}
+
+	me.repository.UpdateOrder(order)
+	me.publishOrderEvent(order, "order.processed")
+
+	for _, trade := range trades {
+		me.executeTrade(trade)
+	}
+
+	// Broadcast order book update
+	me.broadcastOrderBook(ob)
+
+	return nil
+}
+
+func (me *MatchingEngine) processStopOrder(order *types.Order, ob *OrderBook) error {
+	// Stop orders are stored separately and triggered when price reaches stop price
+	order.Status = types.OrderStatusPending
+	me.repository.CreateOrder(order)
+	me.publishOrderEvent(order, "order.created")
+	return nil
+}
+
+func (me *MatchingEngine) processTrailingStopOrder(order *types.Order, ob *OrderBook) error {
+	// Trailing stop orders track the market price and adjust stop price
+	order.Status = types.OrderStatusPending
+	me.repository.CreateOrder(order)
+	me.publishOrderEvent(order, "order.created")
+	return nil
+}
+
+func (me *MatchingEngine) processIcebergOrder(order *types.Order, ob *OrderBook) error {
+	// Iceberg orders display only a portion of the total quantity
+	visibleOrder := *order
+	if order.DisplayQuantity != nil && order.DisplayQuantity.LessThan(order.Quantity) {
+		visibleOrder.Quantity = *order.DisplayQuantity
+		visibleOrder.RemainingQuantity = *order.DisplayQuantity
+	}
+
+	return me.processLimitOrder(&visibleOrder, ob)
+}
+
+func (me *MatchingEngine) matchOrder(takerOrder *types.Order, ob *OrderBook) []*types.Trade {
+	trades := []*types.Trade{}
+
+	for takerOrder.RemainingQuantity.IsPositive() {
+		var makerOrder *types.Order
+		var matchPrice decimal.Decimal
+
+		if takerOrder.Side == types.OrderSideBuy {
+			bestAsk, hasAsk := ob.GetBestAsk()
+			if !hasAsk || (takerOrder.Type == types.OrderTypeLimit && takerOrder.Price.LessThan(bestAsk.Price)) {
+				break
 			}
-		}
-	}
-
-	e.logger.Debug("Order processed",
-		zap.String("orderId", order.ID),
-		zap.String("symbol", order.Symbol),
-		zap.String("side", string(order.Side)),
-		zap.String("status", string(order.Status)),
-		zap.Int("trades", len(trades)),
-		zap.Duration("latency", time.Since(start)),
-	)
-
-	return trades, nil
-}
-
-// matchMarketOrder matches a market order against the order book
-func (e *MatchingEngine) matchMarketOrder(ob *OrderBook, order *Order) []*Trade {
-	ob.mu.Lock()
-	defer ob.mu.Unlock()
-
-	var trades []*Trade
-	var levels []decimal.Decimal
-
-	if order.Side == Buy {
-		levels = ob.askLevels
-	} else {
-		levels = ob.bidLevels
-	}
-
-	for _, price := range levels {
-		if order.RemainingQty.IsZero() {
-			break
-		}
-
-		var level *PriceLevel
-		if order.Side == Buy {
-			level = ob.Asks[price.String()]
+			matchPrice = bestAsk.Price
+			makerOrder = bestAsk.Orders[0]
 		} else {
-			level = ob.Bids[price.String()]
+			bestBid, hasBid := ob.GetBestBid()
+			if !hasBid || (takerOrder.Type == types.OrderTypeLimit && takerOrder.Price.GreaterThan(bestBid.Price)) {
+				break
+			}
+			matchPrice = bestBid.Price
+			makerOrder = bestBid.Orders[0]
 		}
 
-		if level == nil {
-			continue
-		}
+		// Calculate trade quantity
+		tradeQuantity := decimal.Min(takerOrder.RemainingQuantity, makerOrder.RemainingQuantity)
 
-		trades = append(trades, e.matchAtLevel(ob, order, level, price)...)
-	}
-
-	if order.RemainingQty.IsZero() {
-		order.Status = Filled
-	} else if order.FilledQuantity.GreaterThan(decimal.Zero) {
-		order.Status = Partial
-	}
-
-	return trades
-}
-
-// matchLimitOrder matches a limit order against the order book
-func (e *MatchingEngine) matchLimitOrder(ob *OrderBook, order *Order) []*Trade {
-	ob.mu.Lock()
-	defer ob.mu.Unlock()
-
-	var trades []*Trade
-	var levels []decimal.Decimal
-
-	if order.Side == Buy {
-		levels = ob.askLevels
-	} else {
-		levels = ob.bidLevels
-	}
-
-	for _, price := range levels {
-		if order.RemainingQty.IsZero() {
-			break
-		}
-
-		// Check price crossing
-		if order.Side == Buy && price.GreaterThan(order.Price) {
-			break
-		}
-		if order.Side == Sell && price.LessThan(order.Price) {
-			break
-		}
-
-		var level *PriceLevel
-		if order.Side == Buy {
-			level = ob.Asks[price.String()]
-		} else {
-			level = ob.Bids[price.String()]
-		}
-
-		if level == nil {
-			continue
-		}
-
-		trades = append(trades, e.matchAtLevel(ob, order, level, price)...)
-	}
-
-	if order.RemainingQty.IsZero() {
-		order.Status = Filled
-	} else if order.FilledQuantity.GreaterThan(decimal.Zero) {
-		order.Status = Partial
-	}
-
-	return trades
-}
-
-// matchAtLevel matches an order at a specific price level
-func (e *MatchingEngine) matchAtLevel(ob *OrderBook, taker *Order, level *PriceLevel, price decimal.Decimal) []*Trade {
-	var trades []*Trade
-	var remainingOrders []*Order
-
-	for _, maker := range level.Orders {
-		if taker.RemainingQty.IsZero() {
-			remainingOrders = append(remainingOrders, maker)
-			continue
-		}
-
-		// Self-trade prevention
-		if taker.UserID == maker.UserID {
-			remainingOrders = append(remainingOrders, maker)
-			continue
-		}
-
-		// Calculate fill quantity
-		fillQty := decimal.Min(taker.RemainingQty, maker.RemainingQty)
+		// Update order quantities
+		takerOrder.RemainingQuantity = takerOrder.RemainingQuantity.Sub(tradeQuantity)
+		takerOrder.FilledQuantity = takerOrder.FilledQuantity.Add(tradeQuantity)
+		makerOrder.RemainingQuantity = makerOrder.RemainingQuantity.Sub(tradeQuantity)
+		makerOrder.FilledQuantity = makerOrder.FilledQuantity.Add(tradeQuantity)
 
 		// Create trade
-		trade := &Trade{
-			ID:        uuid.New().String(),
-			Symbol:    taker.Symbol,
-			Price:     price,
-			Quantity:  fillQty,
-			CreatedAt: time.Now(),
+		trade := &types.Trade{
+			ID:          uuid.New(),
+			TradingPair: takerOrder.TradingPair,
+			Price:       matchPrice,
+			Quantity:    tradeQuantity,
+			Timestamp:   time.Now(),
+			TradingType: takerOrder.TradingType,
 		}
 
-		if taker.Side == Buy {
-			trade.BuyerOrderID = taker.ID
-			trade.SellerOrderID = maker.ID
-			trade.BuyerID = taker.UserID
-			trade.SellerID = maker.UserID
-			trade.IsBuyerMaker = false
+		if takerOrder.Side == types.OrderSideBuy {
+			trade.BuyOrderID = takerOrder.ID
+			trade.SellOrderID = makerOrder.ID
+			trade.BuyUserID = takerOrder.UserID
+			trade.SellUserID = makerOrder.UserID
+			trade.BuyerFee = tradeQuantity.Mul(matchPrice).Mul(takerOrder.TakerFee)
+			trade.SellerFee = tradeQuantity.Mul(matchPrice).Mul(makerOrder.MakerFee)
 		} else {
-			trade.BuyerOrderID = maker.ID
-			trade.SellerOrderID = taker.ID
-			trade.BuyerID = maker.UserID
-			trade.SellerID = taker.UserID
-			trade.IsBuyerMaker = true
+			trade.BuyOrderID = makerOrder.ID
+			trade.SellOrderID = takerOrder.ID
+			trade.BuyUserID = makerOrder.UserID
+			trade.SellUserID = takerOrder.UserID
+			trade.BuyerFee = tradeQuantity.Mul(matchPrice).Mul(makerOrder.MakerFee)
+			trade.SellerFee = tradeQuantity.Mul(matchPrice).Mul(takerOrder.TakerFee)
 		}
 
 		trades = append(trades, trade)
 
-		// Update quantities
-		taker.FilledQuantity = taker.FilledQuantity.Add(fillQty)
-		taker.RemainingQty = taker.RemainingQty.Sub(fillQty)
-		maker.FilledQuantity = maker.FilledQuantity.Add(fillQty)
-		maker.RemainingQty = maker.RemainingQty.Sub(fillQty)
-		maker.UpdatedAt = time.Now()
-
-		if maker.RemainingQty.IsZero() {
-			maker.Status = Filled
-			delete(ob.orders, maker.ID)
+		// Update maker order status
+		if makerOrder.RemainingQuantity.IsZero() {
+			makerOrder.Status = types.OrderStatusFilled
+			ob.RemoveOrder(makerOrder.ID)
 		} else {
-			maker.Status = Partial
-			remainingOrders = append(remainingOrders, maker)
+			makerOrder.Status = types.OrderStatusPartiallyFilled
 		}
-	}
 
-	// Update level
-	level.Orders = remainingOrders
-	level.Quantity = decimal.Zero
-	for _, o := range remainingOrders {
-		level.Quantity = level.Quantity.Add(o.RemainingQty)
-	}
-
-	// Remove empty level
-	if level.Quantity.IsZero() {
-		if taker.Side == Buy {
-			delete(ob.Asks, price.String())
-			ob.askLevels = removePrice(ob.askLevels, price)
-		} else {
-			delete(ob.Bids, price.String())
-			ob.bidLevels = removePrice(ob.bidLevels, price)
-		}
+		me.repository.UpdateOrder(makerOrder)
+		me.publishOrderEvent(makerOrder, "order.matched")
 	}
 
 	return trades
 }
 
-// addToOrderBook adds an order to the order book
-func (e *MatchingEngine) addToOrderBook(ob *OrderBook, order *Order) {
-	ob.mu.Lock()
-	defer ob.mu.Unlock()
+func (me *MatchingEngine) executeTrade(trade *types.Trade) {
+	// Save trade to database
+	if err := me.repository.CreateTrade(trade); err != nil {
+		me.logger.Error("Failed to create trade", zap.Error(err))
+		return
+	}
 
-	priceStr := order.Price.String()
-	ob.orders[order.ID] = order
+	// Update positions for futures trading
+	if trade.TradingType == types.TradingTypeFutures {
+		me.updatePositions(trade)
+	}
 
-	if order.Side == Buy {
-		level, exists := ob.Bids[priceStr]
-		if !exists {
-			level = &PriceLevel{
-				Price:    order.Price,
-				Quantity: decimal.Zero,
-				Orders:   []*Order{},
-			}
-			ob.Bids[priceStr] = level
-			ob.bidLevels = insertPriceDesc(ob.bidLevels, order.Price)
-		}
-		level.Orders = append(level.Orders, order)
-		level.Quantity = level.Quantity.Add(order.RemainingQty)
-	} else {
-		level, exists := ob.Asks[priceStr]
-		if !exists {
-			level = &PriceLevel{
-				Price:    order.Price,
-				Quantity: decimal.Zero,
-				Orders:   []*Order{},
-			}
-			ob.Asks[priceStr] = level
-			ob.askLevels = insertPriceAsc(ob.askLevels, order.Price)
-		}
-		level.Orders = append(level.Orders, order)
-		level.Quantity = level.Quantity.Add(order.RemainingQty)
+	// Publish trade event
+	me.publishTradeEvent(trade)
+
+	// Broadcast trade to WebSocket clients
+	me.wsHub.BroadcastTrade(trade)
+
+	me.metrics.TradesExecuted++
+}
+
+func (me *MatchingEngine) updatePositions(trade *types.Trade) {
+	// Update buyer position
+	buyerPosition, _ := me.repository.GetPosition(trade.BuyUserID, trade.TradingPair)
+	if buyerPosition != nil {
+		me.updatePosition(buyerPosition, trade.Quantity, trade.Price, types.OrderSideBuy)
+	}
+
+	// Update seller position
+	sellerPosition, _ := me.repository.GetPosition(trade.SellUserID, trade.TradingPair)
+	if sellerPosition != nil {
+		me.updatePosition(sellerPosition, trade.Quantity, trade.Price, types.OrderSideSell)
 	}
 }
 
-// CancelOrder cancels an order
-func (e *MatchingEngine) CancelOrder(symbol, orderID string) (*Order, error) {
-	ob := e.GetOrCreateOrderBook(symbol)
-	ob.mu.Lock()
-	defer ob.mu.Unlock()
-
-	order, exists := ob.orders[orderID]
-	if !exists {
-		return nil, nil
+func (me *MatchingEngine) updatePosition(position *types.Position, quantity, price decimal.Decimal, side types.OrderSide) {
+	if position.Side == side {
+		// Increase position
+		totalValue := position.Size.Mul(position.EntryPrice).Add(quantity.Mul(price))
+		position.Size = position.Size.Add(quantity)
+		position.EntryPrice = totalValue.Div(position.Size)
+	} else {
+		// Reduce or reverse position
+		if quantity.LessThan(position.Size) {
+			// Reduce position
+			pnl := position.Size.Sub(quantity).Mul(position.EntryPrice.Sub(price))
+			position.RealizedPnL = position.RealizedPnL.Add(pnl)
+			position.Size = position.Size.Sub(quantity)
+		} else if quantity.Equal(position.Size) {
+			// Close position
+			pnl := position.Size.Mul(position.EntryPrice.Sub(price))
+			position.RealizedPnL = position.RealizedPnL.Add(pnl)
+			position.Size = decimal.Zero
+		} else {
+			// Reverse position
+			pnl := position.Size.Mul(position.EntryPrice.Sub(price))
+			position.RealizedPnL = position.RealizedPnL.Add(pnl)
+			position.Size = quantity.Sub(position.Size)
+			position.Side = side
+			position.EntryPrice = price
+		}
 	}
 
-	order.Status = Cancelled
+	position.UpdatedAt = time.Now()
+	me.repository.UpdatePosition(position)
+
+	// Check for liquidation
+	me.checkLiquidation(position)
+}
+
+func (me *MatchingEngine) checkLiquidation(position *types.Position) {
+	// Calculate liquidation price
+	maintenanceMargin := decimal.NewFromFloat(0.005) // 0.5%
+	
+	if position.Side == types.OrderSideBuy {
+		position.LiquidationPrice = position.EntryPrice.Mul(
+			decimal.NewFromInt(1).Sub(
+				decimal.NewFromInt(1).Div(position.Leverage).Sub(maintenanceMargin),
+			),
+		)
+	} else {
+		position.LiquidationPrice = position.EntryPrice.Mul(
+			decimal.NewFromInt(1).Add(
+				decimal.NewFromInt(1).Div(position.Leverage).Sub(maintenanceMargin),
+			),
+		)
+	}
+
+	// Check if position should be liquidated
+	shouldLiquidate := false
+	if position.Side == types.OrderSideBuy && position.MarkPrice.LessThanOrEqual(position.LiquidationPrice) {
+		shouldLiquidate = true
+	} else if position.Side == types.OrderSideSell && position.MarkPrice.GreaterThanOrEqual(position.LiquidationPrice) {
+		shouldLiquidate = true
+	}
+
+	if shouldLiquidate {
+		me.liquidatePosition(position)
+	}
+}
+
+func (me *MatchingEngine) liquidatePosition(position *types.Position, markPrice ...decimal.Decimal) {
+	liquidationPrice := position.LiquidationPrice
+	if len(markPrice) > 0 {
+		liquidationPrice = markPrice[0]
+	}
+	
+	liquidation := &types.Liquidation{
+		ID:               uuid.New(),
+		PositionID:       position.ID,
+		UserID:           position.UserID,
+		TradingPair:      position.TradingPair,
+		Side:             position.Side,
+		Size:             position.Size,
+		LiquidationPrice: liquidationPrice,
+		Timestamp:        time.Now(),
+	}
+
+	// Create liquidation order
+	liquidationOrder := &types.Order{
+		ID:                uuid.New(),
+		UserID:            position.UserID,
+		TradingPair:       position.TradingPair,
+		Type:              types.OrderTypeMarket,
+		Side:              getOppositeSide(position.Side),
+		Quantity:          position.Size,
+		RemainingQuantity: position.Size,
+		Status:            types.OrderStatusOpen,
+		TimeInForce:       types.TimeInForceIOC,
+		TradingType:       types.TradingTypeFutures,
+		ReduceOnly:        true,
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
+	}
+
+	// Process liquidation order
+	me.orderQueue <- liquidationOrder
+
+	// Save liquidation
+	me.repository.CreateLiquidation(liquidation)
+
+	// Publish liquidation event
+	me.publishLiquidationEvent(liquidation)
+
+	me.logger.Info("Position liquidated",
+		zap.String("position_id", position.ID.String()),
+		zap.String("user_id", position.UserID.String()),
+		zap.String("trading_pair", position.TradingPair),
+	)
+}
+
+func (me *MatchingEngine) CancelOrder(orderID uuid.UUID) error {
+	// Find order in all order books
+	me.mu.RLock()
+	var order *types.Order
+	var orderBook *OrderBook
+
+	for _, ob := range me.orderBooks {
+		if o, exists := ob.Orders[orderID]; exists {
+			order = o
+			orderBook = ob
+			break
+		}
+	}
+	me.mu.RUnlock()
+
+	if order == nil {
+		return fmt.Errorf("order not found: %s", orderID)
+	}
+
+	// Remove from order book
+	orderBook.RemoveOrder(orderID)
+
+	// Update order status
+	order.Status = types.OrderStatusCancelled
 	order.UpdatedAt = time.Now()
-	delete(ob.orders, orderID)
+	me.repository.UpdateOrder(order)
 
-	// Remove from price level
-	priceStr := order.Price.String()
-	if order.Side == Buy {
-		if level, ok := ob.Bids[priceStr]; ok {
-			level.Orders = removeOrder(level.Orders, orderID)
-			level.Quantity = level.Quantity.Sub(order.RemainingQty)
-			if len(level.Orders) == 0 {
-				delete(ob.Bids, priceStr)
-				ob.bidLevels = removePrice(ob.bidLevels, order.Price)
+	// Publish cancel event
+	me.publishOrderEvent(order, "order.cancelled")
+
+	// Broadcast order book update
+	me.broadcastOrderBook(orderBook)
+
+	return nil
+}
+
+func (me *MatchingEngine) validateOrder(order *types.Order) error {
+	// Basic validation
+	if order.Quantity.LessThanOrEqual(decimal.Zero) {
+		return fmt.Errorf("invalid quantity")
+	}
+
+	if order.Type == types.OrderTypeLimit && order.Price.LessThanOrEqual(decimal.Zero) {
+		return fmt.Errorf("invalid price")
+	}
+
+	// Check position limits for futures
+	if order.TradingType == types.TradingTypeFutures {
+		position, _ := me.repository.GetPosition(order.UserID, order.TradingPair)
+		if position != nil {
+			// Check leverage limits
+			maxLeverage := decimal.NewFromInt(125)
+			if position.Leverage.GreaterThan(maxLeverage) {
+				return fmt.Errorf("leverage exceeds maximum of 125x")
 			}
 		}
-	} else {
-		if level, ok := ob.Asks[priceStr]; ok {
-			level.Orders = removeOrder(level.Orders, orderID)
-			level.Quantity = level.Quantity.Sub(order.RemainingQty)
-			if len(level.Orders) == 0 {
-				delete(ob.Asks, priceStr)
-				ob.askLevels = removePrice(ob.askLevels, order.Price)
-			}
-		}
 	}
 
-	e.stats.mu.Lock()
-	e.stats.OrdersCancelled++
-	e.stats.mu.Unlock()
-
-	return order, nil
+	return nil
 }
 
-// GetOrderBook returns the order book depth
-func (e *MatchingEngine) GetOrderBook(symbol string, depth int) ([]PriceLevel, []PriceLevel) {
-	ob := e.GetOrCreateOrderBook(symbol)
-	ob.mu.RLock()
-	defer ob.mu.RUnlock()
+func (me *MatchingEngine) GetOrderBook(tradingPair string, depth int) *types.OrderBook {
+	me.mu.RLock()
+	ob, exists := me.orderBooks[tradingPair]
+	me.mu.RUnlock()
 
-	bids := make([]PriceLevel, 0, depth)
-	asks := make([]PriceLevel, 0, depth)
-
-	for i, price := range ob.bidLevels {
-		if i >= depth {
-			break
-		}
-		if level, ok := ob.Bids[price.String()]; ok {
-			bids = append(bids, PriceLevel{
-				Price:    level.Price,
-				Quantity: level.Quantity,
-			})
+	if !exists {
+		return &types.OrderBook{
+			TradingPair: tradingPair,
+			Bids:        []types.OrderBookLevel{},
+			Asks:        []types.OrderBookLevel{},
+			Timestamp:   time.Now(),
 		}
 	}
 
-	for i, price := range ob.askLevels {
-		if i >= depth {
-			break
-		}
-		if level, ok := ob.Asks[price.String()]; ok {
-			asks = append(asks, PriceLevel{
-				Price:    level.Price,
-				Quantity: level.Quantity,
-			})
-		}
-	}
-
-	return bids, asks
+	return ob.GetSnapshot(depth)
 }
 
-// GetRecentTrades returns recent trades for a symbol
-func (e *MatchingEngine) GetRecentTrades(symbol string, limit int) []*Trade {
-	e.mu.RLock()
-	defer e.mu.RUnlock()
-
-	trades := e.trades[symbol]
-	if len(trades) == 0 {
-		return []*Trade{}
-	}
-
-	start := len(trades) - limit
-	if start < 0 {
-		start = 0
-	}
-
-	return trades[start:]
+func (me *MatchingEngine) SubmitOrder(order *types.Order) {
+	me.orderQueue <- order
 }
 
-// GetStats returns engine statistics
-func (e *MatchingEngine) GetStats() *EngineStats {
-	e.stats.mu.Lock()
-	defer e.stats.mu.Unlock()
+func (me *MatchingEngine) SubmitCancellation(orderID uuid.UUID) {
+	me.cancelQueue <- orderID
+}
 
-	return &EngineStats{
-		OrdersProcessed: e.stats.OrdersProcessed,
-		TradesExecuted:  e.stats.TradesExecuted,
-		OrdersCancelled: e.stats.OrdersCancelled,
-		LastMatchTimeNs: e.stats.LastMatchTimeNs,
-		StartedAt:       e.stats.StartedAt,
+func (me *MatchingEngine) broadcastOrderBook(ob *OrderBook) {
+	snapshot := ob.GetSnapshot(20)
+	me.wsHub.BroadcastOrderBook(snapshot)
+}
+
+func (me *MatchingEngine) publishOrderEvent(order *types.Order, eventType string) {
+	me.kafkaProducer.PublishOrderUpdate(order)
+}
+
+func (me *MatchingEngine) publishTradeEvent(trade *types.Trade) {
+	me.kafkaProducer.PublishTrade(trade)
+}
+
+func (me *MatchingEngine) publishLiquidationEvent(liquidation *types.Liquidation) {
+	me.kafkaProducer.PublishLiquidation(liquidation)
+}
+
+func (me *MatchingEngine) updateMetrics(latency time.Duration) {
+	me.metrics.OrdersProcessed++
+	me.metrics.AverageLatency = (me.metrics.AverageLatency + latency) / 2
+}
+
+func (me *MatchingEngine) reportMetrics(ctx context.Context) {
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			elapsed := time.Since(me.metrics.lastUpdate).Seconds()
+			me.metrics.OrdersPerSecond = float64(me.metrics.OrdersProcessed) / elapsed
+
+			me.logger.Info("Matching engine metrics",
+				zap.Int64("orders_processed", me.metrics.OrdersProcessed),
+				zap.Int64("orders_matched", me.metrics.OrdersMatched),
+				zap.Int64("trades_executed", me.metrics.TradesExecuted),
+				zap.Duration("avg_latency", me.metrics.AverageLatency),
+				zap.Float64("orders_per_second", me.metrics.OrdersPerSecond),
+			)
+
+			me.metrics.lastUpdate = time.Now()
+		}
 	}
 }
 
-// Helper functions
-func insertPriceAsc(prices []decimal.Decimal, price decimal.Decimal) []decimal.Decimal {
-	for i, p := range prices {
-		if price.LessThan(p) {
-			return append(prices[:i], append([]decimal.Decimal{price}, prices[i:]...)...)
-		}
+func (me *MatchingEngine) getOrCreateOrderBook(tradingPair string) *OrderBook {
+	if ob, exists := me.orderBooks[tradingPair]; exists {
+		return ob
 	}
-	return append(prices, price)
+	ob := NewOrderBook(tradingPair)
+	me.orderBooks[tradingPair] = ob
+	return ob
 }
 
-func insertPriceDesc(prices []decimal.Decimal, price decimal.Decimal) []decimal.Decimal {
-	for i, p := range prices {
-		if price.GreaterThan(p) {
-			return append(prices[:i], append([]decimal.Decimal{price}, prices[i:]...)...)
-		}
-	}
-	return append(prices, price)
+func (me *MatchingEngine) executeMarketOrder(order *types.Order, ob *OrderBook) {
+	me.processMarketOrder(order, ob)
 }
 
-func removePrice(prices []decimal.Decimal, price decimal.Decimal) []decimal.Decimal {
-	for i, p := range prices {
-		if p.Equal(price) {
-			return append(prices[:i], prices[i+1:]...)
-		}
-	}
-	return prices
+func (me *MatchingEngine) executeLimitOrder(order *types.Order, ob *OrderBook) {
+	me.processLimitOrder(order, ob)
 }
 
-func removeOrder(orders []*Order, orderID string) []*Order {
-	for i, o := range orders {
-		if o.ID == orderID {
-			return append(orders[:i], orders[i+1:]...)
-		}
+func getOppositeSide(side types.OrderSide) types.OrderSide {
+	if side == types.OrderSideBuy {
+		return types.OrderSideSell
 	}
-	return orders
+	return types.OrderSideBuy
 }

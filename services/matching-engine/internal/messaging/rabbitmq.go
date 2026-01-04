@@ -3,123 +3,182 @@ package messaging
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"log"
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
-	"github.com/exchange/matching-engine/internal/engine"
-	"github.com/shopspring/decimal"
-	"go.uber.org/zap"
 )
 
-const (
-	ordersExchange      = "orders.exchange"
-	tradesExchange      = "trades.exchange"
-	ordersQueue         = "orders.created"
-	tradesQueue         = "trades.executed"
-)
-
-// RabbitMQ manages RabbitMQ connections
-type RabbitMQ struct {
+// RabbitMQClient handles RabbitMQ connections
+type RabbitMQClient struct {
 	conn    *amqp.Connection
 	channel *amqp.Channel
-	logger  *zap.Logger
+	url     string
+	logger  *log.Logger
 }
 
-// NewRabbitMQ creates a new RabbitMQ connection
-func NewRabbitMQ(url string, logger *zap.Logger) (*RabbitMQ, error) {
-	conn, err := amqp.Dial(url)
-	if err != nil {
-		return nil, err
+// NewRabbitMQClient creates a new RabbitMQ client
+func NewRabbitMQClient(url string, logger *log.Logger) (*RabbitMQClient, error) {
+	client := &RabbitMQClient{
+		url:    url,
+		logger: logger,
 	}
+
+	if err := client.connect(); err != nil {
+		return nil, fmt.Errorf("failed to connect to RabbitMQ: %w", err)
+	}
+
+	return client, nil
+}
+
+// connect establishes connection to RabbitMQ
+func (r *RabbitMQClient) connect() error {
+	conn, err := amqp.Dial(r.url)
+	if err != nil {
+		return err
+	}
+	r.conn = conn
 
 	ch, err := conn.Channel()
 	if err != nil {
 		conn.Close()
-		return nil, err
+		return err
 	}
+	r.channel = ch
 
-	mq := &RabbitMQ{
-		conn:    conn,
-		channel: ch,
-		logger:  logger,
-	}
-
-	// Declare exchanges
-	if err := mq.declareExchange(ordersExchange); err != nil {
-		return nil, err
-	}
-	if err := mq.declareExchange(tradesExchange); err != nil {
-		return nil, err
-	}
-
-	// Declare queues
-	if err := mq.declareQueue(ordersQueue, ordersExchange); err != nil {
-		return nil, err
-	}
-	if err := mq.declareQueue(tradesQueue, tradesExchange); err != nil {
-		return nil, err
-	}
-
-	return mq, nil
-}
-
-func (mq *RabbitMQ) declareExchange(name string) error {
-	return mq.channel.ExchangeDeclare(
-		name,
-		"topic",
-		true,  // durable
-		false, // auto-delete
-		false, // internal
-		false, // no-wait
-		nil,
-	)
-}
-
-func (mq *RabbitMQ) declareQueue(name, exchange string) error {
-	q, err := mq.channel.QueueDeclare(
-		name,
-		true,  // durable
-		false, // auto-delete
-		false, // exclusive
-		false, // no-wait
-		nil,
-	)
-	if err != nil {
+	// Set QoS for prefetch
+	if err := ch.Qos(100, 0, false); err != nil {
 		return err
 	}
 
-	return mq.channel.QueueBind(q.Name, "#", exchange, false, nil)
-}
-
-// Close closes the connection
-func (mq *RabbitMQ) Close() {
-	if mq.channel != nil {
-		mq.channel.Close()
+	// Setup infrastructure
+	if err := r.setupInfrastructure(); err != nil {
+		return err
 	}
-	if mq.conn != nil {
-		mq.conn.Close()
+
+	r.logger.Println("✅ Connected to RabbitMQ")
+	return nil
+}
+
+// setupInfrastructure creates exchanges and queues
+func (r *RabbitMQClient) setupInfrastructure() error {
+	// Declare exchanges
+	exchanges := []string{
+		ExchangeTradingEvents,
+		ExchangeMatchingEngineEvents,
+		ExchangeMarketDataEvents,
+		ExchangeWalletEvents,
+		ExchangeDLX,
 	}
+
+	for _, exchange := range exchanges {
+		if err := r.channel.ExchangeDeclare(
+			exchange,
+			"topic",
+			true,  // durable
+			false, // auto-deleted
+			false, // internal
+			false, // no-wait
+			nil,
+		); err != nil {
+			return fmt.Errorf("failed to declare exchange %s: %w", exchange, err)
+		}
+	}
+
+	// Declare queues
+	queues := map[string]amqp.Table{
+		QueueMatchingOrderProcess: {
+			"x-dead-letter-exchange": ExchangeDLX,
+			"x-message-ttl":          86400000, // 24 hours
+			"x-max-priority":         10,
+		},
+		QueueMatchingOrderReceived: {
+			"x-dead-letter-exchange": ExchangeDLX,
+			"x-message-ttl":          86400000,
+		},
+		QueueDLXQueue: nil,
+	}
+
+	for queue, args := range queues {
+		if _, err := r.channel.QueueDeclare(
+			queue,
+			true,  // durable
+			false, // delete when unused
+			false, // exclusive
+			false, // no-wait
+			args,
+		); err != nil {
+			return fmt.Errorf("failed to declare queue %s: %w", queue, err)
+		}
+	}
+
+	// Bind DLX queue
+	if err := r.channel.QueueBind(
+		QueueDLXQueue,
+		"#",
+		ExchangeDLX,
+		false,
+		nil,
+	); err != nil {
+		return err
+	}
+
+	r.logger.Println("✅ RabbitMQ infrastructure setup completed")
+	return nil
 }
 
-// OrderMessage represents an order from the queue
-type OrderMessage struct {
-	ID            string `json:"id"`
-	UserID        string `json:"userId"`
-	Symbol        string `json:"symbol"`
-	Side          string `json:"side"`
-	Type          string `json:"type"`
-	Price         string `json:"price"`
-	Quantity      string `json:"quantity"`
-	StopPrice     string `json:"stopPrice"`
-	TimeInForce   string `json:"timeInForce"`
-	ClientOrderID string `json:"clientOrderId"`
+// Publish publishes a message to an exchange
+func (r *RabbitMQClient) Publish(ctx context.Context, exchange, routingKey string, message interface{}) error {
+	data, err := json.Marshal(message)
+	if err != nil {
+		return fmt.Errorf("failed to marshal message: %w", err)
+	}
+
+	return r.channel.PublishWithContext(
+		ctx,
+		exchange,
+		routingKey,
+		false, // mandatory
+		false, // immediate
+		amqp.Publishing{
+			ContentType:  "application/json",
+			Body:         data,
+			DeliveryMode: amqp.Persistent,
+			Timestamp:    time.Now(),
+			Priority:     5,
+		},
+	)
 }
 
-// ConsumeOrders starts consuming orders from the queue
-func (mq *RabbitMQ) ConsumeOrders(me *engine.MatchingEngine) {
-	msgs, err := mq.channel.Consume(
-		ordersQueue,
-		"",    // consumer
+// PublishWithPriority publishes a message with custom priority
+func (r *RabbitMQClient) PublishWithPriority(ctx context.Context, exchange, routingKey string, message interface{}, priority uint8) error {
+	data, err := json.Marshal(message)
+	if err != nil {
+		return fmt.Errorf("failed to marshal message: %w", err)
+	}
+
+	return r.channel.PublishWithContext(
+		ctx,
+		exchange,
+		routingKey,
+		false,
+		false,
+		amqp.Publishing{
+			ContentType:  "application/json",
+			Body:         data,
+			DeliveryMode: amqp.Persistent,
+			Timestamp:    time.Now(),
+			Priority:     priority,
+		},
+	)
+}
+
+// Consume starts consuming messages from a queue
+func (r *RabbitMQClient) Consume(queue string, handler func([]byte) error) error {
+	msgs, err := r.channel.Consume(
+		queue,
+		"",    // consumer tag
 		false, // auto-ack
 		false, // exclusive
 		false, // no-local
@@ -127,70 +186,85 @@ func (mq *RabbitMQ) ConsumeOrders(me *engine.MatchingEngine) {
 		nil,
 	)
 	if err != nil {
-		mq.logger.Error("Failed to start consuming", zap.Error(err))
-		return
-	}
-
-	mq.logger.Info("Started consuming orders from queue")
-
-	for msg := range msgs {
-		var orderMsg OrderMessage
-		if err := json.Unmarshal(msg.Body, &orderMsg); err != nil {
-			mq.logger.Error("Failed to unmarshal order", zap.Error(err))
-			msg.Nack(false, false)
-			continue
-		}
-
-		// Process order
-		quantity, _ := decimal.NewFromString(orderMsg.Quantity)
-		price, _ := decimal.NewFromString(orderMsg.Price)
-		stopPrice, _ := decimal.NewFromString(orderMsg.StopPrice)
-
-		order := &engine.Order{
-			ID:            orderMsg.ID,
-			UserID:        orderMsg.UserID,
-			Symbol:        orderMsg.Symbol,
-			Side:          engine.OrderSide(orderMsg.Side),
-			Type:          engine.OrderType(orderMsg.Type),
-			Price:         price,
-			Quantity:      quantity,
-			StopPrice:     stopPrice,
-			TimeInForce:   orderMsg.TimeInForce,
-			ClientOrderID: orderMsg.ClientOrderID,
-		}
-
-		_, err = me.SubmitOrder(order)
-		if err != nil {
-			mq.logger.Error("Failed to process order from queue", zap.Error(err))
-			msg.Nack(false, true) // Requeue
-			continue
-		}
-
-		mq.logger.Debug("Processed order from queue", zap.String("orderId", orderMsg.ID))
-		msg.Ack(false)
-	}
-}
-
-// PublishTrade publishes a trade to the trades exchange
-func (mq *RabbitMQ) PublishTrade(trade *engine.Trade) error {
-	body, err := json.Marshal(trade)
-	if err != nil {
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	go func() {
+		for msg := range msgs {
+			if err := handler(msg.Body); err != nil {
+				r.logger.Printf("Error handling message: %v", err)
+				
+				// Retry logic
+				retryCount := getRetryCount(msg.Headers)
+				if retryCount < 3 {
+					// Nack and requeue with incremented retry count
+					msg.Nack(false, false)
+					
+					// Publish back to queue with retry count
+					headers := amqp.Table{
+						"x-retry-count": retryCount + 1,
+					}
+					r.channel.Publish(
+						"",
+						queue,
+						false,
+						false,
+						amqp.Publishing{
+							ContentType:  msg.ContentType,
+							Body:         msg.Body,
+							DeliveryMode: msg.DeliveryMode,
+							Headers:      headers,
+						},
+					)
+				} else {
+					// Send to DLQ after 3 retries
+					msg.Nack(false, false)
+					r.logger.Printf("Message sent to DLQ after 3 retries")
+				}
+			} else {
+				msg.Ack(false)
+			}
+		}
+	}()
 
-	return mq.channel.PublishWithContext(
-		ctx,
-		tradesExchange,
-		trade.Symbol,
-		false, // mandatory
-		false, // immediate
-		amqp.Publishing{
-			ContentType:  "application/json",
-			DeliveryMode: amqp.Persistent,
-			Body:         body,
-		},
+	r.logger.Printf("✅ Started consuming from queue: %s", queue)
+	return nil
+}
+
+// BindQueue binds a queue to an exchange with a routing key
+func (r *RabbitMQClient) BindQueue(queue, exchange, routingKey string) error {
+	return r.channel.QueueBind(
+		queue,
+		routingKey,
+		exchange,
+		false,
+		nil,
 	)
+}
+
+// Close closes the RabbitMQ connection
+func (r *RabbitMQClient) Close() error {
+	if r.channel != nil {
+		r.channel.Close()
+	}
+	if r.conn != nil {
+		return r.conn.Close()
+	}
+	return nil
+}
+
+// IsConnected checks if the connection is active
+func (r *RabbitMQClient) IsConnected() bool {
+	return r.conn != nil && !r.conn.IsClosed()
+}
+
+// Helper function to get retry count from headers
+func getRetryCount(headers amqp.Table) int {
+	if headers == nil {
+		return 0
+	}
+	if count, ok := headers["x-retry-count"].(int); ok {
+		return count
+	}
+	return 0
 }

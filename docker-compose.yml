@@ -336,12 +336,21 @@ services:
     container_name: exchange-matching-engine
     restart: unless-stopped
     environment:
-      <<: [*common-env, *redis-env, *rabbitmq-env]
+      <<: [*common-env, *redis-env, *rabbitmq-env, *postgres-env, *kafka-env]
       PORT: 3010
       GRPC_PORT: 5010
+      WEBSOCKET_PORT: 6010
+      # Instance Configuration (NEW)
+      INSTANCE_ID: matching-engine-1
+      # Performance Tuning
+      MAX_WORKERS: 10
+      ORDER_QUEUE_SIZE: 100000
+      CANCEL_QUEUE_SIZE: 10000
+      CONSUMER_GROUP: matching-engine
     ports:
       - '3010:3010'
       - '5010:5010'
+      - '6010:6010'
     depends_on:
       redis:
         condition: service_healthy
