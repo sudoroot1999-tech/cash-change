@@ -10,6 +10,7 @@ import (
 	"github.com/trading-platform/matching-engine/internal/api"
 	"github.com/trading-platform/matching-engine/internal/config"
 	"github.com/trading-platform/matching-engine/internal/engine"
+	grpcserver "github.com/trading-platform/matching-engine/internal/grpc"
 	"github.com/trading-platform/matching-engine/internal/kafka"
 	"github.com/trading-platform/matching-engine/internal/repository"
 	"github.com/trading-platform/matching-engine/internal/websocket"
@@ -72,7 +73,16 @@ func main() {
 		}
 	}()
 
+	// Start gRPC server
+	grpcServer := grpcserver.NewServer(matchingEngine, logger)
+	go func() {
+		if err := grpcServer.Start(cfg.GRPCPort); err != nil {
+			logger.Error("gRPC server failed", zap.Error(err))
+		}
+	}()
+
 	logger.Info("Matching engine started successfully",
+		zap.String("grpc_port", cfg.GRPCPort),
 		zap.String("websocket_port", cfg.WebSocketPort),
 		zap.String("http_api_port", "8080"),
 		zap.String("swagger_docs", "http://localhost:8080/swagger/index.html"),
