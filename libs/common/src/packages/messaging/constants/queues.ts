@@ -7,6 +7,7 @@ export const QUEUES = {
   // Auth Service Queues
   USER_REGISTERED: 'auth.user.registered',
   USER_LOGIN: 'auth.user.login',
+  USER_CREATED: 'auth.user.created',
   USER_CODE_REQUESTED:'auth.code.request',
   PASSWORD_RESET_REQUESTED: 'auth.password.reset',
   PASSWORD_CHANGED:'auth.password.change',

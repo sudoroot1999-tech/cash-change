@@ -1,10 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { BullModule } from '@nestjs/bull';
-import { MpcModule } from './modules/mpc/mpc.module';
-import { ThreatsModule } from './modules/threats/threats.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { SecurityModule } from './modules/security/security.module';
+import { PerformanceModule } from '@exchange/common';
 
 @Module({
   imports: [
@@ -27,19 +26,8 @@ import { AuthModule } from './modules/auth/auth.module';
         schema: 'security',
       }),
     }),
-    BullModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        redis: {
-          host: configService.get('REDIS_HOST'),
-          port: configService.get('REDIS_PORT'),
-          password: configService.get('REDIS_PASSWORD'),
-        },
-      }),
-    }),
-    MpcModule,
-    ThreatsModule,
+    SecurityModule,
+    PerformanceModule,
     AuthModule,
   ],
 })

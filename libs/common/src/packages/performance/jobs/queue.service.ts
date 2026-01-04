@@ -4,6 +4,7 @@ import { Queue, Worker, Job } from 'bullmq';
 import { Redis } from 'ioredis';
 
 export interface JobOptions {
+  jobId?: string;
   priority?: number;
   delay?: number;
   attempts?: number;
@@ -259,7 +260,6 @@ async getQueueStats(queueName: string) {
  * Common queue names
  */
 export enum QueueNames {
-  EMAIL = 'email',
   NOTIFICATION = 'notification',
   ANALYTICS = 'analytics',
   TRADE_PROCESSING = 'trade-processing',
@@ -267,4 +267,5 @@ export enum QueueNames {
   REPORT_GENERATION = 'report-generation',
   DATA_EXPORT = 'data-export',
   CACHE_WARMING = 'cache-warming',
+  SECURITY = 'security',
 }

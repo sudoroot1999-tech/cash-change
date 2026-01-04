@@ -136,15 +136,15 @@ export class NotificationCoreService {
     const saved = await this.queueRepository.save(queueItem);
 
     await this.queueService.addJob(
-  QueueNames.NOTIFICATION,
-  'send',
-  { notificationId: saved.id },
-  {
-    priority: saved.priority,
-    attempts: saved.maxRetries,
-    backoff: { type: 'exponential', delay: 2000 },
-  },
-);
+      QueueNames.NOTIFICATION,
+      'send',
+      { notificationId: saved.id },
+      {
+        priority: saved.priority,
+        attempts: saved.maxRetries,
+        backoff: { type: 'exponential', delay: 2000 },
+      },
+    );
 
     this.logger.log(`Notification queued: ${saved.id} for user ${options.userId} via ${options.channel}`);
     return saved;
