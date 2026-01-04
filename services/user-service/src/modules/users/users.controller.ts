@@ -250,10 +250,10 @@ export class UsersController {
       twoFactorEnabled: user.twoFactorEnabled,
       emailVerified: user.emailVerified,
       phoneVerified: user.phoneVerified,
-      email_verification_token:user.email_verification_token,
-      anti_phishing_code:user.anti_phishing_code,
-      last_login_at:user.last_login_at,
-      last_login_ip:user.last_login_ip,
+      emailVerificationToken:user.emailVerificationToken,
+      antiPhishingCode:user.antiPhishingCode,
+      lastLoginAt:user.lastLoginAt,
+      lastLoginIp:user.lastLoginIp,
       createdAt: user.createdAt,
     };
   }

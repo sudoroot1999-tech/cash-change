@@ -77,7 +77,7 @@ export class User {
   lastLoginAt: Date;
 
   @Column({ nullable: true })
-  last_login_ip: string;
+  lastLoginIp: string;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;
