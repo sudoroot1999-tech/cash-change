@@ -27,12 +27,12 @@ func Load() *Config {
 
 	return &Config{
 		GRPCPort:      getEnv("GRPC_PORT", "5010"),
-		DatabaseURL:   getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/trading_db?sslmode=disable"),
+		DatabaseURL:   getEnv("DATABASE_URL", "postgres://exchange_user:exchange_dev_password@localhost:5432/exchange?sslmode=disable"),
 		KafkaBrokers:  strings.Split(getEnv("KAFKA_BROKERS", "localhost:29092"), ","),
 		ConsumerGroup: getEnv("CONSUMER_GROUP", "matching-engine"),
-		WebSocketPort: getEnv("WEBSOCKET_PORT", "8080"),
+		WebSocketPort: getEnv("WEBSOCKET_PORT", "6010"),
 		RedisURL:      getEnv("REDIS_URL", "localhost:6379"),
-		RabbitMQURL:   getEnv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/"),
+		RabbitMQURL:   getEnv("RABBITMQ_URL", "amqp://exchange:rabbitmq_dev_password@localhost:5672/"),
 		InstanceID:    getEnv("INSTANCE_ID", "matching-engine-1"),
 	}
 }

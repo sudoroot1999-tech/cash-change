@@ -35,6 +35,12 @@ func NewKafkaProducer(brokers []string, logger *zap.Logger) *KafkaProducer {
 		TopicSystemMetrics,
 	}
 
+	// Ensure topics exist
+	if err := ensureTopics(brokers, topics, logger); err != nil {
+		logger.Error("Failed to ensure Kafka topics exist", zap.Error(err))
+		// We continue despite error, hoping auto-creation might work or it's a transient issue
+	}
+
 	for _, topic := range topics {
 		writers[topic] = &kafka.Writer{
 			Addr:         kafka.TCP(brokers...),
@@ -50,6 +56,36 @@ func NewKafkaProducer(brokers []string, logger *zap.Logger) *KafkaProducer {
 
 	logger.Info("✅ Kafka producer initialized", zap.Int("topics", len(topics)))
 	return &KafkaProducer{writers: writers, logger: logger}
+}
+
+func ensureTopics(brokers []string, topics []string, logger *zap.Logger) error {
+	if len(brokers) == 0 {
+		return fmt.Errorf("no brokers provided")
+	}
+
+	// Connect to the first broker to manage topics
+	conn, err := kafka.Dial("tcp", brokers[0])
+	if err != nil {
+		return fmt.Errorf("failed to dial kafka broker %s: %w", brokers[0], err)
+	}
+	defer conn.Close()
+
+	var topicConfigs []kafka.TopicConfig
+	for _, topic := range topics {
+		topicConfigs = append(topicConfigs, kafka.TopicConfig{
+			Topic:             topic,
+			NumPartitions:     1,
+			ReplicationFactor: 1,
+		})
+	}
+
+	err = conn.CreateTopics(topicConfigs...)
+	if err != nil {
+		return fmt.Errorf("failed to create topics: %w", err)
+	}
+
+	logger.Info("✅ Kafka topics ensured", zap.Int("count", len(topics)))
+	return nil
 }
 
 
@@ -170,6 +206,9 @@ func (c *KafkaConsumer) Subscribe(ctx context.Context, topic string, handler fun
 	c.mu.Unlock()
 
 	go func() {
+		backoff := 100 * time.Millisecond
+		maxBackoff := 5 * time.Second
+
 		for {
 			select {
 			case <-ctx.Done():
@@ -180,9 +219,22 @@ func (c *KafkaConsumer) Subscribe(ctx context.Context, topic string, handler fun
 					if ctx.Err() != nil {
 						return
 					}
-					c.logger.Error("Failed to read message", zap.String("topic", topic), zap.Error(err))
+					c.logger.Error("Failed to read message, retrying...", 
+						zap.String("topic", topic), 
+						zap.Error(err),
+						zap.Duration("backoff", backoff),
+					)
+					
+					time.Sleep(backoff)
+					backoff *= 2
+					if backoff > maxBackoff {
+						backoff = maxBackoff
+					}
 					continue
 				}
+
+				// Reset backoff on successful read
+				backoff = 100 * time.Millisecond
 
 				if err := handler(msg.Value); err != nil {
 					c.logger.Error("Failed to handle message", zap.String("topic", topic), zap.Error(err))

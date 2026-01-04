@@ -72,15 +72,15 @@ func Load() *Config {
 
 	return &Config{
 		// Database
-		DatabaseURL: getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/market_data_db?sslmode=disable"),
+		DatabaseURL: getEnv("DATABASE_URL", "postgres://exchange_user:exchange_dev_password@localhost:5432/exchange?sslmode=disable"),
 
 		// Redis
 		RedisURL:      getEnv("REDIS_URL", "localhost:6379"),
-		RedisPassword: getEnv("REDIS_PASSWORD", ""),
-		RedisDB:       getEnvInt("REDIS_DB", 0),
+		RedisPassword: getEnv("REDIS_PASSWORD", "redis_dev_password"),
+		// RedisDB:       getEnvInt("REDIS_DB", 0),
 
 		// RabbitMQ
-		RabbitMQURL: getEnv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/"),
+		RabbitMQURL: getEnv("RABBITMQ_URL", "amqp://exchange:rabbitmq_dev_password@localhost:5672"),
 
 		// Kafka
 		KafkaBrokers:       strings.Split(getEnv("KAFKA_BROKERS", "localhost:29092"), ","),
@@ -88,13 +88,13 @@ func Load() *Config {
 
 		// gRPC Services
 		// Matching Engine gRPC is READ-ONLY (stats, health, config, ping)
-		MatchingEngineGRPC: getEnv("MATCHING_ENGINE_GRPC", "localhost:50051"),
-		TradingGRPC:        getEnv("TRADING_GRPC", "localhost:50055"),
+		MatchingEngineGRPC: getEnv("MATCHING_ENGINE_GRPC", "localhost:5010"),
+		TradingGRPC:        getEnv("TRADING_GRPC", "localhost:5004"),
 
 		// Server Ports
-		HTTPPort:      getEnv("HTTP_PORT", "3006"),
-		GRPCPort:      getEnv("GRPC_PORT", "50052"),
-		WebSocketPort: getEnv("WEBSOCKET_PORT", "3007"),
+		HTTPPort:      getEnv("HTTP_PORT", "3005"),
+		GRPCPort:      getEnv("GRPC_PORT", "5005"),
+		WebSocketPort: getEnv("WEBSOCKET_PORT", "6005"),
 
 		// Instance
 		InstanceID: getEnv("INSTANCE_ID", "market-data-1"),
