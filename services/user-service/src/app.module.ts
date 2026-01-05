@@ -29,6 +29,8 @@ import { KafkaModule, PerformanceModule, RabbitMQModule, StorageModule } from '@
         synchronize: configService.get('NODE_ENV') === 'development',
         logging: configService.get('NODE_ENV') === 'development',
         schema: 'users',
+        // migrations: ["./migrations/*.sql"],
+        // migrationsRun:true,
       }),
     }),
 

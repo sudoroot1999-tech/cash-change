@@ -28,6 +28,8 @@ import { KafkaModule, PerformanceModule, RabbitMQModule } from '@exchange/common
         autoLoadEntities: true,
         synchronize: configService.get('NODE_ENV') === 'development',
         schema: 'notifications',
+        // migrations: ["./migrations/*.sql"],
+        // migrationsRun:true,
       }),
     }),
 

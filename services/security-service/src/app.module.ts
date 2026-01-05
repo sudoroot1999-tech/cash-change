@@ -24,6 +24,8 @@ import { PerformanceModule } from '@exchange/common';
         autoLoadEntities: true,
         synchronize: configService.get('NODE_ENV') === 'development',
         schema: 'security',
+        // migrations: ["./migrations/*.sql"],
+        // migrationsRun:true,
       }),
     }),
     SecurityModule,
