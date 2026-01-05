@@ -3,6 +3,7 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { join } from 'path';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -34,6 +35,15 @@ async function bootstrap() {
       queueOptions: {
         durable: true,
       },
+    },
+  });
+
+  // Connect gRPC microservice
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.GRPC,
+    options: {
+      package: 'security',
+      protoPath: join(__dirname, '../../../libs/common/proto/security.proto'),
     },
   });
 

@@ -41,6 +41,7 @@ import {
 } from './controllers';
 
 import { SecurityAdminController } from './controllers/admin/security-admin.controller';
+import { SecurityGrpcController } from './controllers/security-grpc.controller';
 
 // Guards & Middleware
 import { ApiKeyGuard } from '../../guards/api-key.guard';
@@ -80,6 +81,7 @@ const entities = [
     LoginSecurityController,
     BugBountyController,
     SecurityAdminController,
+    SecurityGrpcController,
   ],
   providers: [
     // Services
@@ -95,11 +97,11 @@ const entities = [
     InsuranceFundService,
     BugBountyService,
     IncidentResponseService,
-    
+
     // Guards
     ApiKeyGuard,
     RateLimitGuard,
-    
+
     // Jobs
     WhitelistActivationJob,
     RiskScoringJob,
