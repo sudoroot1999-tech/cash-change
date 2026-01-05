@@ -10,7 +10,6 @@ import {
   ParseUUIDPipe,
   HttpCode,
   HttpStatus,
-  Req,
   UseInterceptors,
   UploadedFile,
 } from '@nestjs/common';
@@ -124,9 +123,8 @@ export class UsersController {
   @Get('preferences')
   @ApiOperation({ summary: 'Get user preferences' })
   @ApiResponse({ status: 200, description: 'Preferences retrieved successfully' })
-  async getPreferences(@Req() req: any) {
-    const userId = req.user.id;
-    const profile = await this.usersService.getUserProfile(userId);
+  async getPreferences(@CurrentUser() user) {
+    const profile = await this.usersService.getUserProfile(user.userID);
     return {
       success: true,
       data: profile.preferences,
@@ -165,16 +163,15 @@ export class UsersController {
   async uploadAvatar(
     @Param('userId', ParseUUIDPipe) userId: string,
     @UploadedFile() file: Express.Multer.File,
-    @Req() req: any,
+    @CurrentUser() user
   ) {
-        const userID = req.user.id;
 
   if (!file) {
     throw new BadRequestError('No file uploaded');
   }
 
   const result = await this.usersService.uploadAvatar(
-    userID,
+    user.userID,
     file,
     file.mimetype
   );
@@ -189,9 +186,8 @@ export class UsersController {
   @Get('limits')
   @ApiOperation({ summary: 'Get user limits based on KYC level' })
   @ApiResponse({ status: 200, description: 'Limits retrieved successfully' })
-  async getLimits(@Req() req: any) {
-    const userId = req.user.id;
-    const limits = await this.usersService.getUserLimits(userId);
+  async getLimits(@CurrentUser() user) {
+    const limits = await this.usersService.getUserLimits(user.userId);
     return {
       success: true,
       data: limits,
@@ -216,12 +212,11 @@ export class UsersController {
   })
   @ApiResponse({ status: 200, description: 'Limit check completed' })
   async checkLimit(
-    @Req() req: any,
+    @CurrentUser() user,
     @Body() body: { limitType: 'withdrawal' | 'deposit' | 'trade'; amount: number },
   ) {
-    const userId = req.user.id;
     const result = await this.usersService.checkLimit(
-      userId,
+      user.userId,
       body.limitType,
       body.amount,
     );

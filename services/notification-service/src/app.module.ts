@@ -31,37 +31,8 @@ import { KafkaModule, PerformanceModule, RabbitMQModule } from '@exchange/common
       }),
     }),
 
-    BullModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => {
-        // Prefer REDIS_URL when provided (docker-compose currently injects this),
-        // otherwise use REDIS_HOST/REDIS_PORT/REDIS_PASSWORD as in .env.example.
-        const redisUrl = (config.get<string>('REDIS_URL') || '').trim();
-        const redis =
-          redisUrl.length > 0
-            ? redisUrl
-            : {
-                host: config.get<string>('REDIS_HOST') || 'localhost',
-                port: Number(config.get<string | number>('REDIS_PORT') || 6379),
-                // Match docker-compose default when REDIS_PASSWORD is unset
-                password: config.get<string>('REDIS_PASSWORD') || 'redis_dev_password',
-              };
-
-        return {
-          redis,
-          defaultJobOptions: {
-            removeOnComplete: 100,
-            removeOnFail: 50,
-            attempts: 3,
-            backoff: { type: 'exponential', delay: 1000 },
-          },
-        };
-      },
-    }),
-
     RabbitMQModule.forRoot({
-      url: process.env.RABBITMQ_URL || 'amqp://guest:guest@localhost:5672/',
+      url: process.env.RABBITMQ_URL || 'amqp://exchange:rabbitmq_dev_password@localhost:5672/',
       connectionName: 'notification-service',
       prefetch: 10,
     }),
@@ -76,6 +47,7 @@ import { KafkaModule, PerformanceModule, RabbitMQModule } from '@exchange/common
     TemplatesModule,
     PreferencesModule,
     AuthModule,
+
   ],
 })
 export class AppModule {}

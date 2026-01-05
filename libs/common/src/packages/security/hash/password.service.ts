@@ -1,40 +1,34 @@
 import { Injectable } from '@nestjs/common';
-import * as argon2 from 'argon2';
+import {
+  hash,
+  verify,
+  Options
+} from '@node-rs/argon2';
 
 @Injectable()
 export class PasswordService {
+  private readonly options:Options = {
+    
+    memoryCost: 65536, // 64 MB
+    timeCost: 3,
+    parallelism: 4,
+  };
+
   /**
-   * Hash password using Argon2
+   * Hash password using Argon2id
    */
-  async hashPassword(password: string): Promise<string> {
-    return argon2.hash(password, {
-      type: argon2.argon2id,
-      memoryCost: 65536, // 64 MB
-      timeCost: 3,
-      parallelism: 4,
-    });
+   async hashPassword(password: string): Promise<string> {
+    return hash(password, this.options);
   }
 
   /**
    * Verify password against hash
    */
-  async verifyPassword(hash: string, password: string): Promise<boolean> {
+  async verifyPassword(hashValue: string, password: string): Promise<boolean> {
     try {
-      return await argon2.verify(hash, password);
-    } catch (error) {
+      return await verify(hashValue, password);
+    } catch {
       return false;
     }
-  }
-
-  /**
-   * Check if password needs rehashing (due to updated params)
-   */
-  async needsRehash(hash: string): Promise<boolean> {
-    return argon2.needsRehash(hash, {
-      type: argon2.argon2id,
-      memoryCost: 65536,
-      timeCost: 3,
-      parallelism: 4,
-    });
   }
 }

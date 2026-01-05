@@ -46,7 +46,7 @@ import { KafkaModule, PerformanceModule, RabbitMQModule, StorageModule } from '@
     }),
 
     RabbitMQModule.forRoot({
-      url: process.env.RABBITMQ_URL || 'amqp://guest:guest@localhost:5672/',
+      url: process.env.RABBITMQ_URL || 'amqp://exchange:rabbitmq_dev_password@localhost:5672/',
       connectionName: 'user-service',
       prefetch: 10,
     }),

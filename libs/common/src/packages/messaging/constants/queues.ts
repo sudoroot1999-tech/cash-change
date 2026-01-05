@@ -37,16 +37,16 @@ export const QUEUES = {
   INTERNAL_TRANSFER: 'wallet.transfer.internal',
   
   // Trading Service Queues
-  ORDER_CREATE: 'trading.order.create',
-  ORDER_CANCEL: 'trading.order.cancel',
-  ORDER_MATCHED: 'trading.order.matched',
-  ORDER_FILLED: 'trading.order.filled',
-  TRADE_EXECUTE: 'trading.trade.execute',
+  // ORDER_CREATE: 'trading.order.create',
+  // ORDER_CANCEL: 'trading.order.cancel',
+  // ORDER_MATCHED: 'trading.order.matched',
+  // ORDER_FILLED: 'trading.order.filled',
+  // TRADE_EXECUTE: 'trading.trade.execute',
   
   // Matching Engine Queues
-  MATCHING_ORDER_RECEIVED: 'matching.order.received',
-  MATCHING_ORDER_PROCESS: 'matching.order.process',
-  MATCHING_ORDERBOOK_UPDATE: 'matching.orderbook.update',
+  // MATCHING_ORDER_RECEIVED: 'matching.order.received',
+  // MATCHING_ORDER_PROCESS: 'matching.order.process',
+  // MATCHING_ORDERBOOK_UPDATE: 'matching.orderbook.update',
   
   // KYC Service Queues
   KYC_SUBMIT: 'kyc.submit',

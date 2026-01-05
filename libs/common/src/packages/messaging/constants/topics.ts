@@ -12,17 +12,17 @@ export const KAFKA_TOPICS = {
   WALLET_EVENTS: 'wallet-events',
   
   // Trading Events (Event Sourcing)
-  TRADING_EVENTS: 'trading-events',
+  // TRADING_EVENTS: 'trading-events',
   
   // Matching Engine Events (High-throughput)
-  MATCHING_ENGINE_EVENTS: 'matching-engine-events',
-  ORDERBOOK_SNAPSHOTS: 'orderbook-snapshots',
+  // MATCHING_ENGINE_EVENTS: 'matching-engine-events',
+  // ORDERBOOK_SNAPSHOTS: 'orderbook-snapshots',
   
   // Market Data (Real-time streaming)
-  MARKET_DATA_TICKER: 'market-data-ticker',
-  MARKET_DATA_TRADES: 'market-data-trades',
-  MARKET_DATA_ORDERBOOK: 'market-data-orderbook',
-  MARKET_DATA_KLINES: 'market-data-klines',
+  // MARKET_DATA_TICKER: 'market-data-ticker',
+  // MARKET_DATA_TRADES: 'market-data-trades',
+  // MARKET_DATA_ORDERBOOK: 'market-data-orderbook',
+  // MARKET_DATA_KLINES: 'market-data-klines',
   
   // KYC & Compliance Events
   KYC_EVENTS: 'kyc-events',

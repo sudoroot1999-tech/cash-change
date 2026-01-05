@@ -26,36 +26,36 @@ export class TradingEventsConsumer implements OnModuleInit {
 
   async onModuleInit() {
     // Subscribe to order matched events
-    await this.rabbitmq.subscribe<OrderMatchedEvent>(
-      QUEUES.ORDER_MATCHED,
-      async (event) => {
-        await this.handleOrderMatched(event);
-      },
-    );
+    // await this.rabbitmq.subscribe<OrderMatchedEvent>(
+    //   QUEUES.ORDER_MATCHED,
+    //   async (event) => {
+    //     await this.handleOrderMatched(event);
+    //   },
+    // );
 
     // Subscribe to order filled events
-    await this.rabbitmq.subscribe<OrderFilledEvent>(
-      QUEUES.ORDER_FILLED,
-      async (event) => {
-        await this.handleOrderFilled(event);
-      },
-    );
+    // await this.rabbitmq.subscribe<OrderFilledEvent>(
+    //   QUEUES.ORDER_FILLED,
+    //   async (event) => {
+    //     await this.handleOrderFilled(event);
+    //   },
+    // );
 
     // Subscribe to order cancelled events
-    await this.rabbitmq.subscribe<OrderCancelledEvent>(
-      QUEUES.ORDER_CANCEL,
-      async (event) => {
-        await this.handleOrderCancelled(event);
-      },
-    );
+    // await this.rabbitmq.subscribe<OrderCancelledEvent>(
+    //   QUEUES.ORDER_CANCEL,
+    //   async (event) => {
+    //     await this.handleOrderCancelled(event);
+    //   },
+    // );
 
     // Subscribe to trade executed events
-    await this.rabbitmq.subscribe<TradeExecutedEvent>(
-      QUEUES.TRADE_EXECUTE,
-      async (event) => {
-        await this.handleTradeExecuted(event);
-      },
-    );
+    // await this.rabbitmq.subscribe<TradeExecutedEvent>(
+    //   QUEUES.TRADE_EXECUTE,
+    //   async (event) => {
+    //     await this.handleTradeExecuted(event);
+    //   },
+    // );
 
     this.logger.log('✅ Trading event consumers started');
   }

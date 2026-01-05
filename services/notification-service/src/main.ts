@@ -25,8 +25,16 @@ async function bootstrap() {
 
   // Connect to RabbitMQ
   const configService = app.get(ConfigService);
-  const rmqUrl = configService.get<string>('RABBITMQ_URL', 'amqp://localhost:5672');
-  
+  const rmqUser = configService.get<string>('RABBITMQ_USER', 'exchange');
+  const rmqPass = configService.get<string>('RABBITMQ_PASSWORD', 'rabbitmq_dev_password');
+  const rmqHost = configService.get<string>('RABBITMQ_HOST', 'localhost');
+  const rmqPort = configService.get<string>('RABBITMQ_PORT', '5672');
+
+  const rmqUrl = configService.get<string>(
+    'RABBITMQ_URL',
+    `amqp://${rmqUser}:${rmqPass}@${rmqHost}:${rmqPort}`,
+  );
+
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.RMQ,
     options: {
