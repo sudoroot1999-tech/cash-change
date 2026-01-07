@@ -4,8 +4,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthModule } from './modules/auth/auth.module';
-import { SessionsModule } from './modules/sessions/sessions.module';
-import {RabbitMQModule,KafkaModule} from "@exchange/common"
+import { RabbitMQModule, KafkaModule, JwtAuthGuard } from "@exchange/common"
+import { APP_GUARD } from '@nestjs/core';
+import { JwtStrategy } from './modules/auth/sterategies/jwt.strategy';
 
 @Module({
   imports: [
@@ -55,7 +56,13 @@ import {RabbitMQModule,KafkaModule} from "@exchange/common"
     }),
 
     AuthModule,
-    SessionsModule,
   ],
+  providers: [
+    JwtStrategy,
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    }
+  ]
 })
-export class AppModule {}
+export class AppModule { }

@@ -8,24 +8,20 @@ import {
   Param,
   Query,
   ParseUUIDPipe,
-  HttpCode,
-  HttpStatus,
   UseInterceptors,
   UploadedFile,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody, ApiConsumes } from '@nestjs/swagger';
-import { RequireAuth, Public, CurrentUser, BadRequestError } from '@exchange/common';
+import {  CurrentUser, BadRequestError } from '@exchange/common';
 import { AuthenticatedUser } from '@exchange/common';
 import { UsersService } from './users.service';
-import { CreateUserDto, UpdateUserDto, UserResponseDto, PaginationQueryDto } from './dto/user.dto';
+import { UpdateUserDto, UserResponseDto, PaginationQueryDto } from './dto/user.dto';
 import { User } from './entities/user.entity';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UploadAvatarResponseDto } from './dto/upload-avatar.dto';
-import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 
 @ApiTags('Users')
 @Controller('users')
-@RequireAuth()
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 

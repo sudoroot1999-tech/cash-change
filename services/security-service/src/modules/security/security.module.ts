@@ -29,6 +29,7 @@ import {
   InsuranceFundService,
   BugBountyService,
   IncidentResponseService,
+  TwoFactorService,
 } from './services';
 
 // Controllers
@@ -52,6 +53,7 @@ import { DeviceFingerprintMiddleware } from '../../middlewares/device-fingerprin
 import { WhitelistActivationJob } from './workers/whitelist-activation.job';
 import { RiskScoringJob } from './workers/risk-scoring.job';
 import { SecurityWorker } from './workers/security.worker';
+import { UserTwoFactor } from './entities/user-two-factor.entity';
 
 const entities = [
   AntiPhishingCode,
@@ -68,6 +70,7 @@ const entities = [
   BugBountySubmission,
   Incident,
   UserSession,
+  UserTwoFactor,
 ];
 
 @Module({
@@ -97,6 +100,7 @@ const entities = [
     InsuranceFundService,
     BugBountyService,
     IncidentResponseService,
+    TwoFactorService,
 
     // Guards
     ApiKeyGuard,
@@ -119,6 +123,7 @@ const entities = [
     InsuranceFundService,
     BugBountyService,
     IncidentResponseService,
+    TwoFactorService,
   ],
 })
 export class SecurityModule implements NestModule {

@@ -3,7 +3,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './modules/auth/auth.module';
 import { SecurityModule } from './modules/security/security.module';
-import { PerformanceModule } from '@exchange/common';
+import { JwtAuthGuard, PerformanceModule } from '@exchange/common';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -32,5 +33,11 @@ import { PerformanceModule } from '@exchange/common';
     PerformanceModule,
     AuthModule,
   ],
+  providers:[
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    }
+  ]
 })
 export class AppModule {}

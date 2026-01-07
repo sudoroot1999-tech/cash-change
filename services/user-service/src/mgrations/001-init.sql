@@ -1,8 +1,5 @@
--- Enable uuid extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
 -- Create User Table
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email VARCHAR(255) NOT NULL UNIQUE,
     username VARCHAR(50) UNIQUE,
@@ -26,7 +23,7 @@ CREATE TABLE users (
 );
 
 -- Create User Profiles Table
-CREATE TABLE user_profiles (
+CREATE TABLE IF NOT EXISTS user_profiles (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL UNIQUE,
     first_name VARCHAR(100),
@@ -44,7 +41,7 @@ CREATE TABLE user_profiles (
 );
 
 -- Create User Preferences Table
-CREATE TABLE user_preferences (
+CREATE TABLE IF NOT EXISTS user_preferences (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL UNIQUE,
     language VARCHAR(10) DEFAULT 'en',
@@ -70,7 +67,7 @@ CREATE TABLE user_preferences (
 );
 
 -- Create User Limits Table
-CREATE TABLE user_limits (
+CREATE TABLE IF NOT EXISTS user_limits (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL UNIQUE,
     kyc_level VARCHAR(20) DEFAULT 'NONE', -- Stored as string in entity enum but likely varchar in DB
@@ -103,8 +100,11 @@ CREATE TABLE user_limits (
 );
 
 -- Create Indexes
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_referral_code ON users(referral_code);
-CREATE INDEX idx_profiles_user_id ON user_profiles(user_id);
-CREATE INDEX idx_preferences_user_id ON user_preferences(user_id);
-CREATE INDEX idx_limits_user_id ON user_limits(user_id);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);
+CREATE INDEX IF NOT EXISTS idx_users_email_verified ON users(email_verified);
+CREATE INDEX IF NOT EXISTS idx_user_created_at ON user(created_at)
+CREATE INDEX IF NOT EXISTS idx_users_referral_code ON users(referral_code);
+CREATE INDEX IF NOT EXISTS idx_profiles_user_id ON user_profiles(user_id);
+CREATE INDEX IF NOT EXISTS idx_preferences_user_id ON user_preferences(user_id);
+CREATE INDEX IF NOT EXISTS idx_limits_user_id ON user_limits(user_id);

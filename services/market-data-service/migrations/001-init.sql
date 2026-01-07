@@ -1,4 +1,5 @@
--- Market Data Service Schema
+-- Enable TimescaleDB extension
+CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
 
 -- Trading pairs configuration
 CREATE TABLE IF NOT EXISTS trading_pairs (

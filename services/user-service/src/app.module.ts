@@ -4,7 +4,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from './modules/users/users.module';
 import { HealthModule } from './modules/health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
-import { KafkaModule, PerformanceModule, RabbitMQModule, StorageModule } from '@exchange/common';
+import { JwtAuthGuard, KafkaModule, PerformanceModule, RabbitMQModule, StorageModule } from '@exchange/common';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -60,9 +61,14 @@ import { KafkaModule, PerformanceModule, RabbitMQModule, StorageModule } from '@
 
     // Feature Modules
     UsersModule,
-    PerformanceModule,
     HealthModule,
     AuthModule,
+  ],
+  providers:[
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    }
   ]
 }
 )

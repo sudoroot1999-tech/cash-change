@@ -4,11 +4,15 @@ package user;
 
 service UserService {
   rpc FindById (FindByIdRequest) returns (UserResponse);
-  rpc FindByEmail (FindByEmailRequest) returns (UserResponse);
+  rpc verifyPassword (VerifyPasswordRequest) returns (VerifyPasswordResponse);
   rpc UpdateKycLevel (UpdateKycLevelRequest) returns (UserResponse);
   rpc Create (CreateUserRequest) returns (UserResponse);
   rpc Validate (ValidateUserRequest) returns (UserResponse);
+  rpc ChangePassword (ChangePasswordRequest) returns (ChangePasswordResponse);
+  rpc ForgotPassword (ForgotPasswordRequest) returns (ForgotPasswordResponse);
+  rpc ResetPassword (ResetPasswordRequest) returns (ResetPasswordResponse);
 }
+
 
 message ValidateUserRequest {
   string email = 1;
@@ -31,19 +35,32 @@ message UpdateKycLevelRequest {
 message CreateUserRequest {
   string email = 1;
   string password = 2;
-  optional string username = 3;
+  string username = 3;
   optional string referral_code = 4;
 }
 
 message UserResponse {
   string id = 1;
   string email = 2;
-  optional string username = 3;
-  string status = 4;
-  string tier = 5;
-  int32 kyc_level = 6;
-  bool two_factor_enabled = 7;
-  optional string password_hash = 8;
+  string username = 3;
+  optional string phone= 4;
+  string status = 5;
+  string tier = 6;
+  int32 kyc_level = 7;
+  optional string kyc_status = 8;
+  string referral_code = 9 ;
+  optional string referred_by = 10 ;
+  bool two_factor_enabled = 11;
+  optional bool is_two_factor_enabled = 12 ;
+  optional string two_factor_secret = 13;
+  bool email_verified = 14;
+  bool phone_verified = 15;
+  optional string email_verification_token = 16;
+  optional string anti_phishing_code = 17;
+  optional string last_login_at = 18;
+  optional string last_login_ip = 19;
+  optional string created_at = 20;
+  optional string updated_at = 21;
 }
 
 message UserProfile {
@@ -65,4 +82,43 @@ message UserProfile {
 message CreateUserResponse {
   UserResponse user = 1;
   UserProfile profile = 2;
+}
+
+message ChangePasswordRequest {
+  string user_id = 1;
+  string currentPassword = 2;
+  string newPassword = 3;
+}
+
+message ForgotPasswordRequest {
+  string email = 1;
+}
+
+message ResetPasswordRequest {
+  string token = 1;
+  string newPassword = 2;
+}
+
+message ForgotPasswordResponse {
+  string message = 1;
+  bool success = 2;
+}
+
+message ResetPasswordResponse {
+  string message = 1;
+  bool success = 2;
+}
+
+message ChangePasswordResponse {
+  string message = 1;
+  bool success = 2;
+}
+
+message VerifyPasswordRequest {
+  string user_id = 1;
+  string password = 2;
+}
+
+message VerifyPasswordResponse {
+  bool success = 1;
 }

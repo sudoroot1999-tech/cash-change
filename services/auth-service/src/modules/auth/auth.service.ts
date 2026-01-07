@@ -2,79 +2,43 @@ import {
   Injectable,
   UnauthorizedException,
   BadRequestException,
-  OnModuleInit,
   Inject,
 } from '@nestjs/common';
-import { ClientGrpc } from '@nestjs/microservices';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { authenticator } from '@otplib/preset-default';
-import * as qrcode from 'qrcode';
-import { Session } from '../sessions/entities/session.entity';
 import { AuthEventsService } from './services/auth-events.service';
-import { UserProfile } from '@exchange/common';
-
-// User entity reference (shared from user-service schema)
-interface User {
-  id: string;
-  email: string;
-  username: string | null;
-  passwordHash: string;
-  status: string;
-  tier: string;
-  kycLevel: number;
-  twoFactorEnabled: boolean;
-  two_factor_enabled: boolean;
-  twoFactorSecret: string | null;
-}
-
-interface UserGrpcService {
-  findById(data: { id: string }): any;
-  findByEmail(data: { email: string }): any;
-  create(data: {
-    email: string;
-    password?: string;
-    username?: string;
-    referral_code?: string;
-  }): any;
-  validate(data: { email: string; password: string }): any;
-}
+import { CacheLayer, createServiceLogger, JWTAuthService, Logger, MultiLayerCacheService, NotFoundError, RateLimit, RateLimiterService, RequestContext, User, USER_STATUS, UserProfile } from '@exchange/common';
+import { ChangePasswordDto, ForgotPasswordDto, RefreshTokenDto, RegisterDto, ResetPasswordDto, Verify2FADto } from './dto/auth.dto';
+import { LoginDto } from './dto/auth.dto';
+import { SECURITY_PORT, USER_PORT } from './tokens/auth.tokens';
+import { UserPort } from './ports/user.port';
+import { SecurityPort } from './ports/security.port';
 
 @Injectable()
-export class AuthService implements OnModuleInit {
+export class AuthService {
+
   constructor(
-    private readonly jwtService: JwtService,
-    private readonly configService: ConfigService,
-    @InjectRepository(Session)
-    private readonly sessionRepository: Repository<Session>,
-    @Inject('USER_PACKAGE') private readonly client: ClientGrpc,
-     private readonly authEvents: AuthEventsService,
-  ) {}
+    private readonly logger: Logger = createServiceLogger(AuthService.name),
+    private readonly rateLimitService: RateLimiterService,
+    @Inject(USER_PORT) private readonly users: UserPort,
+    @Inject(SECURITY_PORT) private readonly security: SecurityPort,
+    private readonly authEvents: AuthEventsService,
+    private readonly tokenService: JWTAuthService,
+    private readonly cacheService: MultiLayerCacheService
+  ) { }
 
-  private userGrpcService: UserGrpcService;
-
-  onModuleInit() {
-    this.userGrpcService = this.client.getService<UserGrpcService>('UserService');
-  }
 
   /**
    * Register a new user
    */
-  async register(dto: any): Promise<any> {
+  async register(dto: RegisterDto): Promise<any> {
     try {
       // Create user via User Service gRPC
-      const grpcUser = await this.userGrpcService
+      const user = await this.users
         .create({
           email: dto.email,
           password: dto.password,
           username: dto.username,
           referral_code: dto.referralCode,
         })
-        .toPromise();
-
-      const user = this.mapGrpcUserToInternal(grpcUser);
 
       await this.authEvents.publishUserRegistered(
         user.id,
@@ -82,8 +46,17 @@ export class AuthService implements OnModuleInit {
         user.username,
       );
 
-      // Auto-login: Generate tokens
-      return this.generateTokens(user);
+      this.logger.logAuth('User registered successfully', user.id, true);
+
+      return {
+        success: true,
+        message: 'Registration successful. Please verify your email.',
+        data: {
+          userId: user.id,
+          email: user.email,
+          antiPhishingCode: user.antiPhishingCode,
+        }
+      }
     } catch (error: any) {
       if (error?.details?.includes('already registered')) {
         // Check specifically for conflict
@@ -93,39 +66,50 @@ export class AuthService implements OnModuleInit {
     }
   }
 
-    /**
-   * Login user
-   */
-  async login(dto: any,ipAddress:string,deviceInfo:any): Promise<any> {
+  /**
+ * Login user
+ */
+  async login(dto: LoginDto, ctx: Partial<RequestContext>): Promise<any> {
+    // Check rate limiting
+    const isBlocked = await this.rateLimitService.isBlocked(ctx.ipAddress);
+    if (isBlocked) {
+      throw new UnauthorizedException('Too many failed login attempts. Please try again later.');
+    }
+
     try {
+      // Find user and validate
       const user = await this.validateUser(dto.email, dto.password);
-      if (!user) {
-        throw new Error('Invalid credentials');
+
+      // Check user status
+      if (user.status !== USER_STATUS.ACTIVE) {
+        throw new UnauthorizedException('Account is not active. Please verify your email.');
       }
 
       // Check 2FA if enabled
       if (user.twoFactorEnabled) {
-        if (!dto.twoFactorCode) {
-          throw new Error('2FA code required');
-        }
-        const isValid = this.verify2FACode(
-          user.twoFactorSecret!,
-          dto.twoFactorCode,
+        // Generate temp token for 2FA verification
+        const tempToken = this.tokenService.generateRandomToken();
+
+        await this.cacheService.set(
+          `2fa:${tempToken}`,
+          { userId: user.id, ipAddress: ctx.ipAddress },
+          {
+            ttl: 300,
+            layer: CacheLayer.L3_SESSION,
+            compress: false,
+          }
         );
-        if (!isValid) {
-          throw new Error('Invalid 2FA code');
-        }
+
+        return {
+          success: true,
+          requires2FA: true,
+          tempToken,
+        };
       }
-      
-      await this.authEvents.publishUserLogin(
-        user.id,
-        user.email,
-        ipAddress
-      );
-      
-      return this.generateTokens(user);
-    
-    } 
+
+      return this.completeLogin(user, ctx);
+
+    }
     catch (error: any) {
       if (error?.details?.includes('already registered')) {
         // Check specifically for conflict
@@ -141,162 +125,362 @@ export class AuthService implements OnModuleInit {
   async validateUser(email: string, password: string): Promise<User | null> {
     // Call user-service via gRPC for secure validation
     try {
-      const grpcUser = await this.userGrpcService.validate({ email, password }).toPromise();
-      if (!grpcUser) return null;
+      const user = await this.users.validate(email, password);
+      if (!user) throw new UnauthorizedException('Invalid email or password');
 
-      const user = this.mapGrpcUserToInternal(grpcUser);
       if (user.status !== 'active' && user.status !== 'pending') {
         throw new UnauthorizedException('Account is suspended or banned');
       }
       return user;
     } catch (error) {
       // If RPC returns null or error, return null
-      return null;
+      throw new UnauthorizedException('An error happened');;
     }
   }
 
   /**
    * Generate access and refresh tokens
    */
-  async generateTokens(user: User, deviceInfo?: Record<string, unknown>, ipAddress?: string) {
-    const payload = {
-      sub: user.id,
+  private async completeLogin(
+    user: User,
+    ctx: Partial<RequestContext>
+  ) {
+    // check if device is trusted
+    const isTrusted = await this.security.isDeviceTrusted(
+      user.id,
+      ctx.fingerprint,
+    );
+
+    let device;
+
+    if (!isTrusted) {
+      // register device
+      device = await this.security.registerDevice(
+        {
+          user_id: user.id,
+          fingerprint: ctx.fingerprint,
+          userAgent: ctx.userAgent,
+          browser: ctx.browser,
+          os: ctx.os,
+          device: ctx.device,
+          screenResolution: ctx.screenResolution,
+          timezone: ctx.timezone,
+          language: ctx.language,
+          ipAddress: ctx.ipAddress,
+        }
+      );
+    }
+    else {
+      device = { fingerprint: ctx.fingerprint };
+    }
+    // create session
+    const session = await this.security.createSession({
+      userId: user.id,
+      ipAddress: ctx.ipAddress,
+      deviceFingerprint: device.fingerprint,
+    });
+    // generate tokens
+    const tokens = await this.tokenService.generateTokenPair({
       email: user.email,
-      tier: user.tier,
+      sub: user.id,
+      sessionId: session.id,
+      username: user.username,
+      status: user.status,
       kycLevel: user.kycLevel,
-    };
-
-    const accessToken = this.jwtService.sign(payload);
-    const refreshToken = this.generateRefreshToken();
-    const expiresIn = this.configService.get('JWT_EXPIRES_IN', '15m');
-
-    // Store session
-    await this.createSession(user.id, refreshToken, deviceInfo, ipAddress);
-    await this.authEvents.publishUserLogin(user.id,user.email)
+      kycStatus: user.kycStatus,
+      tier: user.tier,
+      isTwoFactorEnabled: user.isTwoFactorEnabled,
+      emailVerified: user.emailVerified,
+      phoneVerified: user.phoneVerified,
+    });
+    // update session with refresh token
+    const updateSession = await this.security.updateSession(
+      session.id,
+      tokens.refreshToken
+    )
+    // cache session
+    await this.cacheService.set(`session:${session.id}`, {
+      userId: user.id,
+      fingerprint: device.fingerprint,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // optional, match TTL
+    }, {
+      layer: CacheLayer.L3_SESSION,
+      ttl: 24 * 60 * 60, // 24 hours
+    });
+    // publish user login event
+    await this.authEvents.publishUserLogin(
+      user.id,
+      user.email,
+      ctx.ipAddress,
+    );
 
     return {
-      accessToken,
-      refreshToken,
-      expiresIn: this.parseExpiresIn(expiresIn),
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      expiresIn: this.parseExpiresIn(String(tokens.expiresIn)),
       tokenType: 'Bearer',
+      sessionId: updateSession.id,
+    };
+  }
+
+  /**
+   * Verify 2FA and complete login
+   */
+  @RateLimit({
+    windowMs: 60 * 60 * 1000,
+    maxRequests: 5,
+    blockDurationMs: 60 * 60 * 1000,
+    keyPrefix: '2fa',
+    skipSuccessfulRequests: true,
+    skipFailedRequests: false,
+  })
+  async verify2FA(tempToken: string, dto: Verify2FADto, ctx: Partial<RequestContext>) {
+    // Get user from temp token
+    const tempData = await this.cacheService.get<{ userId: string }>(
+      `2fa:${tempToken}`,
+      { layer: CacheLayer.L3_SESSION }
+    );
+
+    if (!tempData) {
+      throw new UnauthorizedException('Invalid or expired 2FA token');
+    }
+
+    const user = await this.users.findById(tempData.userId)
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const twoFactorAuth = await this.security.findTwoFactorByUserId(user.id);
+
+    if (!twoFactorAuth || !twoFactorAuth.isEnabled) {
+      throw new BadRequestException('2FA is not enabled');
+    }
+
+    let isValid = false;
+
+    if (dto.token) {
+      // Verify TOTP token
+      isValid = await this.security.verifyToken(user.id, dto.token);
+    } else if (dto.backupCode) {
+      // Verify backup code
+      isValid = await this.security.verifyBackupCode(user.id, dto.backupCode);
+    }
+
+    if (!isValid) {
+      await this.security.logLoginAttempt({
+        user_id: user.id,
+        ip_address: ctx.ipAddress,
+        success: false,
+        failure_reason: `invalid 2fa code`
+      });
+      throw new UnauthorizedException('Invalid 2FA code');
+    }
+
+    // Delete temp token
+    await this.cacheService.delete(`2fa:${tempToken}`, { layer: CacheLayer.L3_SESSION });
+
+    // Create session
+    return this.completeLogin(user, ctx);
+  }
+
+  /**
+   * Enable 2FA
+   */
+  async setup2FA(userId: string) {
+
+    // Check if 2FA already enabled
+    const existing = await this.security.findTwoFactorByUserId(userId);
+
+    if (existing?.isEnabled) {
+      throw new BadRequestException('2FA already enabled');
+    }
+
+    const user = await this.users.findById(userId);
+
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    // Generate secret and QR code
+    const { secret, otpauthUrl, backupCodes } = await this.security.generateSecret(userId, user.email);
+
+    const qrCode = await this.security.generateQRCode(otpauthUrl);
+
+    return {
+      success: true,
+      data: {
+        secret,
+        qrCode,
+        backupCodes, // Only show once
+      },
+    };
+  }
+
+  /**
+   * Confirm 2FA setup
+   */
+  async confirm2FA(userId: string, token: string) {
+    const twoFactorAuth = await this.security.findTwoFactorByUserId(userId);
+
+    if (!twoFactorAuth) {
+      throw new BadRequestException('2FA setup not initiated');
+    }
+
+    if (twoFactorAuth.isEnabled) {
+      throw new BadRequestException('2FA already enabled');
+    }
+
+    // Verify token
+    const isValid = await this.security.verifyToken(
+      userId,
+      token,
+    );
+
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid 2FA code');
+    }
+
+    // Enable 2FA
+    twoFactorAuth.isEnabled = true;
+    await this.security.updateTwoFactor(
+      userId,
+      twoFactorAuth.isEnabled,
+      new Date()
+    );
+
+    const user = await this.users.findById(userId);
+    // await this.emailService.send2FAEnabledNotification(user.email, user.anti_phishing_code);
+
+    return {
+      success: true,
+      message: '2FA enabled successfully',
     };
   }
 
   /**
    * Refresh access token
    */
-  async refreshTokens(refreshToken: string) {
-    const session = await this.sessionRepository.findOne({
-      where: { refreshTokenHash: this.hashToken(refreshToken) },
-    });
+  async refreshToken(userId: string, dto: RefreshTokenDto, ctx: RequestContext) {
+    try {
+      // Verify refresh token
+      const payload = await this.tokenService.verifyRefreshToken(dto.refreshToken);
 
-    if (!session || session.expiresAt < new Date()) {
+      // Find session
+      const sessions = await this.security.getActiveSessions(userId);
+
+      if (!sessions) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      let currentSession = null;
+      for (const session of sessions) {
+        if (session.refreshToken === dto.refreshToken) {
+          currentSession = session;
+          break;
+        }
+      }
+
+      if (!currentSession) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      // Verify in Redis
+      const isValid = await this.cacheService.get(`session:${currentSession.id}`, {
+        layer: CacheLayer.L3_SESSION
+      });
+
+      if (!isValid) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      // Generate new access token
+      const pairTokens = await this.tokenService.refreshAccessToken(
+        dto.refreshToken,
+        {
+          email: payload.email,
+          sub: payload.sub,
+          username: payload.username,
+          status: payload.status,
+          kycLevel: payload.kycLevel,
+          kycStatus: payload.kycStatus,
+          tier: payload.tier,
+          isTwoFactorEnabled: payload.isTwoFactorEnabled,
+          emailVerified: payload.emailVerified,
+          phoneVerified: payload.phoneVerified,
+          lastLoginAt: new Date(),
+          lastLoginIp: ctx.ipAddress
+        }
+      );
+
+      return {
+        success: true,
+        data: {
+          accessToken: pairTokens.accessToken,
+          refreshToken: pairTokens.refreshToken,
+          expiresIn: this.parseExpiresIn(String(pairTokens.expiresIn)),
+          tokenType: pairTokens.tokenType
+        },
+      };
+    } catch (error) {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
-
-    // Get user (in production, call user-service)
-    const user = await this.findUserById(session.userId);
-    if (!user) {
-      throw new UnauthorizedException('User not found');
-    }
-
-    // Rotate refresh token
-    await this.sessionRepository.delete(session.id);
-
-    return this.generateTokens(
-      user,
-      session.deviceInfo ?? undefined,
-      session.ipAddress ?? undefined,
-    );
   }
 
   /**
-   * Logout - invalidate session
+   * Change password
    */
-  async logout(refreshToken: string): Promise<void> {
-    await this.sessionRepository.delete({
-      refreshTokenHash: this.hashToken(refreshToken),
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    return await this.users.changePassword({
+      user_id: userId,
+      currentPassword: dto.currentPassword,
+      newPassword: dto.newPassword,
     });
   }
 
   /**
-   * Logout all sessions for a user
+   * Forgot password
    */
-  async logoutAll(userId: string): Promise<void> {
-    await this.sessionRepository.delete({ userId });
+  async forgotPassword(dto: ForgotPasswordDto, ip: string) {
+    return await this.users.forgotPassword(dto.email);
   }
 
   /**
-   * Setup 2FA - generate secret and QR code
+   * Reset password
    */
-  async setup2FA(userId: string): Promise<{ secret: string; qrCode: string }> {
-    const user = await this.findUserById(userId);
-    if (!user) throw new BadRequestException('User not found');
-
-    if (user.twoFactorEnabled) {
-      throw new BadRequestException('2FA is already enabled');
-    }
-
-    const secret = authenticator.generateSecret();
-    const otpAuthUrl = authenticator.keyuri(user.email, 'CryptoExchange', secret);
-    const qrCode = await qrcode.toDataURL(otpAuthUrl);
-
-    return { secret, qrCode };
-  }
-
-  /**
-   * Verify 2FA code
-   */
-  verify2FACode(secret: string, code: string): boolean {
-    return authenticator.verify({ token: code, secret });
-  }
-
-  /**
-   * Validate JWT token
-   */
-  async validateToken(token: string): Promise<any> {
-    try {
-      return this.jwtService.verify(token);
-    } catch {
-      throw new UnauthorizedException('Invalid token');
-    }
-  }
-
-  // Helper methods
-  private generateRefreshToken(): string {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let token = '';
-    for (let i = 0; i < 64; i++) {
-      token += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return token;
-  }
-
-  private hashToken(token: string): string {
-    const crypto = require('crypto');
-    return crypto.createHash('sha256').update(token).digest('hex');
-  }
-
-  private async createSession(
-    userId: string,
-    refreshToken: string,
-    deviceInfo?: Record<string, unknown>,
-    ipAddress?: string,
-  ): Promise<Session> {
-    const refreshExpiresDays = parseInt(this.configService.get('JWT_REFRESH_EXPIRES_DAYS', '7'));
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + refreshExpiresDays);
-
-    const session = this.sessionRepository.create({
-      userId,
-      refreshTokenHash: this.hashToken(refreshToken),
-      deviceInfo: deviceInfo || {},
-      ipAddress: ipAddress || null,
-      expiresAt,
+  async resetPassword(dto: ResetPasswordDto) {
+    return await this.users.resetPassword({
+      token: dto.token,
+      newPassword: dto.newPassword,
     });
-
-    return this.sessionRepository.save(session);
   }
+
+  /**
+   * Logout
+   */
+  // async logout(userId: string, sessionId: string) {
+  //   // Mark session as inactive
+  //   await this.sessionRepository.update({ session_id: sessionId }, { is_active: false });
+
+  //   // Delete from Redis
+  //   await this.redisService.revokeRefreshToken(userId, sessionId);
+  //   await this.redisService.deleteSession(sessionId);
+
+  //   return {
+  //     success: true,
+  //     message: 'Logged out successfully',
+  //   };
+  // }
+
+  /**
+  * Logout all sessions for a user
+  */
+  // async logoutAll(userId: string): Promise<void> {
+  //   await this.sessionRepository.delete({ userId });
+  // }
+
 
   private parseExpiresIn(expiresIn: string): number {
     const match = expiresIn.match(/^(\d+)([smhd])$/);
@@ -308,55 +492,5 @@ export class AuthService implements OnModuleInit {
     return value * multipliers[unit];
   }
 
-  // Placeholder methods - in production these would call user-service
-  // private async findUserByEmail(email: string): Promise<User | null> {
-  //   try {
-  //     const response = await this.userGrpcService.findByEmail({ email }).toPromise();
-  //     return this.mapGrpcUserToInternal(response);
-  //   } catch (error) {
-  //     return null;
-  //   }
-  // }
 
-  private async findUserById(id: string): Promise<User | null> {
-    try {
-      const response = await this.userGrpcService.findById({ id }).toPromise();
-      return this.mapGrpcUserToInternal(response);
-    } catch (error) {
-      return null;
-    }
-  }
-
-  private mapGrpcUserToInternal(grpcUser: any): User {
-    return {
-      id: grpcUser.id,
-      email: grpcUser.email,
-      username: grpcUser.username || null,
-      passwordHash: grpcUser.password_hash,
-      status: grpcUser.status,
-      tier: grpcUser.tier,
-      kycLevel: grpcUser.kyc_level,
-      twoFactorEnabled: grpcUser.two_factor_enabled,
-      two_factor_enabled: grpcUser.two_factor_enabled,
-      twoFactorSecret: null,
-    };
-  }
-
-  private mapGrpcProfileToInternal(grpcProfile: any): UserProfile {
-    return {
-      id: grpcProfile.id,
-      userId: grpcProfile.user_id,
-      firstName: grpcProfile.first_name || null,
-      lastName: grpcProfile.last_name || null,
-      dateOfBirth: grpcProfile.date_of_birth || null,
-      country: grpcProfile.country || null,
-      city: grpcProfile.city || null,
-      address: grpcProfile.address || null,
-      postalCode: grpcProfile.postal_code || null,
-      avatarUrl: grpcProfile.avatar_url || null,
-      bio: grpcProfile.bio || null,
-      createdAt: grpcProfile.created_at,
-      updatedAt: grpcProfile.updated_at,
-    };
-  }
 }

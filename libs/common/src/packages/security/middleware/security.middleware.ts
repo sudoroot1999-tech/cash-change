@@ -1,6 +1,8 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
+import * as crypto from 'crypto';
+import { RequestContext } from '../../../types';
 
 @Injectable()
 export class SecurityMiddleware implements NestMiddleware {
@@ -105,3 +107,43 @@ export class CORSMiddleware implements NestMiddleware {
     next();
   }
 }
+
+@Injectable()
+export class DeviceFingerprintMiddleware implements NestMiddleware {
+
+  async use(req: Request, res: Response, next: NextFunction) {
+    // Generate fingerprint from request
+
+    const hash = crypto.createHash('sha256');
+    hash.update(req.headers['user-agent']);
+    if (req.headers['accept-language']) hash.update(req.headers['accept-language']);
+    if (req.headers['accept-encoding']) hash.update(req.headers['accept-encoding']);
+    hash.update(req.ip);
+
+    const fingerprint = hash.digest('hex');
+
+    // Attach to request
+    (req as any).deviceFingerprint = fingerprint;
+
+    next();
+  }
+}
+
+@Injectable()
+export class DeviceContextMiddleware implements NestMiddleware {
+  use(req: Request & { context?: RequestContext }, _: Response, next: NextFunction) {
+    const ip =
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0] ||
+      req.socket.remoteAddress;
+
+    req.context = {
+      fingerprint: (req as any).deviceFingerprint,
+      ipAddress: ip,
+      userAgent: req.headers['user-agent'],
+      language: req.headers['accept-language'],
+    };
+
+    next();
+  }
+}
+

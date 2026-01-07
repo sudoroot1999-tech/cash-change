@@ -12,7 +12,8 @@ import {
   REWARD_TYPES,
   KYC_LEVELS,
   KYC_STATUS,
-  DOCUMENT_TYPE
+  DOCUMENT_TYPE,
+  LOGIN_STATUS
 } from '../constants';
 
 // Extract types from constants
@@ -30,58 +31,12 @@ export type TransactionType = (typeof TRANSACTION_TYPES)[keyof typeof TRANSACTIO
 export type TransactionStatus = (typeof TRANSACTION_STATUS)[keyof typeof TRANSACTION_STATUS];
 export type NotificationChannel = (typeof NOTIFICATION_CHANNELS)[keyof typeof NOTIFICATION_CHANNELS];
 export type NotificationPriority = (typeof NOTIFICATION_PRIORITY)[keyof typeof NOTIFICATION_PRIORITY];
+export type LoginStatus = (typeof LOGIN_STATUS)[keyof typeof LOGIN_STATUS];
 
-// User Types
-export interface User {
-  id: string;
-  email: string;
-  phone?: string;
-  status: UserStatus;
-  tier: UserTier;
-  kycLevel: number;
-  kycStatus?: string;
-  feeTier?: string;
-  referralCode: string;
-  referredBy?: string;
-  twoFactorEnabled: boolean;
-  isTwoFactorEnabled: boolean;
-  emailVerified: boolean;
-  phoneVerified: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface UserProfile {
-  id: string;
-  userId: string;
-  firstName?: string;
-  lastName?: string;
-  dateOfBirth?: Date;
-  country?: string;
-  city?: string;
-  address?: string;
-  postalCode?: string;
-  avatarUrl?: string;
-  bio?: string;
-  createdAt?:Date,
-  updatedAt?:Date
-}
-
-// Auth Types
-export interface TokenPayload {
-  sub: string;
-  email: string;
-  tier: UserTier;
-  kycLevel: number;
-  iat: number;
-  exp: number;
-}
-
-export interface AuthTokens {
-  accessToken: string;
-  refreshToken: string;
-  expiresIn: number;
-}
+export * from "./auth.types";
+export * from "./user.types";
+export * from "./market.types";
+export * from "./security.types";
 
 // Wallet Types
 export interface Asset {
@@ -211,6 +166,21 @@ export interface Candlestick {
   closeTime: number;
   quoteVolume: string;
   trades: number;
+}
+
+export interface RequestContext {
+  userId?: string;
+  fingerprint: string;
+  browser?: string;
+  os?: string;
+  device?: string;
+  screenResolution?: string;
+  timezone?: string;
+  language?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  locationCountry?: string;
+  locationCity?: string;
 }
 
 // API Response Types

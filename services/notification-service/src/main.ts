@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { Transport, MicroserviceOptions } from '@nestjs/microservices';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { requestLogger } from '@exchange/common';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -12,6 +13,7 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.enableCors();
   app.setGlobalPrefix('api/v1');
+  app.use(requestLogger('notification-service'));
 
   if (process.env.NODE_ENV !== 'production') {
     const config = new DocumentBuilder()

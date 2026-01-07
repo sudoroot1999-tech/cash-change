@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { requestLogger } from '@exchange/common';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -21,6 +22,7 @@ async function bootstrap() {
   });
 
   app.setGlobalPrefix('api/v1');
+  app.use(requestLogger('auth-service'));
 
   if (process.env.NODE_ENV !== 'production') {
     const config = new DocumentBuilder()

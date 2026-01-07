@@ -1,13 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan } from 'typeorm';
-import { LoginHistory, LoginStatus } from '../entities/login-history.entity';
+import { LoginHistory } from '../entities/login-history.entity';
 import { UserSession } from '../entities/user-session.entity';
 import { SecurityEvent, SecurityEventType, RiskLevel } from '../entities/security-event.entity';
+import { LOGIN_STATUS } from '@exchange/common';
 
 export interface LoginAttemptData {
   userId: string;
-  ipAddress: string;
+  ipAddress?: string;
   userAgent?: string;
   deviceFingerprint?: string;
   location?: string;
@@ -25,7 +26,7 @@ export class LoginSecurityService {
   private readonly logger = new Logger(LoginSecurityService.name);
   private readonly MAX_FAILED_ATTEMPTS = 5;
   private readonly LOCKOUT_DURATION_MINUTES = 30;
-  private readonly MAX_CONCURRENT_SESSIONS = 5;
+  private readonly MAX_CONCURRENT_SESSIONS = 10;
 
   constructor(
     @InjectRepository(LoginHistory)
@@ -34,7 +35,7 @@ export class LoginSecurityService {
     private userSessionRepository: Repository<UserSession>,
     @InjectRepository(SecurityEvent)
     private securityEventRepository: Repository<SecurityEvent>,
-  ) {}
+  ) { }
 
   /**
    * Log login attempt
@@ -44,7 +45,7 @@ export class LoginSecurityService {
     await this.loginHistoryRepository.save(loginHistory);
 
     // Check for suspicious activity
-    if (data.status === LoginStatus.FAILED) {
+    if (data.status === LOGIN_STATUS.FAILED) {
       await this.checkFailedAttempts(data.userId, data.ipAddress);
     }
 
@@ -64,7 +65,7 @@ export class LoginSecurityService {
     const failedAttempts = await this.loginHistoryRepository.count({
       where: {
         userId,
-        status: LoginStatus.FAILED,
+        status: LOGIN_STATUS.FAILED,
         createdAt: MoreThan(last30Minutes),
       },
     });
@@ -99,7 +100,7 @@ export class LoginSecurityService {
    */
   async createSession(data: {
     userId: string;
-    sessionToken: string;
+    sessionToken?: string;
     refreshToken?: string;
     deviceFingerprint?: string;
     ipAddress: string;
@@ -135,7 +136,7 @@ export class LoginSecurityService {
     if (activeSessions.length >= this.MAX_CONCURRENT_SESSIONS) {
       // Deactivate oldest sessions
       const sessionsToDeactivate = activeSessions.slice(this.MAX_CONCURRENT_SESSIONS - 1);
-      
+
       for (const session of sessionsToDeactivate) {
         session.isActive = false;
         await this.userSessionRepository.save(session);
@@ -172,6 +173,40 @@ export class LoginSecurityService {
   }
 
   /**
+   * Update existing session
+   */
+  async updateSession(params: {
+    sessionId: string;
+    refreshToken?: string;
+    expiresInHours?: number;
+  }): Promise<UserSession> {
+    const session = await this.userSessionRepository.findOne({
+      where: { id: params.sessionId },
+    });
+
+    if (!session) {
+      throw new Error('Session not found');
+    }
+
+    // Update refresh token if provided
+    if (params.refreshToken) {
+      session.refreshToken = params.refreshToken;
+    }
+
+    // Update expiration if provided
+    if (params.expiresInHours) {
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + params.expiresInHours);
+      session.expiresAt = expiresAt;
+    }
+
+    // Update last activity
+    session.lastActivityAt = new Date();
+
+    return await this.userSessionRepository.save(session);
+  }
+
+  /**
    * Get active sessions for user
    */
   async getActiveSessions(userId: string): Promise<UserSession[]> {
@@ -184,7 +219,7 @@ export class LoginSecurityService {
   /**
    * Kill specific session
    */
-  async killSession(userId: string, sessionId: string): Promise<void> {
+  async killSession(userId: string, sessionId: string): Promise<{ success: boolean, message: string }> {
     const session = await this.userSessionRepository.findOne({
       where: { id: sessionId, userId },
     });
@@ -194,12 +229,17 @@ export class LoginSecurityService {
       await this.userSessionRepository.save(session);
       this.logger.log(`Session killed: ${sessionId}`);
     }
+
+    return {
+      success: true,
+      message: `Session killed: ${sessionId}`,
+    }
   }
 
   /**
    * Kill all sessions for user
    */
-  async killAllSessions(userId: string, exceptSessionId?: string): Promise<void> {
+  async killAllSessions(userId: string, exceptSessionId?: string): Promise<{ success: boolean, message: string }> {
     const sessions = await this.userSessionRepository.find({
       where: { userId, isActive: true },
     });
@@ -208,12 +248,17 @@ export class LoginSecurityService {
       if (exceptSessionId && session.id === exceptSessionId) {
         continue;
       }
-      
+      session.lastActivityAt = new Date();
       session.isActive = false;
       await this.userSessionRepository.save(session);
     }
 
     this.logger.log(`All sessions killed for user ${userId}`);
+
+    return {
+      success: true,
+      message: `All sessions killed for user ${userId}`,
+    }
   }
 
   /**
@@ -234,7 +279,7 @@ export class LoginSecurityService {
     const recentLogins = await this.loginHistoryRepository.find({
       where: {
         userId,
-        status: LoginStatus.SUCCESS,
+        status: LOGIN_STATUS.SUCCESS,
       },
       order: { createdAt: 'DESC' },
       take: 10,
@@ -263,7 +308,7 @@ export class LoginSecurityService {
     if (lastLogin && lastLogin.countryCode !== currentLogin.countryCode) {
       const timeDiff = new Date().getTime() - lastLogin.createdAt.getTime();
       const hoursDiff = timeDiff / (1000 * 60 * 60);
-      
+
       if (hoursDiff < 2) {
         isSuspicious = true;
         reasons.push('Impossible travel speed detected');

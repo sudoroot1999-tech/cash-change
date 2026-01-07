@@ -3,29 +3,17 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { requestLogger, RequestContextInterceptor } from '@exchange/common';
 
 async function bootstrap() {
   const logger = new Logger('API Gateway');
   const app = await NestFactory.create(AppModule);
 
-  // Security
-  app.use(
-    helmet({
-      crossOriginResourcePolicy: { policy: 'cross-origin' },
-    }),
-  );
-
-  app.enableCors({
-    origin: process.env.CORS_ORIGINS?.split(',') || true,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'Accept'],
-    exposedHeaders: ['Content-Range', 'X-Content-Range'],
-    preflightContinue: false,
-  });
-
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.setGlobalPrefix('api/v1');
+
+  app.use(requestLogger('api-gateway'));
+  app.useGlobalInterceptors(new RequestContextInterceptor());
 
   // Swagger
   const config = new DocumentBuilder()

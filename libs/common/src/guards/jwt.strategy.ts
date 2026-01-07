@@ -24,6 +24,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       email: payload.email,
       tier: payload.tier,
       kycLevel: payload.kycLevel,
+      username: payload.username,
+      emailVerified: payload.emailVerified,
+      phoneVerified: payload.phoneVerified,
+      isTwoFactorEnabled: payload.isTwoFactorEnabled,
+      status: payload.status,
     };
   }
 }

@@ -14,7 +14,7 @@ export class AntiPhishingService {
     private antiPhishingCodeRepository: Repository<AntiPhishingCode>,
     @InjectRepository(SecurityEvent)
     private securityEventRepository: Repository<SecurityEvent>,
-  ) {}
+  ) { }
 
   /**
    * Set or update anti-phishing code for user
@@ -23,7 +23,10 @@ export class AntiPhishingService {
     userId: string,
     phishingCode: string,
     ipAddress?: string,
-  ): Promise<AntiPhishingCode> {
+  ): Promise<{
+    success: boolean,
+    data: AntiPhishingCode
+  }> {
     // Validate code
     if (!phishingCode || phishingCode.length < 4 || phishingCode.length > 50) {
       throw new BadRequestException('Anti-phishing code must be between 4 and 50 characters');
@@ -54,7 +57,10 @@ export class AntiPhishingService {
     });
 
     this.logger.log(`Anti-phishing code set for user ${userId}`);
-    return existingCode;
+    return {
+      success: true,
+      data: existingCode,
+    };
   }
 
   /**
@@ -74,7 +80,7 @@ export class AntiPhishingService {
     providedCode: string,
   ): Promise<boolean> {
     const code = await this.getAntiPhishingCode(userId);
-    
+
     if (!code) {
       return false;
     }
@@ -103,17 +109,20 @@ export class AntiPhishingService {
   /**
    * Generate random anti-phishing code suggestion
    */
-  generateRandomCode(): string {
+  generateRandomCode(): { success: boolean, data: string } {
     const words = [
       'alpha', 'bravo', 'charlie', 'delta', 'echo', 'foxtrot',
       'golf', 'hotel', 'india', 'juliet', 'kilo', 'lima',
     ];
-    
+
     const word1 = words[Math.floor(Math.random() * words.length)];
     const word2 = words[Math.floor(Math.random() * words.length)];
     const number = Math.floor(Math.random() * 1000);
-    
-    return `${word1}-${word2}-${number}`;
+
+    return {
+      success: true,
+      data: `${word1}-${word2}-${number}`,
+    };
   }
 
   /**

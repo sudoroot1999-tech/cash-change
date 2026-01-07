@@ -7,84 +7,112 @@ import {
   HttpStatus,
   Req,
   Get,
+  Put,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
-import { Public } from '@exchange/common';
+import { CurrentUser, Public, RateLimit, ReqContext, RequestContext } from '@exchange/common';
 import {
   LoginDto,
   RefreshTokenDto,
-  TokenResponseDto,
   Enable2FADto,
-  TwoFactorSetupDto,
+  RegisterDto,
+  Verify2FADto,
+  ChangePasswordDto,
+  ForgotPasswordDto,
+  ResetPasswordDto
 } from './dto/auth.dto';
-import { RegisterDto } from './dto/register.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
-  @Public()
   @Post('register')
+  @Public()
+  @HttpCode(HttpStatus.CREATED)
+  @RateLimit({ windowMs: 15 * 60 * 1000, maxRequests: 5 })
   @ApiOperation({ summary: 'Register new user' })
-  @ApiResponse({ status: 201, description: 'User successfully registered' })
-  @ApiResponse({ status: 400, description: 'Bad Request' })
-  async register(@Body() registerDto: RegisterDto) {
-    return this.authService.register(registerDto);
+  @ApiResponse({ status: 201, description: 'User registered successfully' })
+  @ApiResponse({ status: 409, description: 'Email already exists' })
+  async register(
+    @Body() dto: RegisterDto,
+  ) {
+    return this.authService.register(dto);
   }
 
-  @Public()
   @Post('login')
+  @Public()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'User login' })
-  @ApiResponse({ status: 200, type: TokenResponseDto })
+  @RateLimit({ windowMs: 15 * 60 * 1000, maxRequests: 5, blockDurationMs: 30 * 60 })
+  @ApiOperation({ summary: 'Login user' })
+  @ApiResponse({ status: 200, description: 'Login successful' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
-  async login(@Body() loginDto: LoginDto, @Req() req: Request): Promise<TokenResponseDto> {
-
-    const deviceInfo = {
-      userAgent: req.headers['user-agent'],
-      platform: req.headers['sec-ch-ua-platform'],
-    };
-    const ipAddress = req.ip || req.socket.remoteAddress;
-
-    return this.authService.login(loginDto, ipAddress,deviceInfo);
+  async login(
+    @Body() dto: LoginDto,
+    @ReqContext() ctx: RequestContext
+  ) {
+    return this.authService.login(dto, ctx);
   }
 
   @Post('refresh')
+  @Public()
   @HttpCode(HttpStatus.OK)
+  @RateLimit({ windowMs: 60 * 1000, maxRequests: 10 })
   @ApiOperation({ summary: 'Refresh access token' })
-  @ApiResponse({ status: 200, type: TokenResponseDto })
-  async refresh(@Body() refreshDto: RefreshTokenDto): Promise<TokenResponseDto> {
-    return this.authService.refreshTokens(refreshDto.refreshToken);
+  @ApiResponse({ status: 200, description: 'Token refreshed successfully' })
+  @ApiResponse({ status: 401, description: 'Invalid refresh token' })
+  async refreshToken(
+    @Body() dto: RefreshTokenDto,
+    @CurrentUser() user,
+    @ReqContext() ctx: RequestContext
+  ) {
+    return this.authService.refreshToken(user.id, dto, ctx);
   }
 
-  @Post('logout')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Logout current session' })
-  async logout(@Body() refreshDto: RefreshTokenDto): Promise<void> {
-    await this.authService.logout(refreshDto.refreshToken);
-  }
+  // @Post('logout')
+  // @HttpCode(HttpStatus.NO_CONTENT)
+  // @ApiBearerAuth()
+  // @ApiOperation({ summary: 'Logout current session' })
+  // async logout(@Body() refreshDto: RefreshTokenDto): Promise<void> {
+  //   await this.authService.logout(refreshDto.refreshToken);
+  // }
 
   @Post('2fa/setup')
+  @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Setup 2FA - get secret and QR code' })
-  @ApiResponse({ status: 200, type: TwoFactorSetupDto })
-  async setup2FA(@Req() req: Request): Promise<TwoFactorSetupDto> {
-    // In production, get userId from JWT token
-    const userId = (req as any).user?.sub;
-    return this.authService.setup2FA(userId);
+  @ApiResponse({ status: 200, type: Enable2FADto })
+  async setup2FA(@CurrentUser() user) {
+    return this.authService.setup2FA(user.id);
   }
 
   @Post('2fa/enable')
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Enable 2FA after verification' })
-  async enable2FA(@Body() _enableDto: Enable2FADto, @Req() _req: Request) {
-    // Implementation would verify code and enable 2FA
-    return { success: true, message: '2FA enabled successfully' };
+  @ApiResponse({ status: 200, description: '2FA setup initiated' })
+  async enable2FA(@CurrentUser() user, @Body() dto: Verify2FADto) {
+    return this.authService.confirm2FA(user.id, dto.token);
+  }
+
+  @Post('verify-2fa')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @RateLimit({ windowMs: 5 * 60 * 1000, maxRequests: 5 })
+  @ApiOperation({ summary: 'Verify 2FA code and complete login' })
+  @ApiResponse({ status: 200, description: '2FA verified successfully' })
+  @ApiResponse({ status: 401, description: 'Invalid 2FA code' })
+  async verify2FA(
+    @Body() dto: Verify2FADto & { tempToken: string },
+    @ReqContext() ctx: RequestContext,
+  ) {
+    return this.authService.verify2FA(
+      dto.tempToken,
+      dto,
+      ctx
+    );
   }
 
   @Post('2fa/disable')
@@ -96,14 +124,46 @@ export class AuthController {
     return { success: true, message: '2FA disabled' };
   }
 
-  @Get('validate')
+  @Put('change-password')
+  @HttpCode(HttpStatus.OK)
+  @RateLimit({ windowMs: 60 * 60 * 1000, maxRequests: 3 })
+  @ApiOperation({ summary: 'Change password' })
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Validate current token' })
-  async validateToken(@Req() req: Request) {
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    if (!token) {
-      throw new Error('No token provided');
-    }
-    return this.authService.validateToken(token);
+  @ApiResponse({ status: 200, description: 'Password changed successfully' })
+  @ApiResponse({ status: 401, description: 'Invalid current password' })
+  async changePassword(@CurrentUser() user, @Body() dto: ChangePasswordDto) {
+    return this.authService.changePassword(user.id, dto);
   }
+
+  @Post('forgot-password')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @RateLimit({ windowMs: 60 * 60 * 1000, maxRequests: 3 })
+  @ApiOperation({ summary: 'Request password reset' })
+  @ApiResponse({ status: 200, description: 'Reset email sent' })
+  async forgotPassword(@Body() dto: ForgotPasswordDto, @ReqContext() ctx: RequestContext) {
+    return this.authService.forgotPassword(dto, ctx.ipAddress);
+  }
+
+  @Post('reset-password')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @RateLimit({ windowMs: 60 * 60 * 1000, maxRequests: 3 })
+  @ApiOperation({ summary: 'Reset password' })
+  @ApiResponse({ status: 200, description: 'Password reset successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid reset token' })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto);
+  }
+
+  // @Post('verify-email')
+  // @Public()
+  // @HttpCode(HttpStatus.OK)
+  // @ApiOperation({ summary: 'Verify email address' })
+  // @ApiResponse({ status: 200, description: 'Email verified successfully' })
+  // @ApiResponse({ status: 400, description: 'Invalid verification token' })
+  // async verifyEmail(@Body() dto: VerifyEmailDto) {
+  //   return this.authService.verifyEmail(dto);
+  // }
+
 }

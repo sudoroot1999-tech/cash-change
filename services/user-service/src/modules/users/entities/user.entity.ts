@@ -20,8 +20,8 @@ export class User {
   email!: string;
 
   @Index()
-  @Column({ type: 'varchar', unique: true, length: 50, nullable: true })
-  username!: string | null;
+  @Column({ type: 'varchar', unique: true, length: 50 })
+  username!: string;
 
   @Column({ type: 'varchar', unique: true, length: 50, nullable: true })
   phone!: string | null;

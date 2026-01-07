@@ -1,11 +1,11 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ThrottlerModule } from '@nestjs/throttler';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ProxyModule } from './proxy/proxy.module';
 import { HealthModule } from './health/health.module';
-import { JwtStrategy } from '@exchange/common';
+import { CORSMiddleware, DeviceContextMiddleware, DeviceFingerprintMiddleware, JwtAuthGuard, JwtStrategy, RateLimiterService, RateLimitGuard, SecurityMiddleware } from '@exchange/common';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -13,14 +13,6 @@ import { JwtStrategy } from '@exchange/common';
       isGlobal: true,
       envFilePath: ['.env', '../.env', '../../.env'],
     }),
-
-    // Rate limiting
-    ThrottlerModule.forRoot([
-      {
-        ttl: 60000, // 1 minute
-        limit: 100, // 100 requests per minute
-      },
-    ]),
 
     PassportModule.register({ defaultStrategy: 'jwt' }),
 
@@ -36,6 +28,25 @@ import { JwtStrategy } from '@exchange/common';
     ProxyModule,
     HealthModule,
   ],
-  providers: [JwtStrategy],
+  providers: [
+    JwtStrategy,
+    RateLimiterService,
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+
+    // Global Rate Limit guard
+    {
+      provide: APP_GUARD,
+      useClass: RateLimitGuard,
+    }
+  ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(SecurityMiddleware, CORSMiddleware, DeviceFingerprintMiddleware, DeviceContextMiddleware)
+      .forRoutes('*');
+  }
+}

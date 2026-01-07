@@ -9,3 +9,4 @@ export * from './proof-of-reserves.service';
 export * from './insurance-fund.service';
 export * from './bug-bounty.service';
 export * from './incident-response.service';
+export * from './two-factor.service';

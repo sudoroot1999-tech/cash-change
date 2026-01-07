@@ -8,7 +8,7 @@ import { NotificationChannel, NotificationPriority, NotificationType } from '../
 import { DevicePlatform } from '../entities';
 
 export class SendNotificationDto {
-   @ApiProperty({ description: 'User ID to send notification to' })
+  @ApiProperty({ description: 'User ID to send notification to' })
   @IsString()
   userId: string;
 

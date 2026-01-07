@@ -1,26 +1,18 @@
 import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { join } from 'path';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
-import { JwtStrategy } from '@exchange/common';
-import { Session } from '../sessions/entities/session.entity';
+import { JWTAuthService, MultiLayerCacheService, PerformanceModule, RateLimiterService } from '@exchange/common';
 import { AuthEventsService } from './services/auth-events.service';
+import { UserGrpcAdapter } from './adapters/user-grpc.adapter';
+import { SECURITY_PORT, USER_PORT } from './tokens/auth.tokens';
+import { SecurityGrpcAdapter } from './adapters/security-grpc.adaptor';
+import { JwtStrategy } from './sterategies/jwt.strategy';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Session]),
-    JwtModule.registerAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.get('JWT_SECRET'),
-        signOptions: { expiresIn: configService.get('JWT_EXPIRES_IN', '15m') },
-      }),
-    }),
     ClientsModule.registerAsync([
       {
         name: 'USER_PACKAGE',
@@ -35,10 +27,41 @@ import { AuthEventsService } from './services/auth-events.service';
           },
         }),
       },
+      {
+        name: 'SECURITY_PACKAGE',
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.GRPC,
+          options: {
+            package: 'security',
+            protoPath: join(__dirname, '../../libs/common/proto/security.proto'),
+            url: configService.get('SECURITY_SERVICE_GRPC_URL', 'localhost:5008'),
+          },
+        }),
+      },
     ]),
+       PerformanceModule
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy,AuthEventsService],
+  providers: [
+    AuthService,
+    AuthEventsService,
+    RateLimiterService,
+    JWTAuthService,
+    MultiLayerCacheService,
+    UserGrpcAdapter,
+    SecurityGrpcAdapter,
+    JwtStrategy,
+    {
+      provide: USER_PORT,
+      useExisting: UserGrpcAdapter,
+    },
+    {
+      provide: SECURITY_PORT,
+      useExisting: SecurityGrpcAdapter,
+    },
+  ],
   exports: [AuthService],
 })
-export class AuthModule {}
+export class AuthModule { }

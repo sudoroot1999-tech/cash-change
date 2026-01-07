@@ -1,5 +1,5 @@
 -- Create notification_templates table
-CREATE TABLE notification_templates (
+CREATE TABLE IF NOT EXISTS notification_templates (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) UNIQUE NOT NULL,
     type VARCHAR(50) NOT NULL,
@@ -17,11 +17,11 @@ CREATE TABLE notification_templates (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_notification_templates_type ON notification_templates(type);
-CREATE INDEX idx_notification_templates_name ON notification_templates(name);
+CREATE INDEX IF NOT EXISTS idx_notification_templates_type ON notification_templates(type);
+CREATE INDEX IF NOT EXISTS idx_notification_templates_name ON notification_templates(name);
 
 -- Create user_notification_preferences table
-CREATE TABLE notification_preferences (
+CREATE TABLE IF NOT EXISTS notification_preferences (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id VARCHAR(255) NOT NULL,
     notification_type VARCHAR(50) NOT NULL,
@@ -40,11 +40,11 @@ CREATE TABLE notification_preferences (
     UNIQUE(user_id, notification_type)
 );
 
-CREATE INDEX idx_user_preferences_user_id ON notification_preferences(user_id);
-CREATE INDEX idx_user_preferences_type ON notification_preferences(notification_type);
+CREATE INDEX IF NOT EXISTS idx_user_preferences_user_id ON notification_preferences(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_preferences_type ON notification_preferences(notification_type);
 
 -- Create notification_queue table
-CREATE TABLE notification_queue (
+CREATE TABLE IF NOT EXISTS notification_queue (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id VARCHAR(255) NOT NULL,
     type VARCHAR(50) NOT NULL,
@@ -65,12 +65,12 @@ CREATE TABLE notification_queue (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_notification_queue_status ON notification_queue(status, scheduled_at);
-CREATE INDEX idx_notification_queue_user_id ON notification_queue(user_id);
-CREATE INDEX idx_notification_queue_type ON notification_queue(type);
+CREATE INDEX IF NOT EXISTS idx_notification_queue_status ON notification_queue(status, scheduled_at);
+CREATE INDEX IF NOT EXISTS idx_notification_queue_user_id ON notification_queue(user_id);
+CREATE INDEX IF NOT EXISTS idx_notification_queue_type ON notification_queue(type);
 
 -- Create notification_history table
-CREATE TABLE notification_history (
+CREATE TABLE IF NOT EXISTS notification_history (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id VARCHAR(255) NOT NULL,
     type VARCHAR(50) NOT NULL,
@@ -92,12 +92,12 @@ CREATE TABLE notification_history (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_notification_history_user_id ON notification_history(user_id, created_at);
-CREATE INDEX idx_notification_history_type_channel ON notification_history(type, channel);
-CREATE INDEX idx_notification_history_status ON notification_history(status);
+CREATE INDEX IF NOT EXISTS idx_notification_history_user_id ON notification_history(user_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_notification_history_type_channel ON notification_history(type, channel);
+CREATE INDEX IF NOT EXISTS idx_notification_history_status ON notification_history(status);
 
 -- Create push_tokens table
-CREATE TABLE push_tokens (
+CREATE TABLE IF NOT EXISTS push_tokens (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id VARCHAR(255) NOT NULL,
     token TEXT NOT NULL UNIQUE,
@@ -112,9 +112,9 @@ CREATE TABLE push_tokens (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_push_tokens_user_id ON push_tokens(user_id);
-CREATE INDEX idx_push_tokens_token ON push_tokens(token);
-CREATE INDEX idx_push_tokens_platform ON push_tokens(platform);
+CREATE INDEX IF NOT EXISTS idx_push_tokens_user_id ON push_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_push_tokens_token ON push_tokens(token);
+CREATE INDEX IF NOT EXISTS idx_push_tokens_platform ON push_tokens(platform);
 
 -- Create trigger function for updating updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()

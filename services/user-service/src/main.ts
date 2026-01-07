@@ -4,6 +4,7 @@ import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { join } from 'path';
 import { AppModule } from './app.module';
+import { requestLogger } from '@exchange/common';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -39,6 +40,7 @@ async function bootstrap() {
 
   // API prefix
   app.setGlobalPrefix('api/v1');
+  app.use(requestLogger('user-service'));
 
   // Swagger documentation
   if (process.env.NODE_ENV !== 'production') {

@@ -6,7 +6,8 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { TemplatesModule } from './modules/templates/templates.module';
 import { PreferencesModule } from './modules/preferences/preferences.module';
 import { AuthModule } from './modules/auth/auth.module';
-import { KafkaModule, PerformanceModule, RabbitMQModule } from '@exchange/common';
+import { JwtAuthGuard, KafkaModule, PerformanceModule, RabbitMQModule } from '@exchange/common';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -51,5 +52,11 @@ import { KafkaModule, PerformanceModule, RabbitMQModule } from '@exchange/common
     AuthModule,
 
   ],
+  providers:[
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    }
+  ]
 })
 export class AppModule {}

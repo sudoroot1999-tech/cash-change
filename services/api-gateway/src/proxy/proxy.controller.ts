@@ -36,7 +36,6 @@ const PUBLIC_PATHS = [
 
 @ApiTags('Proxy')
 @Controller()
-@UseGuards(ThrottlerGuard, JwtAuthGuard)
 @Public()
 export class ProxyController {
   constructor(private readonly proxyService: ProxyService) {}

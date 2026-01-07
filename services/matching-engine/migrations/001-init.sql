@@ -49,10 +49,10 @@ CREATE TABLE IF NOT EXISTS orders (
 );
 
 -- Create indexes for orders
-CREATE INDEX idx_orders_user_id ON orders(user_id);
-CREATE INDEX idx_orders_trading_pair ON orders(trading_pair);
-CREATE INDEX idx_orders_status ON orders(status);
-CREATE INDEX idx_orders_created_at ON orders(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
+CREATE INDEX IF NOT EXISTS idx_orders_trading_pair ON orders(trading_pair);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC);
 
 -- Order Book Table (for historical data)
 CREATE TABLE IF NOT EXISTS order_book_snapshots (
@@ -70,8 +70,8 @@ CREATE TABLE IF NOT EXISTS order_book_snapshots (
 SELECT create_hypertable('order_book_snapshots', 'timestamp', if_not_exists => TRUE);
 
 -- Create indexes for order book
-CREATE INDEX idx_order_book_trading_pair ON order_book_snapshots(trading_pair, timestamp DESC);
-CREATE INDEX idx_order_book_timestamp ON order_book_snapshots(timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_order_book_trading_pair ON order_book_snapshots(trading_pair, timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_order_book_timestamp ON order_book_snapshots(timestamp DESC);
 
 -- Trades Table
 CREATE TABLE IF NOT EXISTS trades (
@@ -95,11 +95,11 @@ CREATE TABLE IF NOT EXISTS trades (
 SELECT create_hypertable('trades', 'timestamp', if_not_exists => TRUE);
 
 -- Create indexes for trades
-CREATE INDEX idx_trades_trading_pair ON trades(trading_pair, timestamp DESC);
-CREATE INDEX idx_trades_buy_user ON trades(buy_user_id, timestamp DESC);
-CREATE INDEX idx_trades_sell_user ON trades(sell_user_id, timestamp DESC);
-CREATE INDEX idx_trades_buy_order ON trades(buy_order_id);
-CREATE INDEX idx_trades_sell_order ON trades(sell_order_id);
+CREATE INDEX IF NOT EXISTS idx_trades_trading_pair ON trades(trading_pair, timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_trades_buy_user ON trades(buy_user_id, timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_trades_sell_user ON trades(sell_user_id, timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_trades_buy_order ON trades(buy_order_id);
+CREATE INDEX IF NOT EXISTS idx_trades_sell_order ON trades(sell_order_id);
 
 -- User Positions Table (for futures/margin trading)
 CREATE TABLE IF NOT EXISTS user_positions (
@@ -123,9 +123,9 @@ CREATE TABLE IF NOT EXISTS user_positions (
 );
 
 -- Create indexes for positions
-CREATE INDEX idx_positions_user_id ON user_positions(user_id);
-CREATE INDEX idx_positions_trading_pair ON user_positions(trading_pair);
-CREATE INDEX idx_positions_liquidation_price ON user_positions(liquidation_price);
+CREATE INDEX IF NOT EXISTS idx_positions_user_id ON user_positions(user_id);
+CREATE INDEX IF NOT EXISTS idx_positions_trading_pair ON user_positions(trading_pair);
+CREATE INDEX IF NOT EXISTS idx_positions_liquidation_price ON user_positions(liquidation_price);
 
 -- Liquidations Table
 CREATE TABLE IF NOT EXISTS liquidations (
@@ -146,8 +146,8 @@ CREATE TABLE IF NOT EXISTS liquidations (
 SELECT create_hypertable('liquidations', 'timestamp', if_not_exists => TRUE);
 
 -- Create indexes for liquidations
-CREATE INDEX idx_liquidations_user_id ON liquidations(user_id, timestamp DESC);
-CREATE INDEX idx_liquidations_trading_pair ON liquidations(trading_pair, timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_liquidations_user_id ON liquidations(user_id, timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_liquidations_trading_pair ON liquidations(trading_pair, timestamp DESC);
 
 -- Tickers Table (for 24h statistics)
 CREATE TABLE IF NOT EXISTS tickers (
@@ -207,8 +207,8 @@ CREATE TABLE IF NOT EXISTS adl_queue (
 );
 
 -- Create indexes for ADL queue
-CREATE INDEX idx_adl_queue_trading_pair ON adl_queue(trading_pair, priority DESC);
-CREATE INDEX idx_adl_queue_position ON adl_queue(position_id);
+CREATE INDEX IF NOT EXISTS idx_adl_queue_trading_pair ON adl_queue(trading_pair, priority DESC);
+CREATE INDEX IF NOT EXISTS idx_adl_queue_position ON adl_queue(position_id);
 
 -- Rate Limits Table
 CREATE TABLE IF NOT EXISTS rate_limits (

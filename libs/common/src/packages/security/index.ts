@@ -41,3 +41,6 @@ export * from './guards/permissions.guard';
 
 // Hash
 export * from "./hash/password.service"
+
+// interceptors
+export * from "./interceptor/request-context.Interceptor"

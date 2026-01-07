@@ -1,8 +1,5 @@
--- Enable uuid extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
 -- Anti-phishing codes
-CREATE TABLE anti_phishing_codes (
+CREATE TABLE IF NOT EXISTS anti_phishing_codes (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL,
   phishing_code VARCHAR(50) NOT NULL,
@@ -12,7 +9,7 @@ CREATE TABLE anti_phishing_codes (
 );
 
 -- Trusted devices
-CREATE TABLE trusted_devices (
+CREATE TABLE IF NOT EXISTS trusted_devices (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL,
   device_name VARCHAR,
@@ -29,7 +26,7 @@ CREATE TABLE trusted_devices (
 );
 
 -- Withdrawal whitelist
-CREATE TABLE withdrawal_whitelist (
+CREATE TABLE IF NOT EXISTS withdrawal_whitelist (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL,
   address VARCHAR NOT NULL,
@@ -46,7 +43,7 @@ CREATE TABLE withdrawal_whitelist (
 );
 
 -- API keys
-CREATE TABLE api_keys (
+CREATE TABLE IF NOT EXISTS api_keys (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL,
   key_name VARCHAR NOT NULL,
@@ -63,7 +60,7 @@ CREATE TABLE api_keys (
 );
 
 -- Login history
-CREATE TABLE login_history (
+CREATE TABLE IF NOT EXISTS login_history (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL,
   status VARCHAR NOT NULL,
@@ -81,7 +78,7 @@ CREATE TABLE login_history (
 );
 
 -- Security events
-CREATE TABLE security_events (
+CREATE TABLE IF NOT EXISTS security_events (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL,
   event_type VARCHAR NOT NULL,
@@ -95,7 +92,7 @@ CREATE TABLE security_events (
 );
 
 -- Risk scores
-CREATE TABLE risk_scores (
+CREATE TABLE IF NOT EXISTS risk_scores (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL UNIQUE,
   score NUMERIC(5, 2) DEFAULT 0,
@@ -107,7 +104,7 @@ CREATE TABLE risk_scores (
 );
 
 -- Cold wallets
-CREATE TABLE cold_wallets (
+CREATE TABLE IF NOT EXISTS cold_wallets (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   currency VARCHAR NOT NULL,
   address VARCHAR NOT NULL,
@@ -123,7 +120,7 @@ CREATE TABLE cold_wallets (
 );
 
 -- Proof of reserves
-CREATE TABLE proof_of_reserves (
+CREATE TABLE IF NOT EXISTS proof_of_reserves (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   currency VARCHAR NOT NULL,
   totalReserves NUMERIC(36, 18) NOT NULL,
@@ -140,7 +137,7 @@ CREATE TABLE proof_of_reserves (
 );
 
 -- Insurance fund transactions
-CREATE TABLE insurance_fund_transactions (
+CREATE TABLE IF NOT EXISTS insurance_fund_transactions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   currency VARCHAR NOT NULL,
   type VARCHAR NOT NULL,
@@ -153,7 +150,7 @@ CREATE TABLE insurance_fund_transactions (
 );
 
 -- Insurance fund balances
-CREATE TABLE insurance_fund_balances (
+CREATE TABLE IF NOT EXISTS insurance_fund_balances (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   currency VARCHAR NOT NULL UNIQUE,
   balance NUMERIC(36, 18) NOT NULL DEFAULT 0,
@@ -163,7 +160,7 @@ CREATE TABLE insurance_fund_balances (
 );
 
 -- Bug bounty
-CREATE TABLE bug_bounty_submissions (
+CREATE TABLE IF NOT EXISTS bug_bounty_submissions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   reporter_id UUID NOT NULL,
   reporter_email VARCHAR NOT NULL,
@@ -184,7 +181,7 @@ CREATE TABLE bug_bounty_submissions (
 );
 
 -- Incidents
-CREATE TABLE incidents (
+CREATE TABLE IF NOT EXISTS incidents (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   title VARCHAR NOT NULL,
   description TEXT NOT NULL,
@@ -208,7 +205,7 @@ CREATE TABLE incidents (
 );
 
 -- User sessions
-CREATE TABLE user_sessions (
+CREATE TABLE IF NOT EXISTS user_sessions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL,
   session_token VARCHAR NOT NULL UNIQUE,
@@ -224,28 +221,43 @@ CREATE TABLE user_sessions (
   updated_at TIMESTAMP DEFAULT now()
 );
 
+-- Two factors
+CREATE TABLE IF NOT EXISTS user_two_factors (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL UNIQUE,
+  secret VARCHAR NOT NULL,
+  backupCodes JSONB NOT NULL,
+  is_enabled BOOLEAN DEFAULT FALSE,
+  last_verified_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT now(),
+  updated_at TIMESTAMP DEFAULT now()
+);
+
+
 -- Create Indexes
-CREATE UNIQUE INDEX idx_anti_phishing_user ON anti_phishing_codes(user_id);
-CREATE UNIQUE INDEX idx_trusted_devices_user_fingerprint ON trusted_devices(user_id, fingerprint);
-CREATE INDEX idx_trusted_devices_user ON trusted_devices(user_id);
-CREATE INDEX idx_withdrawal_whitelist_user_addr_curr ON withdrawal_whitelist(user_id, address, currency);
-CREATE INDEX idx_withdrawal_whitelist_user ON withdrawal_whitelist(user_id);
-CREATE INDEX idx_api_keys_user_active ON api_keys(user_id, is_active);
-CREATE INDEX idx_api_keys_user ON api_keys(user_id);
-CREATE UNIQUE INDEX idx_api_keys_key ON api_keys(api_key);
-CREATE INDEX idx_login_history_user_created ON login_history(user_id, created_at);
-CREATE INDEX idx_login_history_user ON login_history(user_id);
-CREATE INDEX idx_login_history_created ON login_history(created_at);
-CREATE INDEX idx_security_events_user_type_created ON security_events(user_id, event_type, created_at);
-CREATE INDEX idx_security_events_user ON security_events(user_id);
-CREATE INDEX idx_security_events_created ON security_events(created_at);
-CREATE UNIQUE INDEX idx_risk_scores_user ON risk_scores(user_id);
-CREATE INDEX idx_cold_wallets_currency_status ON cold_wallets(currency, status);
-CREATE INDEX idx_proof_reserves_currency_created ON proof_of_reserves(currency, created_at);
-CREATE INDEX idx_insurance_fund_tx_currency_created ON insurance_fund_transactions(currency, created_at);
-CREATE INDEX idx_bug_bounty_reporter_status ON bug_bounty_submissions(reporter_id, status);
-CREATE INDEX idx_bug_bounty_reporter ON bug_bounty_submissions(reporter_id);
-CREATE INDEX idx_incidents_status_severity_created ON incidents(status, severity, created_at);
-CREATE INDEX idx_user_sessions_user_active ON user_sessions(user_id, is_active);
-CREATE INDEX idx_user_sessions_user ON user_sessions(user_id);
-CREATE INDEX idx_user_sessions_token ON user_sessions(session_token);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_anti_phishing_user ON anti_phishing_codes(user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_trusted_devices_user_fingerprint ON trusted_devices(user_id, fingerprint);
+CREATE INDEX IF NOT EXISTS idx_trusted_devices_user ON trusted_devices(user_id);
+CREATE INDEX IF NOT EXISTS idx_withdrawal_whitelist_user_addr_curr ON withdrawal_whitelist(user_id, address, currency);
+CREATE INDEX IF NOT EXISTS idx_withdrawal_whitelist_user ON withdrawal_whitelist(user_id);
+CREATE INDEX IF NOT EXISTS idx_api_keys_user_active ON api_keys(user_id, is_active);
+CREATE INDEX IF NOT EXISTS idx_api_keys_user ON api_keys(user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_api_keys_key ON api_keys(api_key);
+CREATE INDEX IF NOT EXISTS idx_login_history_user_created ON login_history(user_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_login_history_user ON login_history(user_id);
+CREATE INDEX IF NOT EXISTS idx_login_history_created ON login_history(created_at);
+CREATE INDEX IF NOT EXISTS idx_security_events_user_type_created ON security_events(user_id, event_type, created_at);
+CREATE INDEX IF NOT EXISTS idx_security_events_user ON security_events(user_id);
+CREATE INDEX IF NOT EXISTS idx_security_events_created ON security_events(created_at);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_risk_scores_user ON risk_scores(user_id);
+CREATE INDEX IF NOT EXISTS idx_cold_wallets_currency_status ON cold_wallets(currency, status);
+CREATE INDEX IF NOT EXISTS idx_proof_reserves_currency_created ON proof_of_reserves(currency, created_at);
+CREATE INDEX IF NOT EXISTS idx_insurance_fund_tx_currency_created ON insurance_fund_transactions(currency, created_at);
+CREATE INDEX IF NOT EXISTS idx_bug_bounty_reporter_status ON bug_bounty_submissions(reporter_id, status);
+CREATE INDEX IF NOT EXISTS idx_bug_bounty_reporter ON bug_bounty_submissions(reporter_id);
+CREATE INDEX IF NOT EXISTS idx_incidents_status_severity_created ON incidents(status, severity, created_at);
+CREATE INDEX IF NOT EXISTS idx_user_sessions_user_active ON user_sessions(user_id, is_active);
+CREATE INDEX IF NOT EXISTS idx_user_sessions_user ON user_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions(session_token);
+CREATE INDEX IF NOT EXISTS idx_user_two_factors_user ON user_two_factors(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_two_factors_enabled ON user_two_factors(is_enabled);

@@ -156,3 +156,32 @@ export function parseSort(
     order: order?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC',
   };
 }
+
+/**
+ * Conver snake case to camel case
+ */
+export function snakeToCamel<T extends Record<string, any>>(obj: T): any {
+  if (!obj || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(snakeToCamel);
+
+  return Object.keys(obj).reduce((acc, key) => {
+    const camelKey = key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+    acc[camelKey] = snakeToCamel(obj[key]);
+    return acc;
+  }, {} as any);
+}
+
+/**
+ * Conver camel case to snake case
+ */
+export function camelToSnake<T extends Record<string, any>>(obj: T): any {
+  if (!obj || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(camelToSnake);
+
+  return Object.keys(obj).reduce((acc, key) => {
+    const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+    acc[snakeKey] = camelToSnake(obj[key]);
+    return acc;
+  }, {} as any);
+}
+

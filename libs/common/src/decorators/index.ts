@@ -1,9 +1,19 @@
-import { UseGuards, applyDecorators, SetMetadata } from '@nestjs/common';
+import { UseGuards, applyDecorators, SetMetadata, createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { RequestContext } from '../types';
 
 // Export the CurrentUser decorator
 export { CurrentUser } from './user.decorator';
+
+/**
+ * Create context for request to add aditional information
+ */
+export const ReqContext = createParamDecorator(
+  (_, ctx: ExecutionContext): RequestContext =>
+    ctx.switchToHttp().getRequest().context,
+);
+
 
 /**
  * Decorator to mark a method or controller as requiring authentication

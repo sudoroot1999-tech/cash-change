@@ -2,19 +2,24 @@ import {
   Injectable,
   ConflictException,
   NotFoundException,
-  Logger
+  Logger,
+  Inject
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ClientGrpc } from '@nestjs/microservices';
 
 import { User } from './entities/user.entity';
 import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
 import { UserProfile } from './entities/profile.entity';
 import { UserPreferences } from './entities/user-preferences.entity';
 import { UserLimits } from './entities/user-limits.entity';
-import { BadRequestError, JWTAuthService, KYC_LEVELS, KycLevel, PasswordService, QueueNames, QueueService, StorageService, USER_STATUS } from '@exchange/common';
+import { BadRequestError, CacheLayer, JWTAuthService, KYC_LEVELS, KycLevel, MultiLayerCacheService, PasswordService, RateLimiterService, RequestContext, ServiceUnavailableError, StorageService, UnauthorizedError, USER_STATUS } from '@exchange/common';
 import { UpdateUserPreferencesDto } from './dto/update-user-preferences.dto';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
+import { ChangePasswordDto, ForgotPasswordDto, ResetPasswordDto } from './dto/user-password.dto';
+import { SecurityPort } from './ports/security.ports';
+
 
 @Injectable()
 export class UsersService {
@@ -29,18 +34,19 @@ export class UsersService {
     private preferencesRepository: Repository<UserPreferences>,
     @InjectRepository(UserLimits)
     private limitsRepository: Repository<UserLimits>,
-    private readonly queueService: QueueService,
+    @Inject('SECURITY_PACKAGE') private readonly security: SecurityPort,
     private readonly storageService: StorageService,
     private readonly passwordService: PasswordService,
-    private readonly tokenService: JWTAuthService
+    private readonly tokenService: JWTAuthService,
+    private readonly rateLimitService: RateLimiterService,
+    private readonly cacheService: MultiLayerCacheService,
   ) { }
+
 
   /**
    * Create a new user
    */
-  async create(createUserDto: CreateUserDto): Promise<{
-    user: User
-  }> {
+  async create(createUserDto: CreateUserDto): Promise<User> {
     // Check if email already exists
     const existingUser = await this.userRepository.findOne({
       where: { email: createUserDto.email },
@@ -69,18 +75,6 @@ export class UsersService {
       }
     }
 
-    // Hash password
-    const passwordHash = await this.passwordService.hashPassword(createUserDto.password);
-
-    // Generate verification token
-    const email_verification_token = this.tokenService.generateRandomToken();
-
-    // Generate or use provided anti-phishing code
-    const anti_phishing_code = this.tokenService.generateAntiPhishingCode();
-
-    // Generate referral code
-    const referralCode = this.generateReferralCode();
-
     // Find referrer if referral code provided
     let referredBy: string | null = null;
     if (createUserDto.referralCode) {
@@ -92,6 +86,15 @@ export class UsersService {
       }
     }
 
+    // Hash password
+    const passwordHash = await this.passwordService.hashPassword(createUserDto.password);
+
+    // Generate verification token
+    const email_verification_token = this.tokenService.generateRandomToken();
+
+    // Generate referral code
+    const referralCode = this.generateReferralCode();
+
     // Create user
     const user = this.userRepository.create({
       email: createUserDto.email,
@@ -102,23 +105,24 @@ export class UsersService {
       referredBy,
       status: USER_STATUS.PENDING,
       emailVerificationToken: email_verification_token,
-      antiPhishingCode: anti_phishing_code,
     });
+
+    // Generate or use provided anti-phishing code
+    const phishing_code = await this.securityGrpcService.generateRandomCode({});
+    const anti_phishing_code = await this.securityGrpcService.setAntiPhishingCode({
+      user_id: user.id,
+      phishing_code
+    });
+
+    user.antiPhishingCode = anti_phishing_code;
 
     const savedUser = await this.userRepository.save(user);
     this.logger.log(`User created: ${savedUser.id}`);
-    await this.queueService.addJob(
-      QueueNames.PROFILE_SYNC,
-      'create',
-      { userId: savedUser.id },
-      {
-        priority: 1,
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 2000 },
-      },
-    );
 
-    return { user: savedUser };
+    // create Defaults
+    await this.createUserProfile(savedUser.id)
+
+    return savedUser;
   }
 
   /**
@@ -198,26 +202,6 @@ export class UsersService {
   }
 
   /**
-   * Enable 2FA
-   */
-  async enable2FA(id: string, secret: string): Promise<User> {
-    const user = await this.findById(id);
-    user.twoFactorSecret = secret;
-    user.twoFactorEnabled = true;
-    return this.userRepository.save(user);
-  }
-
-  /**
-   * Disable 2FA
-   */
-  async disable2FA(id: string): Promise<User> {
-    const user = await this.findById(id);
-    user.twoFactorSecret = null;
-    user.twoFactorEnabled = false;
-    return this.userRepository.save(user);
-  }
-
-  /**
    * Update KYC level
    */
   async updateKycLevel(id: string, kycLevel: number): Promise<User> {
@@ -260,33 +244,191 @@ export class UsersService {
   /**
    * Verify password
    */
-  async verifyPassword(user: User, password: string): Promise<boolean> {
-    return await this.passwordService.verifyPassword(password, user.passwordHash);
+  async verifyPassword(userId: string, password: string): Promise<boolean> {
+    const user = await this.userRepository.findOne({ where: { id: userId } })
+    if (!user) throw new NotFoundException('User not found')
+    return await this.passwordService.verifyPassword(user.passwordHash, password);
   }
 
   /**
-   * Update password
+   * Change password
    */
-  async updatePassword(id: string, newPassword: string): Promise<void> {
-    const passwordHash = await this.passwordService.hashPassword(newPassword);
-    await this.userRepository.update(id, { passwordHash });
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { id: userId },
+      });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      // Verify current password
+      const isPasswordValid = await this.passwordService.verifyPassword(
+        user.passwordHash,
+        dto.currentPassword,
+      );
+
+      if (!isPasswordValid) {
+        throw new UnauthorizedError('Invalid current password');
+      }
+
+      // Hash new password
+      const newPasswordHash = await this.passwordService.hashPassword(dto.newPassword);
+      user.passwordHash = newPasswordHash;
+      await this.userRepository.save(user);
+
+      // Invalidate all sessions
+      await this.security.killAllSessions(userId);
+
+      // this.logger.logAuthEvent({
+      //   type: 'PASSWORD_CHANGED',
+      //   userId,
+      //   email: user.email,
+      //   ip: '',
+      //   success: true,
+      // });
+
+      return {
+        success: true,
+        message: 'Password changed successfully',
+      };
+    }
+    catch (error) {
+      throw new ServiceUnavailableError("an error happend");
+    }
   }
+
+  /**
+   * Forgot password
+   */
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const user = await this.userRepository.findOne({
+      where: { email: dto.email },
+    });
+
+    // Don't reveal if user exists
+    if (!user) {
+      return {
+        success: true,
+        message: 'If email exists, password reset link has been sent',
+      };
+    }
+
+    // Generate reset token
+    const resetToken = this.tokenService.generateRandomToken();
+    await this.cacheService.set(`password_reset:${resetToken}`, { userId: user.id }, { ttl: 3600 }); // 1 hour
+
+    // Send reset email
+    // await this.emailService.sendPasswordResetEmail(
+    //   user.email,
+    //   resetToken,
+    //   user.anti_phishing_code,
+    // );
+
+    // this.logger.logAuthEvent({
+    //   type: 'PASSWORD_RESET_REQUESTED',
+    //   userId: user.id,
+    //   email: user.email,
+    //   ip,
+    //   success: true,
+    // });
+
+    return {
+      success: true,
+      message: 'If email exists, password reset link has been sent',
+    };
+  }
+
+  /**
+  * Reset password
+  */
+  async resetPassword(dto: ResetPasswordDto) {
+    try {
+      // Get user from reset token
+      const tokenData = await this.cacheService.get<{ userId: string }>(
+        `password_reset:${dto.token}`,
+      );
+
+      if (!tokenData) {
+        throw new BadRequestError('Invalid or expired reset token');
+      }
+
+      const user = await this.userRepository.findOne({
+        where: { id: tokenData.userId },
+      });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      // Hash new password
+      const newPasswordHash = await this.passwordService.hashPassword(dto.newPassword);
+      user.passwordHash = newPasswordHash;
+      await this.userRepository.save(user);
+
+      // Delete reset token
+      await this.cacheService.delete(`password_reset:${dto.token}`);
+
+      // Invalidate all sessions
+      await this.security.killAllSessions(user.id);
+
+      // this.logger.logAuthEvent({
+      //   type: 'PASSWORD_RESET',
+      //   userId: user.id,
+      //   email: user.email,
+      //   ip: '',
+      //   success: true,
+      // });
+
+      return {
+        success: true,
+        message: 'Password reset successfully',
+      };
+    }
+    catch (error) {
+      throw new ServiceUnavailableError("an error happend");
+    }
+  }
+
 
   /**
    * Validate user credentials
    */
-  async validate(email: string, password: string): Promise<User | null> {
-    const user = await this.userRepository.findOne({
-      where: { email },
-      select: ['id', 'email', 'passwordHash', 'status', 'tier', 'kycLevel', 'twoFactorEnabled', 'twoFactorSecret'],
-    });
+  async validate(email: string, password: string, ctx?: RequestContext): Promise<User | null> {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { email },
+        select: ['id', 'email', 'passwordHash', 'status', 'tier', 'kycLevel', 'twoFactorEnabled', 'twoFactorSecret'],
+      });
 
-    if (!user) return null;
+      if (!user) {
+        throw new UnauthorizedError('Invalid credentials')
+      };
 
-    const isPasswordValid = await this.passwordService.verifyPassword(user.passwordHash, password);
-    if (!isPasswordValid) return null;
+      const isPasswordValid = await this.passwordService.verifyPassword(user.passwordHash, password);
+      if (!isPasswordValid) {
 
-    return user;
+        await this.security.logLoginAttempt({
+          user_id: user.id,
+          success: false,
+          failure_reason: 'Invalid credentials',
+          ip_address: ctx?.ipAddress || ''
+        });
+
+        await this.rateLimitService.checkRateLimit(user.id, {
+          windowMs: 5 * 60 * 1000,
+          maxRequests: 10,
+          blockDurationMs: 15 * 60 * 1000,
+          keyPrefix: 'user'
+        });
+        throw new UnauthorizedError('Invalid credentials');
+      };
+      return user;
+    }
+    catch (error) {
+      throw new ServiceUnavailableError("an error happend");
+    }
   }
 
   /**
