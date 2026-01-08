@@ -1,3 +1,4 @@
+import { INCIDENT_SEVERITY, INCIDENT_STATUS, INCIDENT_TYPES, IncidentSeverity, IncidentStatus, IncidentType } from '@exchange/common';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -7,31 +8,6 @@ import {
   Index,
 } from 'typeorm';
 
-export enum IncidentType {
-  SECURITY_BREACH = 'SECURITY_BREACH',
-  UNAUTHORIZED_ACCESS = 'UNAUTHORIZED_ACCESS',
-  SUSPICIOUS_ACTIVITY = 'SUSPICIOUS_ACTIVITY',
-  WITHDRAWAL_ANOMALY = 'WITHDRAWAL_ANOMALY',
-  API_ABUSE = 'API_ABUSE',
-  DDOS_ATTACK = 'DDOS_ATTACK',
-  SYSTEM_FAILURE = 'SYSTEM_FAILURE',
-  OTHER = 'OTHER',
-}
-
-export enum IncidentSeverity {
-  CRITICAL = 'CRITICAL',
-  HIGH = 'HIGH',
-  MEDIUM = 'MEDIUM',
-  LOW = 'LOW',
-}
-
-export enum IncidentStatus {
-  DETECTED = 'DETECTED',
-  INVESTIGATING = 'INVESTIGATING',
-  CONTAINED = 'CONTAINED',
-  RESOLVED = 'RESOLVED',
-  CLOSED = 'CLOSED',
-}
 
 @Entity('incidents')
 @Index(['status', 'severity', 'createdAt'])
@@ -47,20 +23,20 @@ export class Incident {
 
   @Column({
     type: 'enum',
-    enum: IncidentType,
+    enum: INCIDENT_TYPES,
   })
   type: IncidentType;
 
   @Column({
     type: 'enum',
-    enum: IncidentSeverity,
+    enum: INCIDENT_SEVERITY,
   })
   severity: IncidentSeverity;
 
   @Column({
     type: 'enum',
-    enum: IncidentStatus,
-    default: IncidentStatus.DETECTED,
+    enum: INCIDENT_STATUS,
+    default: INCIDENT_STATUS.DETECTED,
   })
   status: IncidentStatus;
 

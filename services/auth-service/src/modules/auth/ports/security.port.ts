@@ -34,9 +34,9 @@ export interface SecurityPort {
         backupCodes: string[];
         secret: any;
     }>;
-    generateQRCode(otpauth_url: string): Promise<string>;
-    verifyToken(user_id: string, token: string): Promise<boolean>;
-    verifyBackupCode(user_id: string, code: string): Promise<boolean>;
+    generateQRCode(otpauth_url: string): Promise<{ qrCodeDataUrl: string }>;
+    verifyToken(user_id: string, token: string): Promise<{ isValid: boolean }>;
+    verifyBackupCode(user_id: string, code: string): Promise<{ isValid: boolean }>;
     // disable2FA(user_id: string): any;
     updateTwoFactor(user_id: string, isEnabled: boolean, lastVerifiedAt: Date): Promise<UserTwoFactor>;
 
@@ -69,7 +69,7 @@ export interface SecurityPort {
         locationCity?: string
     }): Promise<TrustedDevice>;
 
-    isDeviceTrusted(user_id: string, fingerprint: string): Promise<boolean>;
+    isDeviceTrusted(user_id: string, fingerprint: string): Promise<{ isTrusted: boolean }>;
 
     logLoginAttempt({
         user_id,

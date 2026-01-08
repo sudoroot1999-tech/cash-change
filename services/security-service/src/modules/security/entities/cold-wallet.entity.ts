@@ -1,3 +1,4 @@
+import { COLD_WALLET_STATUS, COLD_WALLET_TYPES, ColdWalletStatus, ColdWalletType } from '@exchange/common';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -7,18 +8,6 @@ import {
   Index,
 } from 'typeorm';
 
-export enum ColdWalletType {
-  MULTI_SIG = 'MULTI_SIG',
-  HARDWARE = 'HARDWARE',
-  PAPER = 'PAPER',
-  OFFLINE = 'OFFLINE',
-}
-
-export enum ColdWalletStatus {
-  ACTIVE = 'ACTIVE',
-  INACTIVE = 'INACTIVE',
-  MAINTENANCE = 'MAINTENANCE',
-}
 
 @Entity('cold_wallets')
 @Index(['currency', 'status'])
@@ -34,14 +23,14 @@ export class ColdWallet {
 
   @Column({
     type: 'enum',
-    enum: ColdWalletType,
+    enum: COLD_WALLET_TYPES,
   })
   type: ColdWalletType;
 
   @Column({
     type: 'enum',
-    enum: ColdWalletStatus,
-    default: ColdWalletStatus.ACTIVE,
+    enum: COLD_WALLET_STATUS,
+    default: COLD_WALLET_STATUS.ACTIVE,
   })
   status: ColdWalletStatus;
 

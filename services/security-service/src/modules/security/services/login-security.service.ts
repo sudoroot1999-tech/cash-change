@@ -4,7 +4,7 @@ import { Repository, MoreThan } from 'typeorm';
 import { LoginHistory } from '../entities/login-history.entity';
 import { UserSession } from '../entities/user-session.entity';
 import { SecurityEvent, SecurityEventType, RiskLevel } from '../entities/security-event.entity';
-import { LOGIN_STATUS } from '@exchange/common';
+import { LOGIN_STATUS,LoginStatus } from '@exchange/common';
 
 export interface LoginAttemptData {
   userId: string;

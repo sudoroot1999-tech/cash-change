@@ -1,3 +1,5 @@
+import { LoginStatus } from ".";
+
 export interface UserSession {
   id: string;
   userId: string;
@@ -77,7 +79,7 @@ export interface LoginHistory {
   createdAt: Date;
 }
 
-export interface AntiPhishingCode{
+export interface AntiPhishingCode {
   id: string;
   userId: string;
   phishingCode: string;

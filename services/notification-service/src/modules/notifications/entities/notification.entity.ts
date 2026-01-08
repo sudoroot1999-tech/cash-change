@@ -1,44 +1,8 @@
+import { NOTIFICATION_CHANNELS, NOTIFICATION_PRIORITY, NotificationChannel, NotificationPriority, NotificationStatus, NOTIFICAION_STATUS } from '@exchange/common';
 import {
   Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index,
 } from 'typeorm';
 
-export enum NotificationChannel {
-  EMAIL = 'email',
-  SMS = 'sms',
-  PUSH = 'push',
-  IN_APP = 'in_app',
-  TELEGRAM = 'telegram',
-  DISCORD = 'discord',
-  WHATSAPP= 'whatsapp'
-}
-
-export enum NotificationStatus {
-  PENDING = 'pending',
-  PROCESSING = 'processing',
-  SENT = 'sent',
-  DELIVERED = 'delivered',
-  FAILED = 'failed',
-  CANCELLED = 'cancelled',
-}
-
-export enum NotificationType {
-  TRANSACTIONAL = 'transactional',
-  SECURITY = 'security',
-  MARKETING = 'marketing',
-  PRICE_ALERT = 'price_alert',
-  TRADING_SIGNAL = 'trading_signal',
-  KYC_UPDATE = 'kyc_update',
-  NEWS = 'news',
-  COMMON = 'common',
-  INFO = 'info'
-}
-
-export enum NotificationPriority {
-  CRITICAL = 0,
-  HIGH = 1,
-  MEDIUM = 2,
-  LOW = 3,
-}
 
 @Entity('notifications')
 export class Notification {
@@ -52,13 +16,13 @@ export class Notification {
   @Column({ name: 'template_id', type: 'uuid', nullable: true })
   templateId!: string | null;
 
-  @Column({ type: 'enum', enum: NotificationChannel })
+  @Column({ type: 'enum', enum: NOTIFICATION_CHANNELS })
   channel!: NotificationChannel;
 
-  @Column({ type: 'int', default: NotificationPriority.MEDIUM })
+  @Column({ type: 'int', default: NOTIFICATION_PRIORITY.MEDIUM })
   priority!: NotificationPriority;
 
-  @Column({ type: 'enum', enum: NotificationStatus, default: NotificationStatus.PENDING })
+  @Column({ type: 'enum', enum: NOTIFICAION_STATUS, default: NOTIFICAION_STATUS.PENDING })
   status!: NotificationStatus;
 
   @Column({ type: 'varchar', length: 255, nullable: true })

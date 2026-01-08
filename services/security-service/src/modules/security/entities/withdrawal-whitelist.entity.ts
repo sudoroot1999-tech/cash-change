@@ -1,3 +1,4 @@
+import { WHITE_LIST_STATUS, WhiteListStatus } from '@exchange/common';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -6,12 +7,6 @@ import {
   UpdateDateColumn,
   Index,
 } from 'typeorm';
-
-export enum WhitelistStatus {
-  PENDING = 'PENDING',
-  ACTIVE = 'ACTIVE',
-  REVOKED = 'REVOKED',
-}
 
 @Entity('withdrawal_whitelist')
 @Index(['userId', 'address', 'currency'])
@@ -34,10 +29,10 @@ export class WithdrawalWhitelist {
 
   @Column({
     type: 'enum',
-    enum: WhitelistStatus,
-    default: WhitelistStatus.PENDING,
+    enum: WHITE_LIST_STATUS,
+    default: WHITE_LIST_STATUS.PENDING,
   })
-  status: WhitelistStatus;
+  status: WhiteListStatus;
 
   @Column({ name: 'activated_at', type: 'timestamp', nullable: true })
   activatedAt: Date;

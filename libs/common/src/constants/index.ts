@@ -85,13 +85,13 @@ export const TRADING_TYPES = {
   MARGIN: 'margin',
   FUTURES: 'futures',
   OPTIONS: 'options'
-}
+} as const;
 
 // Margin Modes
 export const MARGIN_MODES = {
   CROSS: 'cross',
   ISOLATED: 'isolated'
-}
+} as const;
 
 // Assets Types
 export const ASSET_TYPES = {
@@ -99,7 +99,7 @@ export const ASSET_TYPES = {
   NFT: 'nft',
   RWA: 'rwa',
   TOKEN: 'token'
-}
+} as const;
 
 // Transaction Types
 export const TRANSACTION_TYPES = {
@@ -137,14 +137,14 @@ export const LOGIN_STATUS = {
   FAILED: 'FAILED',
   BLOCKED: 'BLOCKED',
   SUSPICIOUS: 'SUSPICIOUS',
-}
+} as const;
 
 // Api Key Permissions
 export const API_KEY_PERMISSIONS = {
   READ: 'READ',
   TRADE: 'TRADE',
   WITHDRAW: 'WITHDRAW',
-}
+} as const;
 
 // Bug Bounty Status
 export const BUG_SEVERITY = {
@@ -153,7 +153,7 @@ export const BUG_SEVERITY = {
   MEDIUM: 'MEDIUM',
   LOW: 'LOW',
   INFO: 'INFO',
-}
+} as const;
 
 // Bug Bounty Status
 export const BUGBOUNTY_STATUS = {
@@ -163,7 +163,7 @@ export const BUGBOUNTY_STATUS = {
   REJECTED: 'REJECTED',
   RESOLVED: 'RESOLVED',
   REWARDED: 'REWARDED',
-}
+} as const;
 
 // Cold Wallet Type
 export const COLD_WALLET_TYPES = {
@@ -171,14 +171,14 @@ export const COLD_WALLET_TYPES = {
   HARDWARE: 'HARDWARE',
   PAPER: 'PAPER',
   OFFLINE: 'OFFLINE',
-}
+} as const;
 
 // Cold Wallet Status
 export const COLD_WALLET_STATUS = {
   ACTIVE: 'ACTIVE',
   INACTIVE: 'INACTIVE',
   MAINTENANCE: 'MAINTENANCE',
-}
+} as const;
 
 // Incident Type
 export const INCIDENT_TYPES = {
@@ -190,7 +190,7 @@ export const INCIDENT_TYPES = {
   DDOS_ATTACK: 'DDOS_ATTACK',
   SYSTEM_FAILURE: 'SYSTEM_FAILURE',
   OTHER: 'OTHER',
-}
+} as const;
 
 // Incident Severity
 export const INCIDENT_SEVERITY = {
@@ -198,7 +198,7 @@ export const INCIDENT_SEVERITY = {
   HIGH: 'HIGH',
   MEDIUM: 'MEDIUM',
   LOW: 'LOW',
-}
+} as const;
 
 // Incident Status
 export const INCIDENT_STATUS = {
@@ -207,7 +207,7 @@ export const INCIDENT_STATUS = {
   CONTAINED: 'CONTAINED',
   RESOLVED: 'RESOLVED',
   CLOSED: 'CLOSED',
-}
+} as const;
 
 // Insurance Fund Transaction Type
 export const INSURANCE_FUND_TRANSACTION_TYPES = {
@@ -215,7 +215,7 @@ export const INSURANCE_FUND_TRANSACTION_TYPES = {
   WITHDRAWAL: 'WITHDRAWAL',
   CLAIM: 'CLAIM',
   INTEREST: 'INTEREST',
-}
+} as const;
 
 // Security Event Types
 export const SECURITY_EVENT_TYPES = {
@@ -232,7 +232,31 @@ export const SECURITY_EVENT_TYPES = {
   SUSPICIOUS_ACTIVITY: 'SUSPICIOUS_ACTIVITY',
   ACCOUNT_LOCKED: 'ACCOUNT_LOCKED',
   ACCOUNT_UNLOCKED: 'ACCOUNT_UNLOCKED',
-}
+  LOGIN_SUCCESS: 'LOGIN_SUCCESS',
+  LOGIN_FAILED: 'LOGIN_FAILED',
+  LOGIN_BLOCKED: 'LOGIN_BLOCKED',
+  LOGOUT: 'LOGOUT',
+  PASSWORD_CHANGED: 'PASSWORD_CHANGED',
+  PASSWORD_RESET_REQUESTED: 'PASSWORD_RESET_REQUESTED',
+  TWO_FACTOR_ENABLED: 'TWO_FACTOR_ENABLED',
+  TWO_FACTOR_DISABLED: 'TWO_FACTOR_DISABLED',
+  WITHDRAWAL_INITIATED: 'WITHDRAWAL_INITIATED',
+  WITHDRAWAL_APPROVED: 'WITHDRAWAL_APPROVED',
+  WITHDRAWAL_REJECTED: 'WITHDRAWAL_REJECTED',
+  RATE_LIMIT_EXCEEDED: 'RATE_LIMIT_EXCEEDED',
+  UNAUTHORIZED_ACCESS: 'UNAUTHORIZED_ACCESS',
+  INVALID_TOKEN: 'INVALID_TOKEN',
+  CSRF_DETECTED: 'CSRF_DETECTED',
+  XSS_ATTEMPT: 'XSS_ATTEMPT',
+  SQL_INJECTION_ATTEMPT: 'SQL_INJECTION_ATTEMPT',
+  KYC_SUBMITTED: 'KYC_SUBMITTED',
+  KYC_APPROVED: 'KYC_APPROVED',
+  KYC_REJECTED: 'KYC_REJECTED',
+  LARGE_TRANSACTION: 'LARGE_TRANSACTION',
+  UNUSUAL_PATTERN: 'UNUSUAL_PATTERN',
+  IP_BLACKLISTED: 'IP_BLACKLISTED',
+  DEVICE_CHANGED: 'DEVICE_CHANGED',
+} as const;
 
 // Risk Levels
 export const RISK_LEVELS = {
@@ -240,14 +264,14 @@ export const RISK_LEVELS = {
   MEDIUM: 'MEDIUM',
   HIGH: 'HIGH',
   CRITICAL: 'CRITICAL',
-}
+} as const;
 
 // White List Status
 export const WHITE_LIST_STATUS = {
   PENDING: 'PENDING',
   ACTIVE: 'ACTIVE',
   REVOKED: 'REVOKED',
-}
+} as const;
 
 // Notification Delivery Status
 
@@ -258,7 +282,7 @@ export const DELIVERY_STATUS = {
   BOUNCED: 'bounced',
   OPENED: 'opened',
   CLICKED: 'clicked',
-}
+} as const;
 
 // Notification Channel
 export const NOTIFICATION_CHANNELS = {
@@ -269,7 +293,7 @@ export const NOTIFICATION_CHANNELS = {
   TELEGRAM: 'telegram',
   DISCORD: 'discord',
   WHATSAPP: 'whatsapp'
-}
+} as const;
 
 // Notification Status
 export const NOTIFICAION_STATUS = {
@@ -279,7 +303,7 @@ export const NOTIFICAION_STATUS = {
   DELIVERED: 'delivered',
   FAILED: 'failed',
   CANCELLED: 'cancelled',
-}
+} as const;
 
 // Notification Types
 export const NOTIFICATION_TYPES = {
@@ -292,7 +316,7 @@ export const NOTIFICATION_TYPES = {
   NEWS: 'news',
   COMMON: 'common',
   INFO: 'info'
-}
+} as const;
 
 // Notification Priority
 export const NOTIFICATION_PRIORITY = {
@@ -300,14 +324,14 @@ export const NOTIFICATION_PRIORITY = {
   HIGH: 1,
   MEDIUM: 2,
   LOW: 3,
-}
+} as const;
 
 // Device Platform
 export const DEVICE_PLATFORM = {
   IOS: 'ios',
   ANDROID: 'android',
   WEB: 'web',
-}
+} as const;
 
 // HTTP Status Codes
 export const HTTP_STATUS = {

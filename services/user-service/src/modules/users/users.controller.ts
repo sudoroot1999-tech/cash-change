@@ -12,18 +12,17 @@ import {
   UploadedFile,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody, ApiConsumes } from '@nestjs/swagger';
-import {  CurrentUser, BadRequestError } from '@exchange/common';
+import { CurrentUser, BadRequestError, User } from '@exchange/common';
 import { AuthenticatedUser } from '@exchange/common';
 import { UsersService } from './users.service';
 import { UpdateUserDto, UserResponseDto, PaginationQueryDto } from './dto/user.dto';
-import { User } from './entities/user.entity';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UploadAvatarResponseDto } from './dto/upload-avatar.dto';
 
 @ApiTags('Users')
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   // @Post()
   // @Public()
@@ -41,9 +40,8 @@ export class UsersController {
   @ApiOperation({ summary: 'Get current user from token' })
   @ApiResponse({ status: 200, description: 'Current user data', type: UserResponseDto })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getCurrentUser(@CurrentUser() currentUser: AuthenticatedUser): Promise<UserResponseDto> {
-    const user = await this.usersService.findById(currentUser.userId);
-    return this.toResponseDto(user);
+  async getCurrentUser(@CurrentUser() currentUser): Promise<UserResponseDto> {
+    return this.toResponseDto(currentUser);
   }
 
   @Get(':id')
@@ -95,7 +93,7 @@ export class UsersController {
   @ApiResponse({ status: 404, description: 'Invalid referral code' })
   async checkReferralCode(@Param('code') code: string) {
     const user = await this.usersService.findByReferralCode(code.toUpperCase());
-    return { valid: !!user };
+    return { success: true, data: { valid: !!user } };
   }
 
 
@@ -103,7 +101,8 @@ export class UsersController {
   @ApiOperation({ summary: 'Get user profile' })
   @ApiParam({ name: 'userId', type: 'string', format: 'uuid' })
   async getProfile(@Param('userId', ParseUUIDPipe) userId: string) {
-    return this.usersService.getUserProfile(userId);
+    const profile = await this.usersService.getUserProfile(userId)
+    return { success: true, data: profile }
   }
 
   @Put()
@@ -113,7 +112,8 @@ export class UsersController {
     @Param('userId', ParseUUIDPipe) userId: string,
     @Body() updateDto: UpdateUserDto,
   ) {
-    return this.usersService.update(userId, updateDto);
+    const updatedProfile = await this.usersService.update(userId, updateDto)
+    return { success: true, data: updatedProfile }
   }
 
   @Get('preferences')
@@ -134,7 +134,8 @@ export class UsersController {
     @Param('userId', ParseUUIDPipe) userId: string,
     @Body() preferences: Record<string, unknown>,
   ) {
-    return this.usersService.updateUserPreferences(userId, preferences);
+    const updatedPreferences = this.usersService.updateUserPreferences(userId, preferences);
+    return { success: true, data: updatedPreferences }
   }
 
   @Post('upload-avatar')
@@ -162,21 +163,21 @@ export class UsersController {
     @CurrentUser() user
   ) {
 
-  if (!file) {
-    throw new BadRequestError('No file uploaded');
-  }
+    if (!file) {
+      throw new BadRequestError('No file uploaded');
+    }
 
-  const result = await this.usersService.uploadAvatar(
-    user.userID,
-    file,
-    file.mimetype
-  );
+    const result = await this.usersService.uploadAvatar(
+      user.userID,
+      file,
+      file.mimetype
+    );
 
-  return {
-    success: true,
-    message: 'Avatar uploaded successfully',
-    data: result,
-  };
+    return {
+      success: true,
+      message: 'Avatar uploaded successfully',
+      data: result?.avatarUrl,
+    };
   }
 
   @Get('limits')
@@ -219,7 +220,7 @@ export class UsersController {
 
     return {
       success: true,
-      data: result,
+      data: { ...result },
     };
   }
 
@@ -241,10 +242,10 @@ export class UsersController {
       twoFactorEnabled: user.twoFactorEnabled,
       emailVerified: user.emailVerified,
       phoneVerified: user.phoneVerified,
-      emailVerificationToken:user.emailVerificationToken,
-      antiPhishingCode:user.antiPhishingCode,
-      lastLoginAt:user.lastLoginAt,
-      lastLoginIp:user.lastLoginIp,
+      emailVerificationToken: user.emailVerificationToken,
+      antiPhishingCode: user.antiPhishingCode,
+      lastLoginAt: user.lastLoginAt,
+      lastLoginIp: user.lastLoginIp,
       createdAt: user.createdAt,
     };
   }

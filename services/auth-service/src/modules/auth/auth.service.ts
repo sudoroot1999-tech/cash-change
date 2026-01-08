@@ -5,7 +5,7 @@ import {
   Inject,
 } from '@nestjs/common';
 import { AuthEventsService } from './services/auth-events.service';
-import { CacheLayer, createServiceLogger, JWTAuthService, Logger, MultiLayerCacheService, NotFoundError, RateLimit, RateLimiterService, RequestContext, User, USER_STATUS, UserProfile } from '@exchange/common';
+import { CacheLayer, createServiceLogger, JWTAuthService, Logger, MultiLayerCacheService, NotFoundError, RateLimit, RateLimiterService, RequestContext, ServiceUnavailableError, User, USER_STATUS, UserProfile } from '@exchange/common';
 import { ChangePasswordDto, ForgotPasswordDto, RefreshTokenDto, RegisterDto, ResetPasswordDto, Verify2FADto } from './dto/auth.dto';
 import { LoginDto } from './dto/auth.dto';
 import { SECURITY_PORT, USER_PORT } from './tokens/auth.tokens';
@@ -146,10 +146,10 @@ export class AuthService {
     ctx: Partial<RequestContext>
   ) {
     // check if device is trusted
-    const isTrusted = await this.security.isDeviceTrusted(
+    const isTrusted = (await this.security.isDeviceTrusted(
       user.id,
       ctx.fingerprint,
-    );
+    ))?.isTrusted;
 
     let device;
 
@@ -237,127 +237,141 @@ export class AuthService {
     skipFailedRequests: false,
   })
   async verify2FA(tempToken: string, dto: Verify2FADto, ctx: Partial<RequestContext>) {
-    // Get user from temp token
-    const tempData = await this.cacheService.get<{ userId: string }>(
-      `2fa:${tempToken}`,
-      { layer: CacheLayer.L3_SESSION }
-    );
+    try {
+      // Get user from temp token
+      const tempData = await this.cacheService.get<{ userId: string }>(
+        `2fa:${tempToken}`,
+        { layer: CacheLayer.L3_SESSION }
+      );
 
-    if (!tempData) {
-      throw new UnauthorizedException('Invalid or expired 2FA token');
+      if (!tempData) {
+        throw new UnauthorizedException('Invalid or expired 2FA token');
+      }
+
+      const user = await this.users.findById(tempData.userId)
+
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      const twoFactorAuth = await this.security.findTwoFactorByUserId(user.id);
+
+      if (!twoFactorAuth || !twoFactorAuth.isEnabled) {
+        throw new BadRequestException('2FA is not enabled');
+      }
+
+      let isValid = false;
+
+      if (dto.token) {
+        // Verify TOTP token
+        isValid = (await this.security.verifyToken(user.id, dto.token))?.isValid;
+      } else if (dto.backupCode) {
+        // Verify backup code
+        isValid = (await this.security.verifyBackupCode(user.id, dto.backupCode))?.isValid;
+      }
+
+      if (!isValid) {
+        await this.security.logLoginAttempt({
+          user_id: user.id,
+          ip_address: ctx.ipAddress,
+          success: false,
+          failure_reason: `invalid 2fa code`
+        });
+        throw new UnauthorizedException('Invalid 2FA code');
+      }
+
+      // Delete temp token
+      await this.cacheService.delete(`2fa:${tempToken}`, { layer: CacheLayer.L3_SESSION });
+
+      // Create session
+      return this.completeLogin(user, ctx);
     }
-
-    const user = await this.users.findById(tempData.userId)
-
-    if (!user) {
-      throw new UnauthorizedException('User not found');
+    catch (error) {
+      throw new ServiceUnavailableError('failed to verify 2FA')
     }
-
-    const twoFactorAuth = await this.security.findTwoFactorByUserId(user.id);
-
-    if (!twoFactorAuth || !twoFactorAuth.isEnabled) {
-      throw new BadRequestException('2FA is not enabled');
-    }
-
-    let isValid = false;
-
-    if (dto.token) {
-      // Verify TOTP token
-      isValid = await this.security.verifyToken(user.id, dto.token);
-    } else if (dto.backupCode) {
-      // Verify backup code
-      isValid = await this.security.verifyBackupCode(user.id, dto.backupCode);
-    }
-
-    if (!isValid) {
-      await this.security.logLoginAttempt({
-        user_id: user.id,
-        ip_address: ctx.ipAddress,
-        success: false,
-        failure_reason: `invalid 2fa code`
-      });
-      throw new UnauthorizedException('Invalid 2FA code');
-    }
-
-    // Delete temp token
-    await this.cacheService.delete(`2fa:${tempToken}`, { layer: CacheLayer.L3_SESSION });
-
-    // Create session
-    return this.completeLogin(user, ctx);
   }
 
   /**
    * Enable 2FA
    */
   async setup2FA(userId: string) {
+    try {
+      // Check if 2FA already enabled
+      const existing = await this.security.findTwoFactorByUserId(userId);
 
-    // Check if 2FA already enabled
-    const existing = await this.security.findTwoFactorByUserId(userId);
+      if (existing?.isEnabled) {
+        throw new BadRequestException('2FA already enabled');
+      }
 
-    if (existing?.isEnabled) {
-      throw new BadRequestException('2FA already enabled');
+      const user = await this.users.findById(userId);
+
+      if (!user) {
+        throw new NotFoundError('User not found');
+      }
+
+      // Generate secret and QR code
+      const { secret, otpauthUrl, backupCodes } = await this.security.generateSecret(userId, user.email);
+
+      const qrCode = (await this.security.generateQRCode(otpauthUrl))?.qrCodeDataUrl;
+
+      return {
+        success: true,
+        data: {
+          secret,
+          qrCode,
+          backupCodes, // Only show once
+        },
+      };
     }
-
-    const user = await this.users.findById(userId);
-
-    if (!user) {
-      throw new NotFoundError('User not found');
+    catch (error) {
+      throw new ServiceUnavailableError('failed to setup 2FA')
     }
-
-    // Generate secret and QR code
-    const { secret, otpauthUrl, backupCodes } = await this.security.generateSecret(userId, user.email);
-
-    const qrCode = await this.security.generateQRCode(otpauthUrl);
-
-    return {
-      success: true,
-      data: {
-        secret,
-        qrCode,
-        backupCodes, // Only show once
-      },
-    };
   }
 
   /**
    * Confirm 2FA setup
    */
   async confirm2FA(userId: string, token: string) {
-    const twoFactorAuth = await this.security.findTwoFactorByUserId(userId);
+    try {
+      const twoFactorAuth = await this.security.findTwoFactorByUserId(userId);
 
-    if (!twoFactorAuth) {
-      throw new BadRequestException('2FA setup not initiated');
+      if (!twoFactorAuth) {
+        throw new BadRequestException('2FA setup not initiated');
+      }
+
+      if (twoFactorAuth.isEnabled) {
+        throw new BadRequestException('2FA already enabled');
+      }
+
+      // Verify token
+      const isValid = (await this.security.verifyToken(
+        userId,
+        token,
+      ))?.isValid;
+
+      if (!isValid) {
+        throw new UnauthorizedException('Invalid 2FA code');
+      }
+
+      // Enable 2FA
+      twoFactorAuth.isEnabled = true;
+      await this.security.updateTwoFactor(
+        userId,
+        twoFactorAuth.isEnabled,
+        new Date()
+      );
+
+      const user = await this.users.findById(userId);
+      // await this.emailService.send2FAEnabledNotification(user.email, user.anti_phishing_code);
+
+      return {
+        success: true,
+        message: '2FA enabled successfully',
+      };
     }
-
-    if (twoFactorAuth.isEnabled) {
-      throw new BadRequestException('2FA already enabled');
+    catch (error) {
+      throw new ServiceUnavailableError('failed to confirm 2FA')
     }
-
-    // Verify token
-    const isValid = await this.security.verifyToken(
-      userId,
-      token,
-    );
-
-    if (!isValid) {
-      throw new UnauthorizedException('Invalid 2FA code');
-    }
-
-    // Enable 2FA
-    twoFactorAuth.isEnabled = true;
-    await this.security.updateTwoFactor(
-      userId,
-      twoFactorAuth.isEnabled,
-      new Date()
-    );
-
-    const user = await this.users.findById(userId);
-    // await this.emailService.send2FAEnabledNotification(user.email, user.anti_phishing_code);
-
-    return {
-      success: true,
-      message: '2FA enabled successfully',
-    };
   }
 
   /**
@@ -433,28 +447,43 @@ export class AuthService {
    * Change password
    */
   async changePassword(userId: string, dto: ChangePasswordDto) {
-    return await this.users.changePassword({
-      user_id: userId,
-      currentPassword: dto.currentPassword,
-      newPassword: dto.newPassword,
-    });
+    try {
+      return await this.users.changePassword({
+        user_id: userId,
+        currentPassword: dto.currentPassword,
+        newPassword: dto.newPassword,
+      });
+    }
+    catch (error) {
+      throw new ServiceUnavailableError('failed to change password')
+    }
   }
 
   /**
    * Forgot password
    */
   async forgotPassword(dto: ForgotPasswordDto, ip: string) {
-    return await this.users.forgotPassword(dto.email);
+    try {
+      return await this.users.forgotPassword(dto.email);
+    }
+    catch (error) {
+      throw new ServiceUnavailableError('failed to forget password')
+    }
   }
 
   /**
    * Reset password
    */
   async resetPassword(dto: ResetPasswordDto) {
-    return await this.users.resetPassword({
-      token: dto.token,
-      newPassword: dto.newPassword,
-    });
+    try {
+      return await this.users.resetPassword({
+        token: dto.token,
+        newPassword: dto.newPassword,
+      });
+    }
+    catch (error) {
+      throw new ServiceUnavailableError('failed to reset password')
+    }
   }
 
   /**
@@ -481,7 +510,6 @@ export class AuthService {
   //   await this.sessionRepository.delete({ userId });
   // }
 
-
   private parseExpiresIn(expiresIn: string): number {
     const match = expiresIn.match(/^(\d+)([smhd])$/);
     if (!match) return 900; // default 15m
@@ -491,6 +519,5 @@ export class AuthService {
     const multipliers: Record<string, number> = { s: 1, m: 60, h: 3600, d: 86400 };
     return value * multipliers[unit];
   }
-
 
 }

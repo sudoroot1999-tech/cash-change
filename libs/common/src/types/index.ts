@@ -1,37 +1,223 @@
 import {
   USER_STATUS,
   USER_TIERS,
+  KYC_LEVELS,
+  KYC_STATUS,
+  DOCUMENT_TYPE,
+
   ORDER_TYPES,
   ORDER_SIDES,
   ORDER_STATUS,
   TIME_IN_FORCE,
+  TRADING_TYPES,
+  MARGIN_MODES,
+
+  ASSET_TYPES,
+
   TRANSACTION_TYPES,
   TRANSACTION_STATUS,
-  NOTIFICATION_CHANNELS,
-  NOTIFICATION_PRIORITY,
+
   REWARD_TYPES,
-  KYC_LEVELS,
-  KYC_STATUS,
-  DOCUMENT_TYPE,
-  LOGIN_STATUS
+
+  LOGIN_STATUS,
+
+  API_KEY_PERMISSIONS,
+
+  BUG_SEVERITY,
+  BUGBOUNTY_STATUS,
+
+  COLD_WALLET_TYPES,
+  COLD_WALLET_STATUS,
+
+  INCIDENT_TYPES,
+  INCIDENT_SEVERITY,
+  INCIDENT_STATUS,
+
+  INSURANCE_FUND_TRANSACTION_TYPES,
+
+  SECURITY_EVENT_TYPES,
+
+  RISK_LEVELS,
+
+  WHITE_LIST_STATUS,
+
+  DELIVERY_STATUS,
+
+  NOTIFICATION_CHANNELS,
+  NOTIFICAION_STATUS,
+  NOTIFICATION_TYPES,
+  NOTIFICATION_PRIORITY,
+
+  DEVICE_PLATFORM,
+
+  HTTP_STATUS,
 } from '../constants';
 
-// Extract types from constants
-export type UserStatus = (typeof USER_STATUS)[keyof typeof USER_STATUS];
-export type UserTier = (typeof USER_TIERS)[keyof typeof USER_TIERS];
-export type KycStatus = (typeof KYC_STATUS)[keyof typeof KYC_STATUS];
-export type KycLevel = (typeof KYC_LEVELS)[keyof typeof KYC_LEVELS];
-export type DocumentType = (typeof DOCUMENT_TYPE)[keyof typeof DOCUMENT_TYPE];
-export type OrderType = (typeof ORDER_TYPES)[keyof typeof ORDER_TYPES];
-export type RewardType = (typeof REWARD_TYPES)[keyof typeof REWARD_TYPES];
-export type OrderSide = (typeof ORDER_SIDES)[keyof typeof ORDER_SIDES];
-export type OrderStatus = (typeof ORDER_STATUS)[keyof typeof ORDER_STATUS];
-export type TimeInForce = (typeof TIME_IN_FORCE)[keyof typeof TIME_IN_FORCE];
-export type TransactionType = (typeof TRANSACTION_TYPES)[keyof typeof TRANSACTION_TYPES];
-export type TransactionStatus = (typeof TRANSACTION_STATUS)[keyof typeof TRANSACTION_STATUS];
-export type NotificationChannel = (typeof NOTIFICATION_CHANNELS)[keyof typeof NOTIFICATION_CHANNELS];
-export type NotificationPriority = (typeof NOTIFICATION_PRIORITY)[keyof typeof NOTIFICATION_PRIORITY];
-export type LoginStatus = (typeof LOGIN_STATUS)[keyof typeof LOGIN_STATUS];
+/* ===========================
+   User / Auth
+=========================== */
+
+export type UserStatus =
+  (typeof USER_STATUS)[keyof typeof USER_STATUS];
+
+export type UserTier =
+  (typeof USER_TIERS)[keyof typeof USER_TIERS];
+
+export type LoginStatus =
+  (typeof LOGIN_STATUS)[keyof typeof LOGIN_STATUS];
+
+/* ===========================
+   KYC
+=========================== */
+
+export type KycLevel =
+  (typeof KYC_LEVELS)[keyof typeof KYC_LEVELS];
+
+export type KycStatus =
+  (typeof KYC_STATUS)[keyof typeof KYC_STATUS];
+
+export type DocumentType =
+  (typeof DOCUMENT_TYPE)[keyof typeof DOCUMENT_TYPE];
+
+/* ===========================
+   Trading / Orders
+=========================== */
+
+export type OrderType =
+  (typeof ORDER_TYPES)[keyof typeof ORDER_TYPES];
+
+export type OrderSide =
+  (typeof ORDER_SIDES)[keyof typeof ORDER_SIDES];
+
+export type OrderStatus =
+  (typeof ORDER_STATUS)[keyof typeof ORDER_STATUS];
+
+export type TimeInForce =
+  (typeof TIME_IN_FORCE)[keyof typeof TIME_IN_FORCE];
+
+export type TradingType =
+  (typeof TRADING_TYPES)[keyof typeof TRADING_TYPES];
+
+export type MarginMode =
+  (typeof MARGIN_MODES)[keyof typeof MARGIN_MODES];
+
+/* ===========================
+   Assets
+=========================== */
+
+export type AssetType =
+  (typeof ASSET_TYPES)[keyof typeof ASSET_TYPES];
+
+/* ===========================
+   Transactions
+=========================== */
+
+export type TransactionType =
+  (typeof TRANSACTION_TYPES)[keyof typeof TRANSACTION_TYPES];
+
+export type TransactionStatus =
+  (typeof TRANSACTION_STATUS)[keyof typeof TRANSACTION_STATUS];
+
+/* ===========================
+   Rewards
+=========================== */
+
+export type RewardType =
+  (typeof REWARD_TYPES)[keyof typeof REWARD_TYPES];
+
+/* ===========================
+   API Keys
+=========================== */
+
+export type ApiKeyPermission =
+  (typeof API_KEY_PERMISSIONS)[keyof typeof API_KEY_PERMISSIONS];
+
+/* ===========================
+   Bug Bounty
+=========================== */
+
+export type BugSeverity =
+  (typeof BUG_SEVERITY)[keyof typeof BUG_SEVERITY];
+
+export type BugBountyStatus =
+  (typeof BUGBOUNTY_STATUS)[keyof typeof BUGBOUNTY_STATUS];
+
+/* ===========================
+   Cold Wallet
+=========================== */
+
+export type ColdWalletType =
+  (typeof COLD_WALLET_TYPES)[keyof typeof COLD_WALLET_TYPES];
+
+export type ColdWalletStatus =
+  (typeof COLD_WALLET_STATUS)[keyof typeof COLD_WALLET_STATUS];
+
+/* ===========================
+   Incidents / Security
+=========================== */
+
+export type IncidentType =
+  (typeof INCIDENT_TYPES)[keyof typeof INCIDENT_TYPES];
+
+export type IncidentSeverity =
+  (typeof INCIDENT_SEVERITY)[keyof typeof INCIDENT_SEVERITY];
+
+export type IncidentStatus =
+  (typeof INCIDENT_STATUS)[keyof typeof INCIDENT_STATUS];
+
+export type SecurityEventType =
+  (typeof SECURITY_EVENT_TYPES)[keyof typeof SECURITY_EVENT_TYPES];
+
+export type RiskLevel =
+  (typeof RISK_LEVELS)[keyof typeof RISK_LEVELS];
+
+/* ===========================
+   Insurance Fund
+=========================== */
+
+export type InsuranceFundTransactionType =
+  (typeof INSURANCE_FUND_TRANSACTION_TYPES)[keyof typeof INSURANCE_FUND_TRANSACTION_TYPES];
+
+/* ===========================
+   Whitelist
+=========================== */
+
+export type WhiteListStatus =
+  (typeof WHITE_LIST_STATUS)[keyof typeof WHITE_LIST_STATUS];
+
+/* ===========================
+   Notifications
+=========================== */
+
+export type DeliveryStatus =
+  (typeof DELIVERY_STATUS)[keyof typeof DELIVERY_STATUS];
+
+export type NotificationChannel =
+  (typeof NOTIFICATION_CHANNELS)[keyof typeof NOTIFICATION_CHANNELS];
+
+export type NotificationStatus =
+  (typeof NOTIFICAION_STATUS)[keyof typeof NOTIFICAION_STATUS];
+
+export type NotificationType =
+  (typeof NOTIFICATION_TYPES)[keyof typeof NOTIFICATION_TYPES];
+
+export type NotificationPriority =
+  (typeof NOTIFICATION_PRIORITY)[keyof typeof NOTIFICATION_PRIORITY];
+
+/* ===========================
+   Devices
+=========================== */
+
+export type DevicePlatform =
+  (typeof DEVICE_PLATFORM)[keyof typeof DEVICE_PLATFORM];
+
+/* ===========================
+   HTTP
+=========================== */
+
+export type HttpStatusCode =
+  (typeof HTTP_STATUS)[keyof typeof HTTP_STATUS];
+
 
 export * from "./auth.types";
 export * from "./user.types";
@@ -197,6 +383,8 @@ export interface ApiResponse<T> {
     limit: number;
     total: number;
     totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
   };
 }
 

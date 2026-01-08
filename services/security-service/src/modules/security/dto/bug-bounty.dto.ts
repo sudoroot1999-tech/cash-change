@@ -1,5 +1,6 @@
 import { IsString, IsEmail, IsOptional, IsEnum, IsArray } from 'class-validator';
-import { BugSeverity } from '../entities/bug-bounty.entity';
+import { BUG_SEVERITY, BugSeverity } from '@exchange/common';
+
 
 export class SubmitBugBountyDto {
   @IsEmail()
@@ -15,7 +16,7 @@ export class SubmitBugBountyDto {
   @IsString()
   description: string;
 
-  @IsEnum(BugSeverity)
+  @IsEnum(BUG_SEVERITY)
   severity: BugSeverity;
 
   @IsOptional()

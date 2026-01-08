@@ -1,3 +1,4 @@
+import { ApiKeyPermission } from '@exchange/common';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -7,11 +8,6 @@ import {
   Index,
 } from 'typeorm';
 
-export enum ApiKeyPermission {
-  READ = 'READ',
-  TRADE = 'TRADE',
-  WITHDRAW = 'WITHDRAW',
-}
 
 @Entity('api_keys')
 @Index(['userId', 'isActive'])

@@ -1,14 +1,5 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, Index } from 'typeorm';
-import { NotificationChannel, NotificationType } from './notification.entity';
-
-export enum DeliveryStatus {
-  SENT = 'sent',
-  DELIVERED = 'delivered',
-  FAILED = 'failed',
-  BOUNCED = 'bounced',
-  OPENED = 'opened',
-  CLICKED = 'clicked',
-}
+import { DELIVERY_STATUS, DeliveryStatus, NOTIFICATION_CHANNELS, NOTIFICATION_TYPES, NotificationChannel, NotificationType } from '@exchange/common';
 
 @Entity('notification_history')
 @Index(['userId', 'createdAt'])
@@ -21,10 +12,10 @@ export class NotificationHistory {
   @Column()
   userId: string;
 
-  @Column({ type: 'enum', enum: NotificationType })
+  @Column({ type: 'enum', enum: NOTIFICATION_TYPES })
   type: NotificationType;
 
-  @Column({ type: 'enum', enum: NotificationChannel })
+  @Column({ type: 'enum', enum: NOTIFICATION_CHANNELS })
   channel: NotificationChannel;
 
   @Column({ nullable: true })
@@ -39,7 +30,7 @@ export class NotificationHistory {
   @Column({ type: 'text' })
   content: string;
 
-  @Column({ type: 'enum', enum: DeliveryStatus })
+  @Column({ type: 'enum', enum: DELIVERY_STATUS })
   status: DeliveryStatus;
 
   @Column({ nullable: true })

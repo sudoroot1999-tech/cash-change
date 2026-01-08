@@ -1,3 +1,4 @@
+import { RISK_LEVELS, RiskLevel, SECURITY_EVENT_TYPES, SecurityEventType } from '@exchange/common';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -5,29 +6,6 @@ import {
   CreateDateColumn,
   Index,
 } from 'typeorm';
-
-export enum SecurityEventType {
-  LOGIN_ATTEMPT = 'LOGIN_ATTEMPT',
-  NEW_DEVICE = 'NEW_DEVICE',
-  PASSWORD_CHANGE = 'PASSWORD_CHANGE',
-  EMAIL_CHANGE = 'EMAIL_CHANGE',
-  WITHDRAWAL_REQUEST = 'WITHDRAWAL_REQUEST',
-  API_KEY_CREATED = 'API_KEY_CREATED',
-  API_KEY_DELETED = 'API_KEY_DELETED',
-  TWO_FA_ENABLED = 'TWO_FA_ENABLED',
-  TWO_FA_DISABLED = 'TWO_FA_DISABLED',
-  WHITELIST_ADDRESS_ADDED = 'WHITELIST_ADDRESS_ADDED',
-  SUSPICIOUS_ACTIVITY = 'SUSPICIOUS_ACTIVITY',
-  ACCOUNT_LOCKED = 'ACCOUNT_LOCKED',
-  ACCOUNT_UNLOCKED = 'ACCOUNT_UNLOCKED',
-}
-
-export enum RiskLevel {
-  LOW = 'LOW',
-  MEDIUM = 'MEDIUM',
-  HIGH = 'HIGH',
-  CRITICAL = 'CRITICAL',
-}
 
 @Entity('security_events')
 @Index(['userId', 'eventType', 'createdAt'])
@@ -42,15 +20,15 @@ export class SecurityEvent {
   @Column({
     name: 'event_type',
     type: 'enum',
-    enum: SecurityEventType,
+    enum: SECURITY_EVENT_TYPES,
   })
   eventType: SecurityEventType;
 
   @Column({
     name: 'risk_level',
     type: 'enum',
-    enum: RiskLevel,
-    default: RiskLevel.LOW,
+    enum: RISK_LEVELS,
+    default: RISK_LEVELS.LOW,
   })
   riskLevel: RiskLevel;
 

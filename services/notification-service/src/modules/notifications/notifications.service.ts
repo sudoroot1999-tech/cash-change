@@ -12,8 +12,8 @@ import {
 } from './entities';
 import { EmailProvider, SmsProvider, PushProvider, TelegramProvider, WhatsAppProvider } from '../../providers';
 import { TemplateService } from '../templates/templates.service';
-import {  PreferenceService } from '../preferences/preferences.service';
-import { QueueNames, QueueService } from '@exchange/common';
+import { PreferenceService } from '../preferences/preferences.service';
+import { BadRequestError, QueueNames, QueueService } from '@exchange/common';
 
 export interface SendNotificationOptions {
   userId: string;
@@ -39,7 +39,7 @@ export class NotificationCoreService {
     private historyRepository: Repository<NotificationHistory>,
     @InjectRepository(PushToken)
     private pushTokenRepository: Repository<PushToken>,
-    private queueService:QueueService,
+    private queueService: QueueService,
     private emailProvider: EmailProvider,
     private smsProvider: SmsProvider,
     private pushProvider: PushProvider,
@@ -47,7 +47,7 @@ export class NotificationCoreService {
     private whatsappProvider: WhatsAppProvider,
     private templateService: TemplateService,
     private preferenceService: PreferenceService,
-  ) {}
+  ) { }
 
   async sendNotification(options: SendNotificationOptions): Promise<string[]> {
     const queueIds: string[] = [];
@@ -217,7 +217,7 @@ export class NotificationCoreService {
       } else {
         await this.handleFailure(notification, result.error);
       }
-    } catch (error:any) {
+    } catch (error: any) {
       this.logger.error(`Failed to process notification ${notification.id}: ${error.message}`, error.stack);
       await this.handleFailure(notification, error.message);
     }
@@ -396,57 +396,84 @@ export class NotificationCoreService {
     return { items, total };
   }
 
-  async markAsRead(userId: string, notificationIds: string[]): Promise<void> {
-    await this.historyRepository.update(
-      {
-        userId,
-        id: In(notificationIds),
-      },
-      { isRead: true },
-    );
+  async markAsRead(userId: string, notificationIds: string[]): Promise<string> {
+    try {
+      await this.historyRepository.update(
+        {
+          userId,
+          id: In(notificationIds),
+        },
+        { isRead: true },
+      );
+      return 'notification marked as read'
+
+    }
+    catch (error) { throw new BadRequestError('failed to mark read notification') }
   }
 
   async getUnreadCount(userId: string): Promise<number> {
-    return this.historyRepository.count({
-      where: {
-        userId,
-        channel: NotificationChannel.IN_APP,
-        isRead: false,
-      },
-    });
+    try {
+      const count = await this.historyRepository.count({
+        where: {
+          userId,
+          channel: NotificationChannel.IN_APP,
+          isRead: false,
+        },
+      });
+      return count
+
+    }
+    catch (error) {
+      throw new BadRequestError('failed to get unread notification count')
+    }
   }
 
   async registerPushToken(
     userId: string,
     tokenData: Partial<PushToken>,
   ): Promise<PushToken> {
-    // Check if token already exists
-    const existing = await this.pushTokenRepository.findOne({
-      where: { token: tokenData.token },
-    });
+    try {
+      // Check if token already exists
+      const existing = await this.pushTokenRepository.findOne({
+        where: { token: tokenData.token },
+      });
 
-    if (existing) {
-      existing.userId = userId;
-      existing.isActive = true;
-      existing.lastUsedAt = new Date();
-      Object.assign(existing, tokenData);
-      return this.pushTokenRepository.save(existing);
+      if (existing) {
+        existing.userId = userId;
+        existing.isActive = true;
+        existing.lastUsedAt = new Date();
+        Object.assign(existing, tokenData);
+        const pushToken = await this.pushTokenRepository.save(existing);
+        return pushToken
+
+      }
+
+      const token = this.pushTokenRepository.create({
+        userId,
+        ...tokenData,
+        isActive: true,
+        lastUsedAt: new Date(),
+      });
+
+      const pushToken = await this.pushTokenRepository.save(token);
+      return pushToken
+
     }
-
-    const token = this.pushTokenRepository.create({
-      userId,
-      ...tokenData,
-      isActive: true,
-      lastUsedAt: new Date(),
-    });
-
-    return this.pushTokenRepository.save(token);
+    catch (error) {
+      throw new BadRequestError('failed to register push token')
+    }
   }
 
-  async unregisterPushToken(token: string): Promise<void> {
-    await this.pushTokenRepository.update(
-      { token },
-      { isActive: false },
-    );
+  async unregisterPushToken(token: string): Promise<string> {
+    try {
+      await this.pushTokenRepository.update(
+        { token },
+        { isActive: false },
+      );
+      return 'push token unregistered successsfully'
+    }
+    catch (error) {
+      throw new BadRequestError('failed to unregister push token')
+    }
   }
 }

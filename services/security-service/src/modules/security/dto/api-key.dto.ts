@@ -1,12 +1,12 @@
 import { IsString, IsArray, IsOptional, IsNumber, IsEnum, Min } from 'class-validator';
-import { ApiKeyPermission } from '../entities/api-key.entity';
+import { API_KEY_PERMISSIONS, ApiKeyPermission } from '@exchange/common';
 
 export class CreateApiKeyDto {
   @IsString()
   keyName: string;
 
   @IsArray()
-  @IsEnum(ApiKeyPermission, { each: true })
+  @IsEnum(API_KEY_PERMISSIONS, { each: true })
   permissions: ApiKeyPermission[];
 
   @IsOptional()
@@ -22,7 +22,7 @@ export class CreateApiKeyDto {
 
 export class UpdateApiKeyPermissionsDto {
   @IsArray()
-  @IsEnum(ApiKeyPermission, { each: true })
+  @IsEnum(API_KEY_PERMISSIONS, { each: true })
   permissions: ApiKeyPermission[];
 }
 

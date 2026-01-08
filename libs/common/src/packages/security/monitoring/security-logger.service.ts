@@ -1,38 +1,10 @@
 import { Injectable, LoggerService } from '@nestjs/common';
 import * as winston from 'winston';
 import * as path from 'path';
+import { SecurityEventType } from '../../../types';
+import { SECURITY_EVENT_TYPES } from '../../../constants';
 
-export enum SecurityEventType {
-  LOGIN_SUCCESS = 'LOGIN_SUCCESS',
-  LOGIN_FAILED = 'LOGIN_FAILED',
-  LOGIN_BLOCKED = 'LOGIN_BLOCKED',
-  LOGOUT = 'LOGOUT',
-  PASSWORD_CHANGED = 'PASSWORD_CHANGED',
-  PASSWORD_RESET_REQUESTED = 'PASSWORD_RESET_REQUESTED',
-  TWO_FACTOR_ENABLED = 'TWO_FACTOR_ENABLED',
-  TWO_FACTOR_DISABLED = 'TWO_FACTOR_DISABLED',
-  API_KEY_CREATED = 'API_KEY_CREATED',
-  API_KEY_DELETED = 'API_KEY_DELETED',
-  WITHDRAWAL_INITIATED = 'WITHDRAWAL_INITIATED',
-  WITHDRAWAL_APPROVED = 'WITHDRAWAL_APPROVED',
-  WITHDRAWAL_REJECTED = 'WITHDRAWAL_REJECTED',
-  SUSPICIOUS_ACTIVITY = 'SUSPICIOUS_ACTIVITY',
-  RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
-  UNAUTHORIZED_ACCESS = 'UNAUTHORIZED_ACCESS',
-  INVALID_TOKEN = 'INVALID_TOKEN',
-  CSRF_DETECTED = 'CSRF_DETECTED',
-  XSS_ATTEMPT = 'XSS_ATTEMPT',
-  SQL_INJECTION_ATTEMPT = 'SQL_INJECTION_ATTEMPT',
-  ACCOUNT_LOCKED = 'ACCOUNT_LOCKED',
-  ACCOUNT_UNLOCKED = 'ACCOUNT_UNLOCKED',
-  KYC_SUBMITTED = 'KYC_SUBMITTED',
-  KYC_APPROVED = 'KYC_APPROVED',
-  KYC_REJECTED = 'KYC_REJECTED',
-  LARGE_TRANSACTION = 'LARGE_TRANSACTION',
-  UNUSUAL_PATTERN = 'UNUSUAL_PATTERN',
-  IP_BLACKLISTED = 'IP_BLACKLISTED',
-  DEVICE_CHANGED = 'DEVICE_CHANGED',
-}
+
 
 export interface SecurityEvent {
   type: SecurityEventType;
@@ -43,6 +15,27 @@ export interface SecurityEvent {
   severity?: 'low' | 'medium' | 'high' | 'critical';
   timestamp?: Date;
 }
+
+const SEVERITY_MAP = {
+  [SECURITY_EVENT_TYPES.SQL_INJECTION_ATTEMPT]: 'critical',
+  [SECURITY_EVENT_TYPES.XSS_ATTEMPT]: 'critical',
+  [SECURITY_EVENT_TYPES.CSRF_DETECTED]: 'critical',
+
+  [SECURITY_EVENT_TYPES.WITHDRAWAL_INITIATED]: 'high',
+  [SECURITY_EVENT_TYPES.SUSPICIOUS_ACTIVITY]: 'high',
+  [SECURITY_EVENT_TYPES.UNAUTHORIZED_ACCESS]: 'high',
+  [SECURITY_EVENT_TYPES.ACCOUNT_LOCKED]: 'high',
+  [SECURITY_EVENT_TYPES.LARGE_TRANSACTION]: 'high',
+  [SECURITY_EVENT_TYPES.IP_BLACKLISTED]: 'high',
+
+  [SECURITY_EVENT_TYPES.LOGIN_FAILED]: 'medium',
+  [SECURITY_EVENT_TYPES.LOGIN_BLOCKED]: 'medium',
+  [SECURITY_EVENT_TYPES.RATE_LIMIT_EXCEEDED]: 'medium',
+  [SECURITY_EVENT_TYPES.INVALID_TOKEN]: 'medium',
+  [SECURITY_EVENT_TYPES.DEVICE_CHANGED]: 'medium',
+} as const satisfies Partial<Record<SecurityEventType, Severity>>;
+
+type Severity = 'low' | 'medium' | 'high' | 'critical';
 
 @Injectable()
 export class SecurityLoggerService implements LoggerService {
@@ -174,7 +167,7 @@ export class SecurityLoggerService implements LoggerService {
     metadata?: Record<string, any>,
   ): void {
     this.logSecurityEvent({
-      type: SecurityEventType.SUSPICIOUS_ACTIVITY,
+      type: SECURITY_EVENT_TYPES.SUSPICIOUS_ACTIVITY,
       userId,
       ip,
       metadata: {
@@ -219,7 +212,7 @@ export class SecurityLoggerService implements LoggerService {
     metadata?: Record<string, any>,
   ): void {
     this.logSecurityEvent({
-      type: SecurityEventType.RATE_LIMIT_EXCEEDED,
+      type: SECURITY_EVENT_TYPES.RATE_LIMIT_EXCEEDED,
       ip,
       metadata: {
         ...metadata,
@@ -253,34 +246,8 @@ export class SecurityLoggerService implements LoggerService {
   /**
    * Determine severity based on event type
    */
-  private determineSeverity(type: SecurityEventType): 'low' | 'medium' | 'high' | 'critical' {
-    const criticalEvents = [
-      SecurityEventType.SQL_INJECTION_ATTEMPT,
-      SecurityEventType.XSS_ATTEMPT,
-      SecurityEventType.CSRF_DETECTED,
-    ];
-
-    const highEvents = [
-      SecurityEventType.WITHDRAWAL_INITIATED,
-      SecurityEventType.SUSPICIOUS_ACTIVITY,
-      SecurityEventType.UNAUTHORIZED_ACCESS,
-      SecurityEventType.ACCOUNT_LOCKED,
-      SecurityEventType.LARGE_TRANSACTION,
-      SecurityEventType.IP_BLACKLISTED,
-    ];
-
-    const mediumEvents = [
-      SecurityEventType.LOGIN_FAILED,
-      SecurityEventType.LOGIN_BLOCKED,
-      SecurityEventType.RATE_LIMIT_EXCEEDED,
-      SecurityEventType.INVALID_TOKEN,
-      SecurityEventType.DEVICE_CHANGED,
-    ];
-
-    if (criticalEvents.includes(type)) return 'critical';
-    if (highEvents.includes(type)) return 'high';
-    if (mediumEvents.includes(type)) return 'medium';
-    return 'low';
+  private determineSeverity(type: SecurityEventType): Severity {
+    return SEVERITY_MAP[type] ?? 'low';
   }
 
   /**

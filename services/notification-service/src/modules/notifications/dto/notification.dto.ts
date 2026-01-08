@@ -4,22 +4,21 @@ import {
   IsArray,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { NotificationChannel, NotificationPriority, NotificationType } from '../entities/notification.entity';
-import { DevicePlatform } from '../entities';
+import { DEVICE_PLATFORM, DevicePlatform, NOTIFICATION_CHANNELS, NOTIFICATION_TYPES, NotificationChannel, NotificationPriority, NotificationType } from '@exchange/common';
 
 export class SendNotificationDto {
   @ApiProperty({ description: 'User ID to send notification to' })
   @IsString()
   userId: string;
 
-  @ApiProperty({ enum: NotificationType })
-  @IsEnum(NotificationType)
+  @ApiProperty({ enum: NOTIFICATION_TYPES })
+  @IsEnum(NOTIFICATION_TYPES)
   type: NotificationType;
 
-  @ApiPropertyOptional({ enum: NotificationChannel, isArray: true })
+  @ApiPropertyOptional({ enum: NOTIFICATION_CHANNELS, isArray: true })
   @IsOptional()
   @IsArray()
-  @IsEnum(NotificationChannel, { each: true })
+  @IsEnum(NOTIFICATION_CHANNELS, { each: true })
   channels?: NotificationChannel[];
 
   @ApiPropertyOptional()
@@ -57,8 +56,8 @@ export class BulkNotificationDto {
   @IsUUID(undefined, { each: true })
   userIds!: string[];
 
-  @ApiProperty({ enum: NotificationChannel })
-  @IsEnum(NotificationChannel)
+  @ApiProperty({ enum: NOTIFICATION_CHANNELS })
+  @IsEnum(NOTIFICATION_CHANNELS)
   channel!: NotificationChannel;
 
   @ApiPropertyOptional()
@@ -95,7 +94,7 @@ export class NotificationResponseDto {
   @ApiProperty()
   userId!: string;
 
-  @ApiProperty({ enum: NotificationChannel })
+  @ApiProperty({ enum: NOTIFICATION_CHANNELS })
   channel!: NotificationChannel;
 
   @ApiProperty()
@@ -125,8 +124,8 @@ export class RegisterPushTokenDto {
   @IsString()
   token: string;
 
-  @ApiProperty({ enum: DevicePlatform })
-  @IsEnum(DevicePlatform)
+  @ApiProperty({ enum: DEVICE_PLATFORM })
+  @IsEnum(DEVICE_PLATFORM)
   platform: DevicePlatform;
 
   @ApiPropertyOptional()

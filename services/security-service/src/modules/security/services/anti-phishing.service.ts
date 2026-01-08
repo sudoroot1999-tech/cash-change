@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AntiPhishingCode } from '../entities/anti-phishing-code.entity';
 import { SecurityEvent, SecurityEventType, RiskLevel } from '../entities/security-event.entity';
-import * as crypto from 'crypto';
+import { BadRequestError, NotFoundError } from 'libs/common/dist';
 
 @Injectable()
 export class AntiPhishingService {
@@ -23,53 +23,61 @@ export class AntiPhishingService {
     userId: string,
     phishingCode: string,
     ipAddress?: string,
-  ): Promise<{
-    success: boolean,
-    data: AntiPhishingCode
-  }> {
-    // Validate code
-    if (!phishingCode || phishingCode.length < 4 || phishingCode.length > 50) {
-      throw new BadRequestException('Anti-phishing code must be between 4 and 50 characters');
-    }
+  ): Promise<AntiPhishingCode> {
+    try {
+      // Validate code
+      if (!phishingCode || phishingCode.length < 4 || phishingCode.length > 50) {
+        throw new BadRequestException('Anti-phishing code must be between 4 and 50 characters');
+      }
 
-    // Check if user already has a code
-    let existingCode = await this.antiPhishingCodeRepository.findOne({
-      where: { userId },
-    });
-
-    if (existingCode) {
-      existingCode.phishingCode = phishingCode;
-      existingCode.isActive = true;
-      await this.antiPhishingCodeRepository.save(existingCode);
-    } else {
-      existingCode = this.antiPhishingCodeRepository.create({
-        userId,
-        phishingCode,
-        isActive: true,
+      // Check if user already has a code
+      let existingCode = await this.antiPhishingCodeRepository.findOne({
+        where: { userId },
       });
-      await this.antiPhishingCodeRepository.save(existingCode);
+
+      if (existingCode) {
+        existingCode.phishingCode = phishingCode;
+        existingCode.isActive = true;
+        await this.antiPhishingCodeRepository.save(existingCode);
+      } else {
+        existingCode = this.antiPhishingCodeRepository.create({
+          userId,
+          phishingCode,
+          isActive: true,
+        });
+        await this.antiPhishingCodeRepository.save(existingCode);
+      }
+
+      // Log security event
+      await this.logSecurityEvent(userId, SecurityEventType.PASSWORD_CHANGE, {
+        action: 'Anti-phishing code updated',
+        ipAddress,
+      });
+
+      this.logger.log(`Anti-phishing code set for user ${userId}`);
+      return existingCode
     }
-
-    // Log security event
-    await this.logSecurityEvent(userId, SecurityEventType.PASSWORD_CHANGE, {
-      action: 'Anti-phishing code updated',
-      ipAddress,
-    });
-
-    this.logger.log(`Anti-phishing code set for user ${userId}`);
-    return {
-      success: true,
-      data: existingCode,
-    };
+    catch (error) {
+      throw new BadRequestError('an error happen while setting code')
+    }
   }
 
   /**
    * Get user's anti-phishing code
    */
   async getAntiPhishingCode(userId: string): Promise<AntiPhishingCode | null> {
-    return await this.antiPhishingCodeRepository.findOne({
-      where: { userId, isActive: true },
-    });
+    try {
+      const antiPhishingCode = await this.antiPhishingCodeRepository.findOne({
+        where: { userId, isActive: true },
+      });
+
+      if (!antiPhishingCode) throw new NotFoundError("not found code for this user")
+
+      return antiPhishingCode
+    }
+    catch (error) {
+      throw new BadRequestError('an error happen while getting code')
+    }
   }
 
   /**
@@ -79,37 +87,51 @@ export class AntiPhishingService {
     userId: string,
     providedCode: string,
   ): Promise<boolean> {
-    const code = await this.getAntiPhishingCode(userId);
-
-    if (!code) {
-      return false;
+    try {
+      const data = await this.getAntiPhishingCode(userId);
+      data.phishingCode === providedCode;
+      await this.antiPhishingCodeRepository.save(data)
+      return true
     }
-
-    return code.phishingCode === providedCode;
+    catch (error) {
+      throw new NotFoundError("can not find your antiphishing code")
+    }
   }
 
   /**
    * Get anti-phishing code for email template
    */
   async getCodeForEmail(userId: string): Promise<string> {
-    const code = await this.getAntiPhishingCode(userId);
-    return code ? code.phishingCode : 'NOT_SET';
+    try {
+      const data = await this.getAntiPhishingCode(userId);
+      return data.phishingCode ? data.phishingCode : 'NOT_SET';
+    }
+    catch (error) {
+      throw new NotFoundError("can not find your antiphishing code")
+    }
   }
 
   /**
    * Deactivate anti-phishing code
    */
-  async deactivateCode(userId: string): Promise<void> {
-    await this.antiPhishingCodeRepository.update(
-      { userId },
-      { isActive: false },
-    );
+  async deactivateCode(userId: string): Promise<string> {
+    try {
+      await this.antiPhishingCodeRepository.update(
+        { userId },
+        { isActive: false },
+      );
+      return 'Your code deactivate'
+
+    }
+    catch (error) {
+      throw new BadRequestError('can not deactiveate your code')
+    }
   }
 
   /**
    * Generate random anti-phishing code suggestion
    */
-  generateRandomCode(): { success: boolean, data: string } {
+  generateRandomCode(): string {
     const words = [
       'alpha', 'bravo', 'charlie', 'delta', 'echo', 'foxtrot',
       'golf', 'hotel', 'india', 'juliet', 'kilo', 'lima',
@@ -119,10 +141,7 @@ export class AntiPhishingService {
     const word2 = words[Math.floor(Math.random() * words.length)];
     const number = Math.floor(Math.random() * 1000);
 
-    return {
-      success: true,
-      data: `${word1}-${word2}-${number}`,
-    };
+    return `${word1}-${word2}-${number}`;
   }
 
   /**

@@ -1,21 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import Redis from 'ioredis';
 import * as crypto from 'crypto';
-
-export enum IncidentSeverity {
-  LOW = 'LOW',
-  MEDIUM = 'MEDIUM',
-  HIGH = 'HIGH',
-  CRITICAL = 'CRITICAL',
-}
-
-export enum IncidentStatus {
-  DETECTED = 'DETECTED',
-  INVESTIGATING = 'INVESTIGATING',
-  CONTAINED = 'CONTAINED',
-  RESOLVED = 'RESOLVED',
-  CLOSED = 'CLOSED',
-}
+import { IncidentSeverity, IncidentStatus } from '../../../types';
+import { INCIDENT_SEVERITY, INCIDENT_STATUS } from 'libs/common/src/constants';
 
 export interface SecurityIncident {
   id: string;
@@ -79,7 +66,7 @@ export class IncidentManagerService {
       id,
       type,
       severity,
-      status: IncidentStatus.DETECTED,
+      status: INCIDENT_STATUS.DETECTED,
       description,
       detectedAt: new Date(),
       detectedBy,
@@ -103,7 +90,7 @@ export class IncidentManagerService {
     this.logger.error(`Security incident created: ${id} - ${type} (${severity})`);
 
     // Trigger alerts for high/critical incidents
-    if (severity === IncidentSeverity.HIGH || severity === IncidentSeverity.CRITICAL) {
+    if (severity === INCIDENT_SEVERITY.HIGH || severity === INCIDENT_SEVERITY.CRITICAL) {
       await this.triggerAlert(incident);
     }
 
@@ -133,11 +120,11 @@ export class IncidentManagerService {
       details,
     });
 
-    if (status === IncidentStatus.RESOLVED) {
+    if (status === INCIDENT_STATUS.RESOLVED) {
       incident.resolvedAt = new Date();
     }
 
-    if (status === IncidentStatus.CLOSED) {
+    if (status === INCIDENT_STATUS.CLOSED) {
       await this.redis.srem('active_incidents', incidentId);
     }
 
@@ -208,7 +195,7 @@ export class IncidentManagerService {
   ): Promise<void> {
     const incidentId = await this.createIncident(
       'EMERGENCY_SHUTDOWN',
-      IncidentSeverity.CRITICAL,
+      INCIDENT_SEVERITY.CRITICAL,
       `Emergency shutdown initiated: ${reason}`,
       performedBy,
       { affectedSystems: services || ['ALL'] },
@@ -264,7 +251,7 @@ export class IncidentManagerService {
     this.emergencyActions.set('disable_withdrawals', {
       name: 'Disable Withdrawals',
       description: 'Disable all withdrawal operations',
-      severity: IncidentSeverity.HIGH,
+      severity: INCIDENT_SEVERITY.HIGH,
       execute: async () => {
         await this.redis.set('emergency:withdrawals_disabled', 'true');
         this.logger.warn('Withdrawals disabled');
@@ -275,7 +262,7 @@ export class IncidentManagerService {
     this.emergencyActions.set('disable_trading', {
       name: 'Disable Trading',
       description: 'Disable all trading operations',
-      severity: IncidentSeverity.HIGH,
+      severity: INCIDENT_SEVERITY.HIGH,
       execute: async () => {
         await this.redis.set('emergency:trading_disabled', 'true');
         this.logger.warn('Trading disabled');
@@ -286,7 +273,7 @@ export class IncidentManagerService {
     this.emergencyActions.set('enable_maintenance', {
       name: 'Enable Maintenance Mode',
       description: 'Enable maintenance mode for all services',
-      severity: IncidentSeverity.MEDIUM,
+      severity: INCIDENT_SEVERITY.MEDIUM,
       execute: async () => {
         await this.redis.set('emergency:maintenance_mode', 'true');
         this.logger.warn('Maintenance mode enabled');
@@ -297,7 +284,7 @@ export class IncidentManagerService {
     this.emergencyActions.set('block_suspicious_ips', {
       name: 'Block Suspicious IPs',
       description: 'Block all IPs flagged as suspicious',
-      severity: IncidentSeverity.HIGH,
+      severity: INCIDENT_SEVERITY.HIGH,
       execute: async () => {
         const suspiciousIPs = await this.redis.smembers('suspicious_ips');
         for (const ip of suspiciousIPs) {
@@ -311,7 +298,7 @@ export class IncidentManagerService {
     this.emergencyActions.set('shutdown_all', {
       name: 'Shutdown All Services',
       description: 'Emergency shutdown of all services',
-      severity: IncidentSeverity.CRITICAL,
+      severity: INCIDENT_SEVERITY.CRITICAL,
       execute: async () => {
         await this.redis.set('emergency:shutdown', 'true');
         await this.redis.set('emergency:withdrawals_disabled', 'true');
@@ -338,10 +325,10 @@ export class IncidentManagerService {
 
     return incidents.sort((a, b) => {
       const severityOrder = {
-        [IncidentSeverity.CRITICAL]: 0,
-        [IncidentSeverity.HIGH]: 1,
-        [IncidentSeverity.MEDIUM]: 2,
-        [IncidentSeverity.LOW]: 3,
+        [INCIDENT_SEVERITY.CRITICAL]: 0,
+        [INCIDENT_SEVERITY.HIGH]: 1,
+        [INCIDENT_SEVERITY.MEDIUM]: 2,
+        [INCIDENT_SEVERITY.LOW]: 3,
       };
       return severityOrder[a.severity] - severityOrder[b.severity];
     });

@@ -5,7 +5,7 @@ import {
   CreateDateColumn,
   Index,
 } from 'typeorm';
-import { LOGIN_STATUS,LoginStatus } from '@exchange/common';
+import { LOGIN_STATUS, LoginStatus } from '@exchange/common';
 
 @Entity('login_history')
 @Index(['userId', 'createdAt'])
@@ -19,7 +19,7 @@ export class LoginHistory {
 
   @Column({
     type: 'enum',
-    enum: LOGIN_STATUS,
+    enum: Object.values(LOGIN_STATUS),
   })
   status: LoginStatus;
 

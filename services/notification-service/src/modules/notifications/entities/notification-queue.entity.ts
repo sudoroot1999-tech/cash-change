@@ -1,5 +1,5 @@
+import { NOTIFICATION_CHANNELS, NOTIFICATION_TYPES, NotificationChannel, NotificationType, NOTIFICAION_STATUS, NotificationStatus } from '@exchange/common';
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
-import { NotificationChannel, NotificationStatus, NotificationType } from './notification.entity';
 
 
 @Entity('notification_queue')
@@ -12,10 +12,10 @@ export class NotificationQueue {
   @Column()
   userId: string;
 
-  @Column({ type: 'enum', enum: NotificationType })
+  @Column({ type: 'enum', enum: NOTIFICATION_TYPES })
   type: NotificationType;
 
-  @Column({ type: 'enum', enum: NotificationChannel })
+  @Column({ type: 'enum', enum: NOTIFICATION_CHANNELS })
   channel: NotificationChannel;
 
   @Column({ nullable: true })
@@ -30,7 +30,7 @@ export class NotificationQueue {
   @Column({ type: 'jsonb', nullable: true })
   data: Record<string, any>;
 
-  @Column({ type: 'enum', enum: NotificationStatus, default: NotificationStatus.PENDING })
+  @Column({ type: 'enum', enum: NOTIFICAION_STATUS, default: NOTIFICAION_STATUS.PENDING })
   status: NotificationStatus;
 
   @Column({ type: 'int', default: 0 })

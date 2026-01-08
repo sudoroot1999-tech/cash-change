@@ -8,7 +8,7 @@ export interface SecurityPort {
 
     // 2FA methods
 
-    generateRandomCode(): Promise<string>;
+    generateRandomCode(): Promise<{ code: string }>;
     setAntiPhishingCode({
         user_id,
         phishing_code,

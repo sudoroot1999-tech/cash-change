@@ -1,10 +1,6 @@
+import { DEVICE_PLATFORM, DevicePlatform } from '@exchange/common';
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
 
-export enum DevicePlatform {
-  IOS = 'ios',
-  ANDROID = 'android',
-  WEB = 'web',
-}
 
 @Entity('push_tokens')
 @Index(['userId'])
@@ -19,7 +15,7 @@ export class PushToken {
   @Column({ type: 'text' })
   token: string;
 
-  @Column({ type: 'enum', enum: DevicePlatform })
+  @Column({ type: 'enum', enum: DEVICE_PLATFORM })
   platform: DevicePlatform;
 
   @Column({ nullable: true })

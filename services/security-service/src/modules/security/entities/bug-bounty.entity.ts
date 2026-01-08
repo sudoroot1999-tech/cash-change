@@ -1,3 +1,4 @@
+import { BUG_SEVERITY, BUGBOUNTY_STATUS, BugBountyStatus, BugSeverity } from '@exchange/common';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -6,23 +7,6 @@ import {
   UpdateDateColumn,
   Index,
 } from 'typeorm';
-
-export enum BugSeverity {
-  CRITICAL = 'CRITICAL',
-  HIGH = 'HIGH',
-  MEDIUM = 'MEDIUM',
-  LOW = 'LOW',
-  INFO = 'INFO',
-}
-
-export enum BugBountyStatus {
-  SUBMITTED = 'SUBMITTED',
-  TRIAGING = 'TRIAGING',
-  ACCEPTED = 'ACCEPTED',
-  REJECTED = 'REJECTED',
-  RESOLVED = 'RESOLVED',
-  REWARDED = 'REWARDED',
-}
 
 @Entity('bug_bounty_submissions')
 @Index(['reporterId', 'status'])
@@ -48,14 +32,14 @@ export class BugBountySubmission {
 
   @Column({
     type: 'enum',
-    enum: BugSeverity,
+    enum: BUG_SEVERITY,
   })
   severity: BugSeverity;
 
   @Column({
     type: 'enum',
-    enum: BugBountyStatus,
-    default: BugBountyStatus.SUBMITTED,
+    enum: BUGBOUNTY_STATUS,
+    default: BUGBOUNTY_STATUS.SUBMITTED,
   })
   status: BugBountyStatus;
 

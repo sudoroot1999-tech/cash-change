@@ -4,7 +4,6 @@ package security;
 
 service SecurityService {
   rpc CreateSession (CreateSessionRequest) returns (CreateSessionResponse);
-  rpc ValidateSession (ValidateSessionRequest) returns (ValidateSessionResponse);
   rpc KillSession (KillSessionRequest) returns (KillSessionResponse);
   rpc KillAllSessions (KillAllSessionsRequest) returns (KillAllSessionsResponse);
   rpc UpdateSession (UpdateSessionRequest) returns (UpdateSessionResponse);
@@ -12,119 +11,36 @@ service SecurityService {
 
   rpc GenerateSecret (GenerateSecretRequest) returns (GenerateSecretResponse);
   rpc GenerateQRCode (GenerateQRCodeRequest) returns (GenerateQRCodeResponse);
-  rpc VerifyAndEnable (VerifyAndEnableRequest) returns (VerifyAndEnableResponse);
   rpc VerifyToken (VerifyTokenRequest) returns (VerifyTokenResponse);
   rpc VerifyBackupCode (VerifyBackupCodeRequest) returns (VerifyBackupCodeResponse);
   rpc Disable2FA (Disable2FARequest) returns (Disable2FAResponse);
   rpc UpdateTwoFactor (UpdateTwoFactorRequest) returns (UpdateTwoFactorResponse);
+  rpc FindTwoFactorByUserId (FindTwoFactorByUserIdRequest) returns (FindTwoFactorByUserIdResponse);
 
   rpc RegisterDevice (RegisterDeviceRequest) returns (RegisterDeviceResponse);
   rpc IsDeviceTrusted (IsDeviceTrustedRequest) returns (IsDeviceTrustedResponse);
-  rpc TrustDevice (TrustDeviceRequest) returns (TrustDeviceResponse);
-  rpc RevokeDeviceTrust (RevokeDeviceTrustRequest) returns (RevokeDeviceTrustResponse);
-  rpc GetUserDevices (GetUserDevicesRequest) returns (GetUserDevicesResponse);
-  rpc IsNewDevice (IsNewDeviceRequest) returns (IsNewDeviceResponse);
-  rpc GenerateFingerprint (GenerateFingerprintRequest) returns (GenerateFingerprintResponse);
-  rpc DeleteDevice (DeleteDeviceRequest) returns (DeleteDeviceResponse);
 
   rpc SetAntiPhishingCode (SetAntiPhishingCodeRequest) returns (SetAntiPhishingCodeResponse);
-  rpc GetAntiPhishingCode (GetAntiPhishingCodeRequest) returns (GetAntiPhishingCodeResponse);
-  rpc GetCodeForEmail (GetCodeForEmailRequest) returns (GetCodeForEmailResponse);
-  rpc VerifyAntiPhishingCode (VerifyAntiPhishingCodeRequest) returns (VerifyAntiPhishingCodeResponse);
-  rpc DeactivateCode (DeactivateCodeRequest) returns (DeactivateCodeResponse);
   rpc GenerateRandomCode (GenerateRandomCodeRequest) returns (GenerateRandomCodeResponse);
   rpc LogLoginAttempt (LogLoginAttemptRequest) returns (LogLoginAttemptResponse);
-  rpc FindTwoFactorByUserId (FindTwoFactorByUserIdRequest) returns (FindTwoFactorByUserIdResponse);
 }
 
-message GetActiveSessionRequest {
-    string user_id = 1;
+
+message Error{
+  string code = 1;
+  string message = 2;
+  optional string details = 3;
 }
 
-message UserSession {
-    string id = 1;
-    string user_id = 2;
-    string session_token = 3;
-    bool is_active = 4;
-    string expires_at = 5;
-    string last_activity_at = 6;
-    string device_fingerprint = 7;
-    string ip_address = 8;
-    string user_agent = 9;
+message Pagination{
+  int32 page = 1;
+  int32 limit = 2;
+  int32 total = 3;
+  int32 totalPages = 4;
+  bool hasNext = 5;
+  bool hasPrev = 6;
 }
 
-message GetActiveSessionResponse {
-    repeated UserSession sessions = 1;
-}
-
-message UpdateTwoFactorRequest {
-  string user_id = 1;
-  UpdateTwoFactorData data = 2;  
-}
-
-message UpdateTwoFactorData {
-  bool is_enabled = 1;
-  string last_verified_at = 2;
-}
-
-message UpdateTwoFactorResponse {
-    string id = 1;
-    string user_id = 2;
-    string secret = 3;
-    repeated string backup_codes = 4;
-    bool is_enabled = 5;
-    string last_verified_at = 6;
-}
-
-message FindTwoFactorByUserIdRequest {
-    string user_id = 1;
-}
-
-message FindTwoFactorByUserIdResponse {
-  string id = 1;
-  string user_id = 2;
-  string secret = 3;
-  repeated string backup_codes = 4;
-  bool is_enabled = 5;
-  string last_verified_at = 6;
-}
-
-message LogLoginAttemptRequest {
-  string user_id = 1;
-  string ip_address = 2;
-  string user_agent = 3;
-  string device_fingerprint = 4;
-  bool success = 5;
-  string failure_reason = 6;
-  string metadata_json = 7;
-}
-
-message LogLoginAttemptResponse {
-  bool success = 1;
-}
-
-message ValidateApiKeyRequest {
-  string api_key = 1;
-  string api_secret = 2;
-}
-
-message ValidateApiKeyResponse {
-  bool is_valid = 1;
-  string user_id = 2;
-  repeated string permissions = 3;
-}
-
-message CheckRiskScoreRequest {
-  string user_id = 1;
-  string action = 2;
-  string ip_address = 3;
-}
-
-message CheckRiskScoreResponse {
-  double score = 1;
-  string risk_level = 2;
-  bool check_passed = 3;
-}
 
 message CreateSessionRequest {
   string user_id = 1;
@@ -137,14 +53,42 @@ message CreateSessionRequest {
   int32 expires_in_hours = 8;
 }
 
-message UpdateSessionRequest {
-    string session_id = 1;
-    string refresh_token = 2;
-    int32 expires_in_hours = 3;
+message CreateSessionResponse {
+  bool success = 1;
+  SessionData data = 2;
+  optional Error error = 3;
+  optional Pagination meta = 4;
 }
 
-message UpdateSessionResponse {
-    SessionData session = 1;
+message KillSessionRequest {
+  string user_id = 1;
+  string session_id = 2;
+}
+
+message KillSessionResponse {
+  bool success = 1;
+  optional string data = 2;
+  optional Error error = 3;
+  optional Pagination meta = 4;
+}
+
+message KillAllSessionsRequest {
+  string user_id = 1;
+  string except_session_id = 2;
+}
+
+message KillAllSessionsResponse {
+  bool success = 1;
+  optional string data = 2;
+  optional Error error = 3;
+  optional Pagination meta = 4;
+}
+
+
+message UpdateSessionRequest {
+  string session_id = 1;
+  string refresh_token = 2;
+  int32 expires_in_hours = 3;
 }
 
 message SessionData {
@@ -159,61 +103,68 @@ message SessionData {
   string user_agent = 9;
 }
 
-message CreateSessionResponse {
-  SessionData session = 1;
-}
-
-message ValidateSessionRequest {
-  string session_token = 1;
-}
-
-message ValidateSessionResponse {
-  bool is_valid = 1;
-  SessionData session = 2;
-}
-
-message KillSessionRequest {
-  string user_id = 1;
-  string session_id = 2;
-}
-
-message KillSessionResponse {
+message UpdateSessionResponse {
   bool success = 1;
+  SessionData data = 2;
+  optional Error error = 3;
+  optional Pagination meta = 4;
 }
 
-message KillAllSessionsRequest {
-  string user_id = 1;
-  string except_session_id = 2;
+
+message GetActiveSessionRequest {
+    string user_id = 1;
 }
 
-message KillAllSessionsResponse {
+message UserSessionData {
+    string id = 1;
+    string user_id = 2;
+    string session_token = 3;
+    bool is_active = 4;
+    string expires_at = 5;
+    string last_activity_at = 6;
+    string device_fingerprint = 7;
+    string ip_address = 8;
+    string user_agent = 9;
+}
+
+message GetActiveSessionResponse {
   bool success = 1;
+  repeated UserSession data = 2;
+  optional Error error = 3;
+  optional Pagination meta = 4;
 }
+
 
 message GenerateSecretRequest {
   string user_id = 1;
   string email = 2;
 }
 
-message GenerateSecretResponse {
+message GenerateSecretData {
   string otpauth_url = 1;
+}
+
+
+message GenerateSecretResponse {
+  bool success = 1;
+  GenerateSecretData data = 2;
+  optional Error error = 3;
+  optional Pagination meta = 4;
 }
 
 message GenerateQRCodeRequest {
   string otpauth_url = 1;
 }
 
-message GenerateQRCodeResponse {
+message GenerateQRCodeData {
   string qr_code_data_url = 1;
 }
 
-message VerifyAndEnableRequest {
-  string user_id = 1;
-  string token = 2;
-}
-
-message VerifyAndEnableResponse {
+message GenerateQRCodeResponse {
   bool success = 1;
+  GenerateQRCodeData data = 2
+  optional Error error = 3;
+  optional Pagination meta = 4;
 }
 
 message VerifyTokenRequest {
@@ -221,8 +172,16 @@ message VerifyTokenRequest {
   string token = 2;
 }
 
-message VerifyTokenResponse {
+message VerifyTokenData {
   bool is_valid = 1;
+}
+
+
+message VerifyTokenResponse {
+  bool success = 1;
+  VerifyTokenData data = 2
+  optional Error error = 3;
+  optional Pagination meta = 4;
 }
 
 message VerifyBackupCodeRequest {
@@ -230,8 +189,15 @@ message VerifyBackupCodeRequest {
   string code = 2;
 }
 
-message VerifyBackupCodeResponse {
+message VerifyBackupCodeData {
   bool is_valid = 1;
+}
+
+message VerifyBackupCodeResponse {
+  bool success = 1;
+  VerifyBackupCodeData data = 2
+  optional Error error = 3;
+  optional Pagination meta = 4;
 }
 
 message Disable2FARequest {
@@ -240,6 +206,55 @@ message Disable2FARequest {
 
 message Disable2FAResponse {
   bool success = 1;
+  string data = 2
+  optional Error error = 3;
+  optional Pagination meta = 4;
+}
+
+message UpdateTwoFactorRequest {
+  string user_id = 1;
+  UpdateTwoFactorData data = 2;  
+}
+
+message UpdateTwoFactorData {
+  bool is_enabled = 1;
+  string last_verified_at = 2;
+}
+
+message UpdateTwoFactorResponseData {
+    string id = 1;
+    string user_id = 2;
+    string secret = 3;
+    repeated string backup_codes = 4;
+    bool is_enabled = 5;
+    string last_verified_at = 6;
+}
+
+message UpdateTwoFactorResponse {
+  bool success = 1;
+  UpdateTwoFactorResponseData data = 2
+  optional Error error = 3;
+  optional Pagination meta = 4;
+}
+
+message FindTwoFactorByUserIdRequest {
+    string user_id = 1;
+}
+
+message FindTwoFactorByUserIdData {
+  string id = 1;
+  string user_id = 2;
+  string secret = 3;
+  repeated string backup_codes = 4;
+  bool is_enabled = 5;
+  string last_verified_at = 6;
+}
+
+message FindTwoFactorByUserIdResponse {
+  bool success = 1;
+  FindTwoFactorByUserIdData data = 2
+  optional Error error = 3;
+  optional Pagination meta = 4;
 }
 
 message DeviceInfo {
@@ -265,7 +280,7 @@ message RegisterDeviceRequest {
   DeviceLocation location = 3;
 }
 
-message TrustedDeviceData {
+message RegisteredDeviceData {
   string id = 1;
   string user_id = 2;
   string fingerprint = 3;
@@ -279,7 +294,10 @@ message TrustedDeviceData {
 }
 
 message RegisterDeviceResponse {
-  TrustedDeviceData device = 1;
+  bool success = 1;
+  RegisteredDeviceData data = 2
+  optional Error error = 3;
+  optional Pagination meta = 4;
 }
 
 message IsDeviceTrustedRequest {
@@ -287,63 +305,15 @@ message IsDeviceTrustedRequest {
   string fingerprint = 2;
 }
 
-message IsDeviceTrustedResponse {
+message IsDeviceTrustedData {
   bool is_trusted = 1;
 }
 
-message TrustDeviceRequest {
-  string user_id = 1;
-  string device_id = 2;
-}
-
-message TrustDeviceResponse {
-  TrustedDeviceData device = 1;
-}
-
-message RevokeDeviceTrustRequest {
-  string user_id = 1;
-  string device_id = 2;
-}
-
-message RevokeDeviceTrustResponse {
+message IsDeviceTrustedResponse {
   bool success = 1;
-}
-
-message GetUserDevicesRequest {
-  string user_id = 1;
-}
-
-message GetUserDevicesResponse {
-  repeated TrustedDeviceData devices = 1;
-}
-
-message IsNewDeviceRequest {
-  string user_id = 1;
-  string fingerprint = 2;
-}
-
-message IsNewDeviceResponse {
-  bool is_new = 1;
-}
-
-message GenerateFingerprintRequest {
-  string user_agent = 1;
-  string accept_language = 2;
-  string accept_encoding = 3;
-  string ip_address = 4;
-}
-
-message GenerateFingerprintResponse {
-  string fingerprint = 1;
-}
-
-message DeleteDeviceRequest {
-  string user_id = 1;
-  string device_id = 2;
-}
-
-message DeleteDeviceResponse {
-  bool success = 1;
+  IsDeviceTrustedData data = 2
+  optional Error error = 3;
+  optional Pagination meta = 4;
 }
 
 message SetAntiPhishingCodeRequest {
@@ -359,44 +329,40 @@ message AntiPhishingData {
 }
 
 message SetAntiPhishingCodeResponse {
-  AntiPhishingData code = 1;
-}
-
-message GetAntiPhishingCodeRequest {
-  string user_id = 1;
-}
-
-message GetAntiPhishingCodeResponse {
-  AntiPhishingData code = 1;
-}
-
-message GetCodeForEmailRequest {
-  string user_id = 1;
-}
-
-message GetCodeForEmailResponse {
-  string code = 1;
-}
-
-message VerifyAntiPhishingCodeRequest {
-  string user_id = 1;
-  string code = 2;
-}
-
-message VerifyAntiPhishingCodeResponse {
-  bool is_valid = 1;
-}
-
-message DeactivateCodeRequest {
-  string user_id = 1;
-}
-
-message DeactivateCodeResponse {
   bool success = 1;
+  AntiPhishingData data = 2
+  optional Error error = 3;
+  optional Pagination meta = 4;
 }
 
 message GenerateRandomCodeRequest {}
 
-message GenerateRandomCodeResponse {
+message GenerateRandomCodeData {
   string code = 1;
 }
+
+message GenerateRandomCodeResponse {
+  bool success = 1;
+  GenerateRandomCodeData data = 2;
+  optional Error error = 3;
+  optional Pagination meta = 4;
+}
+
+message LogLoginAttemptRequest {
+  string user_id = 1;
+  string ip_address = 2;
+  string user_agent = 3;
+  string device_fingerprint = 4;
+  bool success = 5;
+  string failure_reason = 6;
+  string metadata_json = 7;
+}
+
+message LogLoginAttemptResponse {
+  bool success = 1;
+  string data = 2;
+  optional Error error = 3;
+  optional Pagination meta = 4;
+}
+
+

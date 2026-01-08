@@ -1,5 +1,5 @@
 import { IsString, IsEnum, IsOptional, IsArray, IsObject } from 'class-validator';
-import { IncidentType, IncidentSeverity } from '../entities/incident.entity';
+import { INCIDENT_SEVERITY, INCIDENT_TYPES, IncidentSeverity, IncidentType } from '@exchange/common';
 
 export class CreateIncidentDto {
   @IsString()
@@ -8,10 +8,10 @@ export class CreateIncidentDto {
   @IsString()
   description: string;
 
-  @IsEnum(IncidentType)
+  @IsEnum(INCIDENT_TYPES)
   type: IncidentType;
 
-  @IsEnum(IncidentSeverity)
+  @IsEnum(INCIDENT_SEVERITY)
   severity: IncidentSeverity;
 
   @IsOptional()

@@ -1,3 +1,4 @@
+import { INSURANCE_FUND_TRANSACTION_TYPES, InsuranceFundTransactionType } from '@exchange/common';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -7,12 +8,6 @@ import {
   Index,
 } from 'typeorm';
 
-export enum InsuranceFundTransactionType {
-  DEPOSIT = 'DEPOSIT',
-  WITHDRAWAL = 'WITHDRAWAL',
-  CLAIM = 'CLAIM',
-  INTEREST = 'INTEREST',
-}
 
 @Entity('insurance_fund_transactions')
 @Index(['currency', 'createdAt'])
@@ -25,7 +20,7 @@ export class InsuranceFundTransaction {
 
   @Column({
     type: 'enum',
-    enum: InsuranceFundTransactionType,
+    enum: INSURANCE_FUND_TRANSACTION_TYPES,
   })
   type: InsuranceFundTransactionType;
 
