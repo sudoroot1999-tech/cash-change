@@ -1,0 +1,248 @@
+<div class="settings-page">
+    <div class="settings-header">
+        <h1 class="page-title">Settings</h1>
+        <p class="page-subtitle">Manage your account preferences</p>
+    </div>
+
+    <div class="settings-layout">
+        <!-- Sidebar Navigation -->
+        <nav class="settings-nav">
+            @for (section of sections; track section.id) {
+            <button class="nav-item" [class.active]="activeSection() === section.id"
+                (click)="activeSection.set(section.id)">
+                <span class="nav-icon">{{ section.icon }}</span>
+                {{ section.title }}
+            </button>
+            }
+        </nav>
+
+        <!-- Settings Content -->
+        <div class="settings-content">
+            @switch (activeSection()) {
+            @case ('general') {
+            <ui-card variant="elevated" title="General Settings">
+                <div class="settings-form">
+                    <div class="form-group">
+                        <label class="form-label">Username</label>
+                        <ui-input [ngModel]="settings().username" (ngModelChange)="updateUsername($event)"
+                            placeholder="Your username" />
+                        <span class="form-hint">This is your public display name.</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <ui-input type="email" [ngModel]="settings().email" [disabled]="true"
+                            placeholder="your@email.com" />
+                        <span class="form-hint">Email cannot be changed</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Timezone</label>
+                        <select class="form-select" [ngModel]="settings().timezone"
+                            (ngModelChange)="updateTimezone($event)">
+                            <option value="UTC">UTC</option>
+                            <option value="America/New_York">Eastern Time (ET)</option>
+                            <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                            <option value="Europe/London">London (GMT)</option>
+                            <option value="Asia/Tokyo">Tokyo (JST)</option>
+                            <option value="Asia/Singapore">Singapore (SGT)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Language</label>
+                        <select class="form-select" [ngModel]="settings().language"
+                            (ngModelChange)="updateLanguage($event)">
+                            <option value="en">English</option>
+                            <option value="zh">中文</option>
+                            <option value="ja">日本語</option>
+                            <option value="ko">한국어</option>
+                            <option value="es">Español</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <ui-button variant="primary" (click)="saveSettings()" [disabled]="isSaving()">
+                        {{ isSaving() ? 'Saving...' : 'Save Changes' }}
+                    </ui-button>
+                </div>
+            </ui-card>
+            }
+
+            @case ('notifications') {
+            <ui-card variant="elevated" title="Notification Preferences">
+                <div class="notifications-list">
+                    <div class="notification-item">
+                        <div class="notification-info">
+                            <span class="notification-title">Email Notifications</span>
+                            <span class="notification-desc">Receive updates via email</span>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" [ngModel]="settings().emailNotifications"
+                                (ngModelChange)="updateEmailNotifications($event)" />
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="notification-item">
+                        <div class="notification-info">
+                            <span class="notification-title">Trade Confirmations</span>
+                            <span class="notification-desc">Get notified when orders are filled</span>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" [ngModel]="settings().tradeNotifications"
+                                (ngModelChange)="updateTradeNotifications($event)" />
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="notification-item">
+                        <div class="notification-info">
+                            <span class="notification-title">Price Alerts</span>
+                            <span class="notification-desc">Notifications for price movements</span>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" [ngModel]="settings().priceAlerts"
+                                (ngModelChange)="updatePriceAlerts($event)" />
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="notification-item">
+                        <div class="notification-info">
+                            <span class="notification-title">Security Alerts</span>
+                            <span class="notification-desc">Login and security notifications</span>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" [ngModel]="settings().securityAlerts"
+                                (ngModelChange)="updateSecurityAlerts($event)" />
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="notification-item">
+                        <div class="notification-info">
+                            <span class="notification-title">Marketing Updates</span>
+                            <span class="notification-desc">News, features, and promotions</span>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" [ngModel]="settings().marketingEmails"
+                                (ngModelChange)="updateMarketingEmails($event)" />
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <ui-button variant="primary" (click)="saveSettings()">Save Preferences</ui-button>
+                </div>
+            </ui-card>
+            }
+
+            @case ('trading') {
+            <ui-card variant="elevated" title="Trading Preferences">
+                <div class="settings-form">
+                    <div class="form-group">
+                        <label class="form-label">Default Trading Pair</label>
+                        <select class="form-select" [ngModel]="settings().defaultPair"
+                            (ngModelChange)="updateDefaultPair($event)">
+                            <option value="BTCUSDT">BTC/USDT</option>
+                            <option value="ETHUSDT">ETH/USDT</option>
+                            <option value="SOLUSDT">SOL/USDT</option>
+                            <option value="BNBUSDT">BNB/USDT</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Chart Type</label>
+                        <select class="form-select" [ngModel]="settings().chartType"
+                            (ngModelChange)="updateChartType($event)">
+                            <option value="candlestick">Candlestick</option>
+                            <option value="line">Line</option>
+                            <option value="area">Area</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Default Timeframe</label>
+                        <select class="form-select" [ngModel]="settings().defaultTimeframe"
+                            (ngModelChange)="updateDefaultTimeframe($event)">
+                            <option value="1m">1 minute</option>
+                            <option value="5m">5 minutes</option>
+                            <option value="15m">15 minutes</option>
+                            <option value="1H">1 hour</option>
+                            <option value="4H">4 hours</option>
+                            <option value="1D">1 day</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Order Confirmation</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" [ngModel]="settings().confirmOrders"
+                                    (ngModelChange)="updateConfirmOrders($event)" />
+                                <span>Require confirmation before placing orders</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Sound Effects</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" [ngModel]="settings().soundEffects"
+                                    (ngModelChange)="updateSoundEffects($event)" />
+                                <span>Play sounds on order execution</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <ui-button variant="primary" (click)="saveSettings()">Save Preferences</ui-button>
+                </div>
+            </ui-card>
+            }
+
+            @case ('appearance') {
+            <ui-card variant="elevated" title="Appearance">
+                <div class="theme-selector">
+                    <button class="theme-option" [class.active]="settings().theme === 'dark'"
+                        (click)="updateTheme('dark')">
+                        <div class="theme-preview dark">
+                            <div class="preview-header"></div>
+                            <div class="preview-content"></div>
+                        </div>
+                        <span class="theme-name">Dark</span>
+                    </button>
+
+                    <button class="theme-option" [class.active]="settings().theme === 'light'"
+                        (click)="updateTheme('light')">
+                        <div class="theme-preview light">
+                            <div class="preview-header"></div>
+                            <div class="preview-content"></div>
+                        </div>
+                        <span class="theme-name">Light</span>
+                    </button>
+
+                    <button class="theme-option" [class.active]="settings().theme === 'system'"
+                        (click)="updateTheme('system')">
+                        <div class="theme-preview system">
+                            <div class="preview-header"></div>
+                            <div class="preview-content"></div>
+                        </div>
+                        <span class="theme-name">System</span>
+                    </button>
+                </div>
+
+                <div class="form-actions">
+                    <ui-button variant="primary" (click)="saveSettings()">Apply Theme</ui-button>
+                </div>
+            </ui-card>
+            }
+            }
+        </div>
+    </div>
+</div>

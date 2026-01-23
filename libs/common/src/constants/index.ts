@@ -39,9 +39,41 @@ export const KYC_STATUS = {
 export const DOCUMENT_TYPE = {
   PASSPORT: 'passport',
   ID_CARD: 'id_card',
+  NATIONAL_ID: 'national_id',
   DRIVER_LICENSE: 'driver_license',
   PROOF_OF_ADDRESS: 'proof_of_address',
-  SELFIE: 'selfie'
+  SELFIE: 'selfie',
+  UTILITY_BILL: 'utility_bill',
+  BANK_STATEMENT: 'bank_statement',
+} as const;
+
+// KYC Providers
+export const KYC_PROVIDER = {
+  ONFIDO: 'onfido',
+  JUMIO: 'jumio',
+  MANUAL: 'manual',
+} as const;
+
+// Compliance Check Type
+export const COMPLIANCE_CHECK_TYPE = {
+  KYC_VERIFICATION: 'kyc_verification',
+  AML_SCREENING: 'aml_screening',
+  PEP_SCREENING: 'pep_screening',
+  SANCTIONS_CHECK: 'sanctions_check',
+  ADVERSE_MEDIA: 'adverse_media',
+  TRANSACTION_MONITORING: 'transaction_monitoring',
+  ENHANCED_DUE_DILIGENCE: 'enhanced_due_diligence',
+  ONGOING_MONITORING: 'ongoing_monitoring',
+} as const;
+
+// Compliance Check Status
+export const COMPLIANCE_CHECK_STATUS = {
+  PENDING: 'pending',
+  IN_PROGRESS: 'in_progress',
+  PASSED: 'passed',
+  FAILED: 'failed',
+  REQUIRES_REVIEW: 'requires_review',
+  EXPIRED: 'expired',
 } as const;
 
 // Order Types

@@ -1,7 +1,6 @@
-import { Controller, All, Req, Res, UseGuards, HttpStatus } from '@nestjs/common';
+import { Controller, All, Req, Res, HttpStatus } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { ThrottlerGuard } from '@nestjs/throttler';
-import { Public, JwtAuthGuard } from '@exchange/common';
+import { Public } from '@exchange/common';
 import { Request, Response } from 'express';
 import { ProxyService } from './proxy.service';
 
@@ -24,33 +23,15 @@ const ROUTES: Record<string, string> = {
   '/reserves': 'reserves',
 };
 
-// Paths that bypass authentication at the gateway
-const PUBLIC_PATHS = [
-  '/auth/login',
-  '/auth/register',
-  '/auth/refresh',
-  '/admin/auth/login', // Admin login is public
-  '/market',
-  '/reserves/latest',
-];
-
 @ApiTags('Proxy')
 @Controller()
 @Public()
 export class ProxyController {
-  constructor(private readonly proxyService: ProxyService) {}
+  constructor(private readonly proxyService: ProxyService) { }
 
   @All('*')
   async proxy(@Req() req: Request, @Res() res: Response) {
     const path = req.path.replace('/api/v1', '');
-
-    // Check if path is public:
-    // 1. Explicitly public paths
-    // 2. User registration (POST /users)
-    const isPublic =
-      PUBLIC_PATHS.some((p) => path.startsWith(p)) ||
-      (path === '/users' && req.method === 'POST') ||
-      path === '/auth';
 
     // If it's not a public path and we don't have a user, the JwtAuthGuard will handle validation
     // The JwtAuthGuard will check the @Public() metadata
@@ -64,15 +45,21 @@ export class ProxyController {
     const [_prefix, service] = serviceEntry;
     const servicePath = path;
 
-    // Forward user info if authenticated
+    // Forward user info
     const headers: Record<string, string> = {};
     if (req.headers.authorization) {
       headers['Authorization'] = req.headers.authorization;
     }
-    if ((req as any).user) {
-      headers['X-User-Id'] = (req as any).user.userId;
-      headers['X-User-Tier'] = (req as any).user.tier;
+    if (req.headers['user-agent']) {
+      headers['user-agent'] = req.headers['user-agent'];
     }
+    if (req.headers['accept-language']) {
+      headers['accept-language'] = req.headers['accept-language'];
+    }
+    if (req.headers['accept-encoding']) {
+      headers['accept-encoding'] = req.headers['accept-encoding'];
+    }
+    // headers['x-forwarded-for'] = req.ip ? req.ip : '127.0.0.1';
 
     try {
       const result = await this.proxyService.forward(

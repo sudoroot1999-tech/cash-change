@@ -1,4 +1,4 @@
-import { NotificationPriority } from 'libs/common/src/types';
+import { NotificationPriority } from '../../../types';
 import { BaseEvent } from './base.event';
 
 
@@ -6,7 +6,8 @@ import { BaseEvent } from './base.event';
  * Send email event
  */
 export interface SendEmailEvent extends BaseEvent {
-  to: string | string[];
+  to: string;
+  userId: string;
   subject: string;
   template: string;
   data: Record<string, any>;
@@ -24,7 +25,7 @@ export interface SendEmailEvent extends BaseEvent {
  * Email sent event
  */
 export interface EmailSentEvent extends BaseEvent {
-  to: string | string[];
+  to: string;
   subject: string;
   template: string;
   messageId: string;
@@ -35,7 +36,7 @@ export interface EmailSentEvent extends BaseEvent {
  * Email failed event
  */
 export interface EmailFailedEvent extends BaseEvent {
-  to: string | string[];
+  to: string;
   subject: string;
   template: string;
   error: string;
@@ -49,6 +50,7 @@ export interface SendSmsEvent extends BaseEvent {
   to: string;
   message: string;
   countryCode?: string;
+  userId: string;
   priority?: NotificationPriority;
 }
 

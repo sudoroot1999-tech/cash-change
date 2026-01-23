@@ -4,37 +4,37 @@ export interface SecurityPort {
     // Session methods
 
     // killSession(user_id: string, session_id: string): any;
-    killAllSessions(user_id: string, except_session_id?: string): Promise<string>;
+    killAllSessions(userId: string, exceptSessionId?: string): Promise<string>;
 
     // 2FA methods
 
     generateRandomCode(): Promise<{ code: string }>;
     setAntiPhishingCode({
-        user_id,
-        phishing_code,
-        ip_address
+        userId,
+        phishingCode,
+        ipAddress
     }: {
-        user_id: string,
-        phishing_code: string,
-        ip_address?: string
+        userId: string,
+        phishingCode: string,
+        ipAddress?: string
     }): Promise<AntiPhishingCode>;
 
     logLoginAttempt({
-        user_id,
-        ip_address,
+        userId,
+        ipAddress,
         success,
-        user_agent,
-        device_fingerprint,
-        failure_reason,
-        metadata_json
+        userAgent,
+        deviceFingerprint,
+        failureReason,
+        metadataJson
     }: {
-        user_id: string,
-        ip_address: string,
+        userId: string,
+        ipAddress: string,
         success: boolean,
-        user_agent?: string,
-        device_fingerprint?: string,
-        failure_reason?: string,
-        metadata_json?: string
+        userAgent?: string,
+        deviceFingerprint?: string,
+        failureReason?: string,
+        metadataJson?: string
     }): Promise<LoginHistory>;
 
 }

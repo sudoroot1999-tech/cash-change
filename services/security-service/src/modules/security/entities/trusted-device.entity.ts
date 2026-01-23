@@ -8,18 +8,18 @@ import {
 } from 'typeorm';
 
 @Entity('trusted_devices')
-@Index(['userId', 'fingerprint'], { unique: true })
 export class TrustedDevice {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column({ name: 'user_id' })
-  @Index()
+  @Index(['user_id'], { unique: true })
   userId: string;
 
   @Column({ name: 'device_name', nullable: true })
   deviceName: string;
 
+  @Index({ unique: true })
   @Column({ name: 'fingerprint' })
   fingerprint: string;
 
@@ -45,9 +45,11 @@ export class TrustedDevice {
   @Column({ name: 'city', nullable: true })
   city: string;
 
+  @Index()
   @Column({ name: 'is_trusted', default: false })
   isTrusted: boolean;
 
+  @Index()
   @Column({ name: 'last_used_at', type: 'timestamp', nullable: true })
   lastUsedAt: Date;
 

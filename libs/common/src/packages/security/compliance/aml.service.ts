@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 
 export interface AMLCheck {
@@ -36,8 +37,8 @@ export class AMLService {
   private readonly logger = new Logger(AMLService.name);
   private redis: Redis;
 
-  constructor(redisUrl: string) {
-    this.redis = new Redis(redisUrl);
+  constructor(private configService: ConfigService) {
+    this.redis = new Redis(configService.get('REDIS_URL'));
   }
 
   /**
@@ -51,7 +52,7 @@ export class AMLService {
     transactionId?: string,
   ): Promise<AMLCheck> {
     const id = `aml_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+
     // Calculate risk score
     const riskScore = await this.calculateRiskScore(userId, type, amount, currency);
     const riskLevel = this.determineRiskLevel(riskScore);
@@ -99,7 +100,7 @@ export class AMLService {
 
     // Check user history
     const userHistory = await this.getUserTransactionHistory(userId);
-    
+
     // New user risk
     if (userHistory.length < 5) {
       score += 20;
@@ -161,7 +162,7 @@ export class AMLService {
     // Check for structuring (smurfing)
     const recentTransactions = await this.getRecentTransactions(userId, 24);
     const totalAmount = recentTransactions.reduce((sum, t) => sum + parseFloat(t.amount), 0);
-    
+
     if (recentTransactions.length >= 3 && totalAmount > 10000) {
       flags.push('POSSIBLE_STRUCTURING');
     }
@@ -175,7 +176,7 @@ export class AMLService {
     // Check for rapid deposits and withdrawals
     const deposits = recentTransactions.filter((t) => t.type === 'deposit');
     const withdrawals = recentTransactions.filter((t) => t.type === 'withdrawal');
-    
+
     if (deposits.length >= 3 && withdrawals.length >= 3) {
       flags.push('RAPID_MOVEMENT');
     }
@@ -184,7 +185,7 @@ export class AMLService {
     const userHistory = await this.getUserTransactionHistory(userId);
     if (userHistory.length > 0) {
       const avgAmount = userHistory.reduce((sum, t) => sum + parseFloat(t.amount), 0) / userHistory.length;
-      
+
       if (amountNum > avgAmount * 10) {
         flags.push('UNUSUAL_AMOUNT');
       }
@@ -193,7 +194,7 @@ export class AMLService {
     // Check for high-risk jurisdiction
     const userCountry = await this.redis.get(`user_country:${userId}`);
     const highRiskCountries = ['KP', 'IR', 'SY']; // Example high-risk countries
-    
+
     if (userCountry && highRiskCountries.includes(userCountry)) {
       flags.push('HIGH_RISK_JURISDICTION');
     }

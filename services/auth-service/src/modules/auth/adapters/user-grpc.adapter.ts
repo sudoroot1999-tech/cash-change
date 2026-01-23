@@ -43,11 +43,11 @@ interface UserGrpcService {
   verifyPassword(data: { user_id: string; password: string }): Observable<{ success: boolean, data: { is_valid: boolean } }>;
   changePassword(data: {
     user_id: string;
-    currentPassword: string;
-    newPassword: string;
+    current_password: string;
+    new_password: string;
   }): Observable<{ data: string, success: boolean }>;
   forgotPassword(data: { email: string }): Observable<{ data: string, success: boolean }>;
-  resetPassword(data: { token: string; newPassword: string }): Observable<{ data: string, success: boolean }>;
+  resetPassword(data: { token: string; new_password: string }): Observable<{ data: string, success: boolean }>;
 }
 
 
@@ -61,8 +61,8 @@ export class UserGrpcAdapter implements UserPort, OnModuleInit {
     this.service = this.client.getService<UserGrpcService>('UserService');
   }
 
-  async create({ email, password, username, referral_code }: { email: string; password: string; username: string; referral_code?: string; }): Promise<User> {
-    const data = { email, password, username, referral_code }
+  async create({ email, password, username, referralCode }: { email: string; password: string; username: string; referralCode?: string; }): Promise<User> {
+    const data = { email, password, username, referral_code: referralCode };
     try {
       const response = await firstValueFrom(this.service.create(data));
       if (!response.success || !response.data) {
@@ -100,10 +100,10 @@ export class UserGrpcAdapter implements UserPort, OnModuleInit {
     }
   }
 
-  async verifyPassword({ user_id, password }: { user_id: string; password: string; }): Promise<{ isValid: boolean }> {
+  async verifyPassword({ userId, password }: { userId: string; password: string; }): Promise<{ isValid: boolean }> {
     try {
       const response = await firstValueFrom(this.service.verifyPassword({
-        user_id,
+        user_id: userId,
         password
       }));
       if (!response.success || !response.data) {
@@ -118,7 +118,7 @@ export class UserGrpcAdapter implements UserPort, OnModuleInit {
     try {
       const response = await firstValueFrom(this.service.resetPassword({
         token,
-        newPassword
+        new_password: newPassword
       }));
       if (!response.success || !response.data) {
         throw new Error('Reset password failed');
@@ -141,12 +141,12 @@ export class UserGrpcAdapter implements UserPort, OnModuleInit {
     catch (error) { throw new UnauthorizedError('Something Wrong'); }
   }
 
-  async changePassword({ user_id, currentPassword, newPassword }: { user_id: string; currentPassword: string; newPassword: string; }): Promise<string> {
+  async changePassword({ userId, currentPassword, newPassword }: { userId: string; currentPassword: string; newPassword: string; }): Promise<string> {
     try {
       const response = await firstValueFrom(this.service.changePassword({
-        user_id,
-        currentPassword,
-        newPassword,
+        user_id: userId,
+        current_password: currentPassword,
+        new_password: newPassword,
       }));
       if (!response.success || !response.data) {
         throw new Error('Create session failed');

@@ -1,0 +1,33 @@
+<div class="recent-trades">
+    <div class="trades-header">
+        <span class="trades-title">Recent Trades</span>
+        <span class="trades-pair">{{ pair() }}</span>
+    </div>
+
+    <div class="trades-columns">
+        <span>Price ({{ quoteAsset() }})</span>
+        <span class="text-right">Amount ({{ baseAsset() }})</span>
+        <span class="text-right">Time</span>
+    </div>
+
+    <div class="trades-content">
+        @for (trade of displayedTrades(); track trade.id) {
+        <div class="trade-row animate-in" [class.buy]="trade.side === 'buy'" [class.sell]="trade.side === 'sell'">
+            <span class="trade-price">{{ trade.price | number:priceFormat() }}</span>
+            <span class="trade-amount">{{ trade.amount | number:'1.4-4' }}</span>
+            <span class="trade-time">{{ trade.timestamp | date:'HH:mm:ss' }}</span>
+        </div>
+        } @empty {
+        <div class="empty-state">
+            <span class="empty-icon">📊</span>
+            <span class="empty-text">Waiting for trades...</span>
+        </div>
+        }
+    </div>
+
+    <!-- Live indicator -->
+    <div class="live-indicator">
+        <span class="live-dot" [class.connected]="isConnected()"></span>
+        <span class="live-text">{{ isConnected() ? 'Live' : 'Connecting...' }}</span>
+    </div>
+</div>

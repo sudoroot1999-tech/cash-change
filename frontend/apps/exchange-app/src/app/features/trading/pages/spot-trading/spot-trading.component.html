@@ -1,0 +1,127 @@
+<div class="trading-page">
+    <!-- Top Bar: Pair Selector + Price Info -->
+    <div class="trading-header">
+        <app-trading-pair-selector [selectedPair]="selectedPair()" (pairChange)="onPairChange($event)" />
+
+        <div class="price-stats">
+            <!-- Live Price Display -->
+            <div class="stat-item primary">
+                <span class="stat-label">Last Price</span>
+                <span class="stat-value" [class.positive]="isPriceUp()" [class.negative]="!isPriceUp()"
+                    [class.tick-up]="priceTickDirection() === 'up'" [class.tick-down]="priceTickDirection() === 'down'">
+                    {{ lastPrice() | number: '1.2-2' }}
+                    <span class="change-badge">{{ priceChange() >= 0 ? '+' : '' }}{{ priceChange() | number: '1.2-2'
+                        }}%</span>
+                </span>
+            </div>
+
+            <div class="stat-item">
+                <span class="stat-label">24h High</span>
+                <span class="stat-value">{{ high24h() | number: '1.2-2' }}</span>
+            </div>
+
+            <div class="stat-item">
+                <span class="stat-label">24h Low</span>
+                <span class="stat-value">{{ low24h() | number: '1.2-2' }}</span>
+            </div>
+
+            <div class="stat-item">
+                <span class="stat-label">24h Volume</span>
+                <span class="stat-value">{{ formatVolume(volume24h()) }}</span>
+            </div>
+
+            <!-- Connection Status -->
+            <div class="connection-status" [class.connected]="isConnected()">
+                <span class="status-dot"></span>
+                <span class="status-text">{{ isConnected() ? 'Real-time' : 'Connecting...' }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Trading Grid -->
+    <div class="trading-grid">
+        <!-- Chart Area - TradingView Lightweight Charts -->
+        <div class="chart-area">
+            <app-trading-chart [symbol]="currentSymbol()" [data]="candleData()" />
+        </div>
+
+        <!-- Order Book - Real-time updates -->
+        <div class="orderbook-area">
+            <app-order-book [pair]="currentSymbol()" />
+        </div>
+
+        <!-- Trade Form -->
+        <div class="trade-form-area">
+            <app-trade-form [pair]="selectedPair()" (orderSubmit)="onOrderSubmit($event)" />
+        </div>
+
+        <!-- Recent Trades - Real-time updates -->
+        <div class="recent-trades-area">
+            <app-recent-trades [pair]="currentSymbol()" />
+        </div>
+    </div>
+
+    <!-- Bottom: Open Orders / Order History -->
+    <div class="orders-section">
+        <ui-card variant="elevated" title="Open Orders">
+            <div class="orders-tabs">
+                <button class="orders-tab" [class.active]="ordersTab() === 'open'" (click)="ordersTab.set('open')">
+                    Open Orders ({{ openOrders().length }})
+                </button>
+                <button class="orders-tab" [class.active]="ordersTab() === 'history'"
+                    (click)="ordersTab.set('history')">
+                    Order History
+                </button>
+                <button class="orders-tab" [class.active]="ordersTab() === 'trades'" (click)="ordersTab.set('trades')">
+                    Trade History
+                </button>
+            </div>
+
+            <div class="orders-content">
+                @if (ordersTab() === 'open') {
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Pair</th>
+                            <th>Type</th>
+                            <th>Side</th>
+                            <th>Price</th>
+                            <th>Amount</th>
+                            <th>Filled</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (order of openOrders(); track order.id) {
+                        <tr>
+                            <td>{{ order.createdAt | date: 'yyyy-MM-dd HH:mm' }}</td>
+                            <td>{{ currentSymbol() }}</td>
+                            <td>{{ order.type | titlecase }}</td>
+                            <td [class.text-success]="order.side === 'buy'" [class.text-danger]="order.side === 'sell'">
+                                {{ order.side | titlecase }}
+                            </td>
+                            <td>{{ order.price ? (order.price | number: '1.2-2') : 'Market' }}</td>
+                            <td>{{ order.quantity | number: '1.4-4' }} {{ baseAsset() }}</td>
+                            <td>
+                                {{
+                                (Number(order.filledQuantity) / Number(order.quantity)) * 100
+                                | number: '1.0-0'
+                                }}%
+                            </td>
+                            <td>
+                                <button class="cancel-btn" (click)="cancelOrder(order.id)">Cancel</button>
+                            </td>
+                        </tr>
+                        } @empty {
+                        <tr>
+                            <td colspan="8" class="empty-state">No open orders</td>
+                        </tr>
+                        }
+                    </tbody>
+                </table>
+                }
+            </div>
+        </ui-card>
+    </div>
+</div>

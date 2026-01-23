@@ -1,6 +1,6 @@
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { SecurityPort } from "../ports/security.ports";
-import { AntiPhishingCode, LoginHistory, snakeToCamel } from "@exchange/common";
+import { AntiPhishingCode, camelToSnake, LoginHistory, snakeToCamel } from "@exchange/common";
 import { ClientGrpc } from "@nestjs/microservices";
 import { firstValueFrom, Observable } from "rxjs";
 
@@ -70,9 +70,9 @@ export class SecurityGrpcAdapter implements SecurityPort, OnModuleInit {
     }
 
 
-    async killAllSessions(user_id: string, except_session_id?: string): Promise<string> {
+    async killAllSessions(userId: string, exceptSessionId?: string): Promise<string> {
         try {
-            const response = await firstValueFrom(this.service.killAllSessions({ user_id, except_session_id }));
+            const response = await firstValueFrom(this.service.killAllSessions({ user_id: userId, except_session_id: exceptSessionId }));
             if (!response.success || !response.data) {
                 throw new Error('Create session failed');
             }
@@ -96,9 +96,9 @@ export class SecurityGrpcAdapter implements SecurityPort, OnModuleInit {
         }
     }
 
-    async setAntiPhishingCode({ user_id, phishing_code, ip_address }: { user_id: string; phishing_code: string; ip_address?: string; }): Promise<AntiPhishingCode> {
+    async setAntiPhishingCode({ userId, phishingCode, ipAddress }: { userId: string; phishingCode: string; ipAddress?: string; }): Promise<AntiPhishingCode> {
         try {
-            const response = await firstValueFrom(this.service.setAntiPhishingCode({ user_id, phishing_code, ip_address }));
+            const response = await firstValueFrom(this.service.setAntiPhishingCode({ user_id: userId, phishing_code: phishingCode, ip_address: ipAddress }));
             if (!response.success || !response.data) {
                 throw new Error('Create session failed');
             }
@@ -109,17 +109,26 @@ export class SecurityGrpcAdapter implements SecurityPort, OnModuleInit {
         }
     }
 
-    async logLoginAttempt({ user_id, ip_address, success, user_agent, device_fingerprint, failure_reason, metadata_json }: { user_id: string; ip_address: string; success: boolean; user_agent?: string; device_fingerprint?: string; failure_reason?: string; metadata_json?: string; }): Promise<LoginHistory> {
+    async logLoginAttempt(data: {
+        userId: string,
+        ipAddress: string,
+        success: boolean,
+        userAgent?: string,
+        deviceFingerprint?: string,
+        failureReason?: string,
+        metadataJson?: string
+    }): Promise<LoginHistory> {
+        const transformedData = camelToSnake<{
+            userId: string,
+            ipAddress: string,
+            success: boolean,
+            userAgent?: string,
+            deviceFingerprint?: string,
+            failureReason?: string,
+            metadataJson?: string
+        }>(data);
         try {
-            const response = await firstValueFrom(this.service.logLoginAttempt({
-                user_id,
-                ip_address,
-                success,
-                user_agent,
-                device_fingerprint,
-                failure_reason,
-                metadata_json,
-            }));
+            const response = await firstValueFrom(this.service.logLoginAttempt(transformedData));
             if (!response.success || !response.data) {
                 throw new Error('Create session failed');
             }

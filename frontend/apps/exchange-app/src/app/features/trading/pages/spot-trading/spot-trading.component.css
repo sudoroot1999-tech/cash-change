@@ -1,0 +1,238 @@
+.trading-page {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 64px);
+    background: var(--color-bg-primary);
+}
+
+.trading-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-6);
+    padding: var(--spacing-3) var(--spacing-4);
+    background: var(--color-bg-secondary);
+    border-bottom: 1px solid var(--color-border-primary);
+    overflow-x: auto;
+}
+
+.price-stats {
+    display: flex;
+    gap: var(--spacing-6);
+    align-items: center;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.stat-item.primary .stat-value {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+}
+
+.stat-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.stat-value {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+    font-family: var(--font-family-mono);
+    transition: color 0.1s ease;
+}
+
+.stat-value.positive {
+    color: var(--color-success);
+}
+
+.stat-value.negative {
+    color: var(--color-danger);
+}
+
+/* Price tick animation */
+.stat-value.tick-up {
+    animation: tickUp 0.3s ease-out;
+}
+
+.stat-value.tick-down {
+    animation: tickDown 0.3s ease-out;
+}
+
+@keyframes tickUp {
+    0% {
+        background: rgba(34, 197, 94, 0.3);
+    }
+
+    100% {
+        background: transparent;
+    }
+}
+
+@keyframes tickDown {
+    0% {
+        background: rgba(239, 68, 68, 0.3);
+    }
+
+    100% {
+        background: transparent;
+    }
+}
+
+.change-badge {
+    font-size: var(--font-size-sm);
+    margin-left: var(--spacing-2);
+}
+
+.connection-status {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-1);
+    padding: var(--spacing-1) var(--spacing-2);
+    background: var(--color-bg-tertiary);
+    border-radius: var(--radius-full);
+}
+
+.status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-warning);
+    animation: pulse 1.5s infinite;
+}
+
+.connection-status.connected .status-dot {
+    background: var(--color-success);
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.status-text {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-tertiary);
+}
+
+.trading-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 280px 320px;
+    grid-template-rows: 1fr auto;
+    gap: 1px;
+    background: var(--color-border-primary);
+    min-height: 0;
+}
+
+.chart-area {
+    grid-row: span 2;
+    background: var(--color-bg-secondary);
+    min-height: 400px;
+}
+
+.orderbook-area {
+    background: var(--color-bg-secondary);
+    overflow: hidden;
+}
+
+.trade-form-area {
+    background: var(--color-bg-secondary);
+}
+
+.recent-trades-area {
+    background: var(--color-bg-secondary);
+}
+
+.orders-section {
+    padding: var(--spacing-4);
+    background: var(--color-bg-primary);
+}
+
+.orders-tabs {
+    display: flex;
+    gap: var(--spacing-4);
+    margin-bottom: var(--spacing-4);
+    border-bottom: 1px solid var(--color-border-primary);
+}
+
+.orders-tab {
+    padding: var(--spacing-2) 0;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-tertiary);
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.orders-tab:hover {
+    color: var(--color-text-secondary);
+}
+
+.orders-tab.active {
+    color: var(--color-text-primary);
+    border-bottom-color: var(--color-accent-500);
+}
+
+.cancel-btn {
+    padding: var(--spacing-1) var(--spacing-2);
+    font-size: var(--font-size-xs);
+    color: var(--color-danger);
+    background: var(--color-danger-soft);
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.cancel-btn:hover {
+    background: var(--color-danger);
+    color: white;
+}
+
+.empty-state {
+    text-align: center;
+    padding: var(--spacing-4);
+    color: var(--color-text-tertiary);
+}
+
+.text-danger {
+    color: var(--color-danger);
+}
+
+.text-success {
+    color: var(--color-success);
+}
+
+@media (max-width: 1200px) {
+    .trading-grid {
+        grid-template-columns: 1fr 280px;
+    }
+
+    .trade-form-area {
+        grid-column: span 2;
+    }
+}
+
+@media (max-width: 768px) {
+    .trading-grid {
+        grid-template-columns: 1fr;
+    }
+}

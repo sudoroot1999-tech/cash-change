@@ -1,8 +1,10 @@
 import { Controller, Post, Get, Body, UseGuards, Req } from '@nestjs/common';
 import { AntiPhishingService } from '../services/anti-phishing.service';
 import { SetAntiPhishingCodeDto } from '../dto/anti-phishing.dto';
+import { RequireAuth } from '@exchange/common';
 
 @Controller('security/anti-phishing')
+@RequireAuth()
 export class AntiPhishingController {
   constructor(private readonly antiPhishingService: AntiPhishingService) {}
 

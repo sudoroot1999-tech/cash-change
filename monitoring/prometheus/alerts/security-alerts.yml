@@ -1,0 +1,227 @@
+groups:
+  - name: security_alerts
+    interval: 30s
+    rules:
+      # Failed Login Attempts
+      - alert: HighFailedLoginRate
+        expr: rate(security_failed_logins_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          category: authentication
+        annotations:
+          summary: "High rate of failed login attempts"
+          description: "{{ $value }} failed login attempts per second in the last 5 minutes"
+
+      - alert: CriticalFailedLoginRate
+        expr: rate(security_failed_logins_total[5m]) > 50
+        for: 1m
+        labels:
+          severity: critical
+          category: authentication
+        annotations:
+          summary: "Critical rate of failed login attempts - possible brute force attack"
+          description: "{{ $value }} failed login attempts per second - immediate action required"
+
+      # Rate Limit Violations
+      - alert: HighRateLimitViolations
+        expr: rate(security_rate_limit_exceeded_total[5m]) > 20
+        for: 5m
+        labels:
+          severity: warning
+          category: rate_limiting
+        annotations:
+          summary: "High rate of rate limit violations"
+          description: "{{ $value }} rate limit violations per second"
+
+      # AML Checks
+      - alert: HighRiskAMLChecks
+        expr: increase(security_aml_check_score{risk_level="high"}[10m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+          category: compliance
+        annotations:
+          summary: "Multiple high-risk AML checks detected"
+          description: "{{ $value }} high-risk transactions in the last 10 minutes"
+
+      - alert: CriticalRiskAMLChecks
+        expr: increase(security_aml_check_score{risk_level="critical"}[5m]) > 1
+        for: 1m
+        labels:
+          severity: critical
+          category: compliance
+        annotations:
+          summary: "Critical risk AML check detected"
+          description: "Critical risk transaction requires immediate review"
+
+      # Withdrawal Monitoring
+      - alert: UnusualWithdrawalVolume
+        expr: rate(security_withdrawals_total[15m]) > 100
+        for: 5m
+        labels:
+          severity: warning
+          category: withdrawals
+        annotations:
+          summary: "Unusual withdrawal volume detected"
+          description: "{{ $value }} withdrawals per second - above normal threshold"
+
+      - alert: SuspiciousWithdrawalPattern
+        expr: increase(security_withdrawals_total{status="rejected"}[10m]) > 10
+        for: 5m
+        labels:
+          severity: high
+          category: withdrawals
+        annotations:
+          summary: "Multiple suspicious withdrawals detected"
+          description: "{{ $value }} withdrawals rejected in the last 10 minutes"
+
+      # API Security
+      - alert: APIAbuseDetected
+        expr: rate(api_requests_total{status="429"}[5m]) > 50
+        for: 3m
+        labels:
+          severity: warning
+          category: api_security
+        annotations:
+          summary: "API abuse detected"
+          description: "{{ $value }} requests per second hitting rate limits"
+
+      # System Security
+      - alert: UnauthorizedAccessAttempt
+        expr: increase(security_unauthorized_access_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: high
+          category: access_control
+        annotations:
+          summary: "Multiple unauthorized access attempts"
+          description: "{{ $value }} unauthorized access attempts detected"
+
+      - alert: SecurityIncidentCreated
+        expr: increase(security_incidents_total{severity="critical"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          category: incident_response
+        annotations:
+          summary: "Critical security incident created"
+          description: "A critical security incident has been created - immediate response required"
+
+      # Database Security
+      - alert: SuspiciousDatabaseActivity
+        expr: rate(database_suspicious_queries_total[5m]) > 5
+        for: 3m
+        labels:
+          severity: high
+          category: database_security
+        annotations:
+          summary: "Suspicious database activity detected"
+          description: "{{ $value }} suspicious queries per second"
+
+      # Encryption & Key Management
+      - alert: EncryptionFailures
+        expr: rate(encryption_failures_total[5m]) > 1
+        for: 2m
+        labels:
+          severity: high
+          category: encryption
+        annotations:
+          summary: "Encryption failures detected"
+          description: "{{ $value }} encryption failures per second"
+
+      # Circuit Breaker
+      - alert: CircuitBreakerOpen
+        expr: circuit_breaker_state{state="open"} == 1
+        for: 5m
+        labels:
+          severity: warning
+          category: reliability
+        annotations:
+          summary: "Circuit breaker {{ $labels.circuit }} is open"
+          description: "Service {{ $labels.circuit }} is experiencing failures"
+
+      # Service Health
+      - alert: ServiceDown
+        expr: up{job=~".*-service"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "Service {{ $labels.job }} has been down for more than 1 minute"
+
+      # Resource Monitoring
+      - alert: HighCPUUsage
+        expr: rate(process_cpu_seconds_total[5m]) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+          category: resources
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is {{ $value }}%"
+
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes / 1024 / 1024 / 1024 > 4
+        for: 10m
+        labels:
+          severity: warning
+          category: resources
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is {{ $value }}GB"
+
+      # Redis Security
+      - alert: RedisConnectionFailures
+        expr: rate(redis_connection_errors_total[5m]) > 5
+        for: 3m
+        labels:
+          severity: warning
+          category: infrastructure
+        annotations:
+          summary: "Redis connection failures"
+          description: "{{ $value }} Redis connection failures per second"
+
+      # TLS/SSL
+      - alert: TLSCertificateExpiringSoon
+        expr: (ssl_certificate_expiry_seconds - time()) / 86400 < 30
+        for: 1h
+        labels:
+          severity: warning
+          category: certificates
+        annotations:
+          summary: "TLS certificate expiring soon"
+          description: "Certificate for {{ $labels.domain }} expires in {{ $value }} days"
+
+      - alert: TLSCertificateExpired
+        expr: (ssl_certificate_expiry_seconds - time()) < 0
+        for: 1m
+        labels:
+          severity: critical
+          category: certificates
+        annotations:
+          summary: "TLS certificate expired"
+          description: "Certificate for {{ $labels.domain }} has expired"
+
+      # Compliance Monitoring
+      - alert: GDPRDataExportDelayed
+        expr: time() - gdpr_export_request_timestamp > 259200
+        for: 1h
+        labels:
+          severity: critical
+          category: compliance
+        annotations:
+          summary: "GDPR data export request overdue"
+          description: "Data export request {{ $labels.request_id }} is overdue (>72 hours)"
+
+      - alert: PendingSARReview
+        expr: sar_pending_review_count > 10
+        for: 1h
+        labels:
+          severity: high
+          category: compliance
+        annotations:
+          summary: "Multiple SARs pending review"
+          description: "{{ $value }} Suspicious Activity Reports require review"

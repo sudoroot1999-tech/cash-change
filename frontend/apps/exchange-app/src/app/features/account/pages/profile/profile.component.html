@@ -1,0 +1,119 @@
+<div class="profile-page">
+    <div class="profile-header">
+        <h1 class="page-title">Profile</h1>
+        <p class="page-subtitle">Manage your account information</p>
+    </div>
+
+    <div class="profile-content">
+        <!-- Profile Card -->
+        <ui-card variant="elevated" class="profile-card">
+            <div class="profile-info">
+                <div class="avatar-section">
+                    <div class="avatar">
+                        {{ userInitials() }}
+                    </div>
+                    <button class="avatar-edit-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path
+                                d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                            <circle cx="12" cy="13" r="4" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="user-details">
+                    <h2 class="user-name">{{ user()?.username || 'Anonymous User' }}</h2>
+                    <p class="user-email">{{ user()?.email || 'No email' }}</p>
+                    <div class="user-badges">
+                        <ui-badge [variant]="verificationStatus().variant">
+                            {{ verificationStatus().label }}
+                        </ui-badge>
+                        @if (user()?.twoFactorEnabled) {
+                        <ui-badge variant="success">2FA Enabled</ui-badge>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="profile-stats">
+                <div class="stat">
+                    <span class="stat-value">{{ user()?.createdAt | date: 'MMM yyyy' }}</span>
+                    <span class="stat-label">Member Since</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value">{{ tradingVolume() }}</span>
+                    <span class="stat-label">30d Volume</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value">{{ user()?.tier || 'BASIC' }}</span>
+                    <span class="stat-label">Tier</span>
+                </div>
+            </div>
+        </ui-card>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <a routerLink="/account/settings" class="action-card">
+                <div class="action-icon">⚙️</div>
+                <div class="action-info">
+                    <span class="action-title">Account Settings</span>
+                    <span class="action-desc">Update preferences</span>
+                </div>
+                <svg class="action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+            </a>
+
+            <a routerLink="/account/security" class="action-card">
+                <div class="action-icon">🔒</div>
+                <div class="action-info">
+                    <span class="action-title">Security</span>
+                    <span class="action-desc">Manage 2FA & sessions</span>
+                </div>
+                <svg class="action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+            </a>
+
+            <a routerLink="/account/verification" class="action-card">
+                <div class="action-icon">✓</div>
+                <div class="action-info">
+                    <span class="action-title">Verification</span>
+                    <span class="action-desc">Complete KYC</span>
+                </div>
+                <svg class="action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+            </a>
+
+            <a routerLink="/account/api-keys" class="action-card">
+                <div class="action-icon">🔑</div>
+                <div class="action-info">
+                    <span class="action-title">API Keys</span>
+                    <span class="action-desc">Manage API access</span>
+                </div>
+                <svg class="action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+            </a>
+        </div>
+
+        <!-- Recent Activity -->
+        <ui-card variant="elevated" title="Recent Activity">
+            <div class="activity-list">
+                @for (activity of recentActivity(); track activity.id) {
+                <div class="activity-item">
+                    <div class="activity-icon" [class]="activity.type">
+                        {{ activity.icon }}
+                    </div>
+                    <div class="activity-info">
+                        <span class="activity-title">{{ activity.title }}</span>
+                        <span class="activity-meta">{{ activity.description }}</span>
+                    </div>
+                    <span class="activity-time">{{ activity.time }}</span>
+                </div>
+                }
+            </div>
+        </ui-card>
+    </div>
+</div>

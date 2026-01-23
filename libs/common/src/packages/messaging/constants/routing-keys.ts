@@ -16,7 +16,7 @@ export const ROUTING_KEYS = {
   ACCOUNT_LOCKED: 'auth.account.locked',
   ACCOUNT_UNLOCKED: 'auth.account.unlocked',
   EMAIL_VERIFICATION_REQUESTED: 'auth.email.verification.requested',
-  
+
   // User Events
   PROFILE_UPDATED: 'user.profile.updated',
   AVATAR_UPLOADED: 'user.avatar.uploaded',
@@ -24,7 +24,7 @@ export const ROUTING_KEYS = {
   USER_DELETED: 'user.deleted',
   USER_SUSPENDED: 'user.suspended',
   USER_ACTIVATED: 'user.activated',
-  
+
   // Wallet Events
   DEPOSIT_DETECTED: 'wallet.deposit.detected',
   DEPOSIT_CONFIRMED: 'wallet.deposit.confirmed',
@@ -36,7 +36,7 @@ export const ROUTING_KEYS = {
   BALANCE_UPDATED: 'wallet.balance.updated',
   WALLET_CREATED: 'wallet.created',
   INTERNAL_TRANSFER: 'wallet.transfer.internal',
-  
+
   // Trading Events
   // ORDER_CREATED: 'trading.order.created',
   // ORDER_PLACED: 'trading.order.placed',
@@ -50,7 +50,7 @@ export const ROUTING_KEYS = {
   // ORDERBOOK_SNAPSHOT: 'trading.orderbook.snapshot',
   // MARKET_PRICE_UPDATED: 'trading.market.price.updated',
   // STOP_ORDER_TRIGGERED: 'trading.order.stop.triggered',
-  
+
   // Matching Engine Events
   // MATCHING_ORDER_RECEIVED: 'matching.order.received',
   // MATCHING_ORDER_MATCH: 'matching.order.match',
@@ -61,7 +61,7 @@ export const ROUTING_KEYS = {
   // LIQUIDITY_POOL_UPDATED: 'matching.liquidity.pool.updated',
   // CIRCUIT_BREAKER_TRIGGERED: 'matching.circuit_breaker.triggered',
   // TRADING_RESUMED: 'matching.trading.resumed',
-  
+
   // KYC Events
   KYC_SUBMITTED: 'kyc.submitted',
   KYC_UNDER_REVIEW: 'kyc.under_review',
@@ -70,7 +70,7 @@ export const ROUTING_KEYS = {
   KYC_EXPIRED: 'kyc.expired',
   KYC_DOCUMENT_REQUESTED: 'kyc.document.requested',
   KYC_LIMIT_UPDATED: 'kyc.limit.updated',
-  
+
   // Notification Events
   EMAIL_SEND: 'notification.email.send',
   EMAIL_SENT: 'notification.email.sent',
@@ -81,8 +81,14 @@ export const ROUTING_KEYS = {
   PUSH_SEND: 'notification.push.send',
   PUSH_SENT: 'notification.push.sent',
   PUSH_FAILED: 'notification.push.failed',
+  TELEGRAM_SEND: 'notification.telegram.send',
+  TELEGRAM_SENT: 'notification.telegram.sent',
+  TELEGRAM_FAILED: 'notification.telegram.failed',
+  WHATSAPP_SEND: 'notification.whatsapp.send',
+  WHATSAPP_SENT: 'notification.whatsapp.sent',
+  WHATSAPP_FAILED: 'notification.whatsapp.failed',
   IN_APP_NOTIFICATION: 'notification.inapp',
-  
+
   // Gamification Events
   XP_EARNED: 'gamification.xp.earned',
   LEVEL_UP: 'gamification.level.up',
@@ -93,7 +99,7 @@ export const ROUTING_KEYS = {
   STREAK_UPDATED: 'gamification.streak.updated',
   LEADERBOARD_POSITION_CHANGED: 'gamification.leaderboard.position.changed',
   REWARD_CLAIMED: 'gamification.reward.claimed',
-  
+
   // Wildcard patterns for subscriptions
   ALL_AUTH: 'auth.#',
   ALL_USER: 'user.#',

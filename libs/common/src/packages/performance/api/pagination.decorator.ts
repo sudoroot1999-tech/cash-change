@@ -1,5 +1,5 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { CursorPaginatedResponse, PaginatedResponse } from 'libs/common/src/types';
+import { CursorPaginatedResponse, PaginatedResponse } from '../../../types';
 
 export interface PaginationParams {
   page: number;

@@ -1,9 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import helmet from 'helmet';
 import { AppModule } from './app.module';
-import { requestLogger, RequestContextInterceptor } from '@exchange/common';
+import { requestLogger, RequestContextInterceptor, CompressionInterceptor, ETagInterceptor } from '@exchange/common';
 
 async function bootstrap() {
   const logger = new Logger('API Gateway');
@@ -13,7 +12,8 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1');
 
   app.use(requestLogger('api-gateway'));
-  app.useGlobalInterceptors(new RequestContextInterceptor());
+  // app.useGlobalInterceptors(new CompressionInterceptor());
+  // app.useGlobalInterceptors(new ETagInterceptor());
 
   // Swagger
   const config = new DocumentBuilder()

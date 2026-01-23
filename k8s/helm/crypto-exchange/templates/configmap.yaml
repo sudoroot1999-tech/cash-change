@@ -1,0 +1,23 @@
+{{- range $serviceName, $service := .Values.services }}
+{{- if $service.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $service.name }}-config
+  namespace: {{ $.Values.namespace }}
+  labels:
+    app: {{ $service.name }}
+    {{- include "crypto-exchange.labels" $ | nindent 4 }}
+data:
+  LOG_LEVEL: "info"
+  NODE_ENV: "production"
+  CORS_ORIGIN: "*"
+  RATE_LIMIT_MAX: "100"
+  RATE_LIMIT_WINDOW: "15"
+  JAEGER_SERVICE_NAME: "{{ $service.name }}"
+  JAEGER_AGENT_HOST: "jaeger-agent"
+  JAEGER_AGENT_PORT: "6831"
+  PROMETHEUS_PORT: "{{ $service.port }}"
+{{- end }}
+{{- end }}

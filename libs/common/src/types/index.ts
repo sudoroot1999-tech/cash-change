@@ -51,7 +51,11 @@ import {
   DEVICE_PLATFORM,
 
   HTTP_STATUS,
+  KYC_PROVIDER,
+  COMPLIANCE_CHECK_TYPE,
+  COMPLIANCE_CHECK_STATUS,
 } from '../constants';
+import { AuthenticatedUser } from './auth.types';
 
 /* ===========================
    User / Auth
@@ -78,6 +82,19 @@ export type KycStatus =
 
 export type DocumentType =
   (typeof DOCUMENT_TYPE)[keyof typeof DOCUMENT_TYPE];
+
+export type KycProvider =
+  (typeof KYC_PROVIDER)[keyof typeof KYC_PROVIDER];
+
+/* ===========================
+   COMPLIANCE
+=========================== */
+
+export type ComplianceCheckType =
+  (typeof COMPLIANCE_CHECK_TYPE)[keyof typeof COMPLIANCE_CHECK_TYPE];
+
+export type ComplianceCheckStatus =
+  (typeof COMPLIANCE_CHECK_STATUS)[keyof typeof COMPLIANCE_CHECK_STATUS];
 
 /* ===========================
    Trading / Orders
@@ -355,7 +372,7 @@ export interface Candlestick {
 }
 
 export interface RequestContext {
-  userId?: string;
+  user?: AuthenticatedUser;
   fingerprint: string;
   browser?: string;
   os?: string;

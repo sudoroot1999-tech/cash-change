@@ -1,0 +1,18 @@
+{{- range $serviceName, $service := .Values.services }}
+{{- if and $service.enabled $service.podDisruptionBudget.enabled }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ $service.name }}-pdb
+  namespace: {{ $.Values.namespace }}
+  labels:
+    app: {{ $service.name }}
+    {{- include "crypto-exchange.labels" $ | nindent 4 }}
+spec:
+  minAvailable: {{ $service.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      app: {{ $service.name }}
+{{- end }}
+{{- end }}

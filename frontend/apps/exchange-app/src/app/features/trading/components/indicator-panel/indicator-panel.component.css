@@ -1,0 +1,291 @@
+  .indicator-panel {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 320px;
+      height: 100%;
+      background: var(--color-bg-elevated);
+      border-left: 1px solid var(--color-border-primary);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform var(--transition-base);
+  }
+
+  .indicator-panel.open {
+      transform: translateX(0);
+  }
+
+  .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--spacing-3) var(--spacing-4);
+      border-bottom: 1px solid var(--color-border-primary);
+  }
+
+  .panel-title {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+      margin: 0;
+  }
+
+  .close-btn {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      color: var(--color-text-tertiary);
+      cursor: pointer;
+  }
+
+  .close-btn:hover {
+      color: var(--color-text-primary);
+  }
+
+  .close-btn svg {
+      width: 16px;
+      height: 16px;
+  }
+
+  .section {
+      padding: var(--spacing-4);
+      border-bottom: 1px solid var(--color-border-primary);
+  }
+
+  .section-title {
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin: 0 0 var(--spacing-3) 0;
+  }
+
+  .empty-state {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-muted);
+      margin: 0;
+  }
+
+  .active-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-2);
+  }
+
+  .active-item {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-2);
+      padding: var(--spacing-2);
+      background: var(--color-bg-card);
+      border-radius: var(--radius-md);
+  }
+
+  .indicator-color {
+      width: 4px;
+      height: 32px;
+      border-radius: 2px;
+  }
+
+  .indicator-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+  }
+
+  .indicator-name {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-primary);
+  }
+
+  .indicator-params {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+  }
+
+  .indicator-actions {
+      display: flex;
+      gap: var(--spacing-1);
+  }
+
+  .action-btn {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      color: var(--color-text-tertiary);
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+  }
+
+  .action-btn:hover {
+      color: var(--color-text-primary);
+      background: var(--color-bg-tertiary);
+  }
+
+  .action-btn.hidden {
+      color: var(--color-text-muted);
+  }
+
+  .action-btn.remove:hover {
+      color: var(--color-danger);
+      background: var(--color-danger-soft);
+  }
+
+  .action-btn svg {
+      width: 14px;
+      height: 14px;
+  }
+
+  .indicator-grid {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-2);
+  }
+
+  .indicator-card {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-3);
+      padding: var(--spacing-3);
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border-primary);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      text-align: left;
+      transition: all var(--transition-fast);
+  }
+
+  .indicator-card:hover {
+      background: var(--color-bg-card-hover);
+      border-color: var(--color-border-secondary);
+  }
+
+  .indicator-icon {
+      font-size: var(--font-size-xl);
+  }
+
+  .indicator-details {
+      display: flex;
+      flex-direction: column;
+  }
+
+  .card-name {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-primary);
+  }
+
+  .card-desc {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+  }
+
+  .settings-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+  }
+
+  .settings-dialog {
+      width: 300px;
+      background: var(--color-bg-elevated);
+      border: 1px solid var(--color-border-primary);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+  }
+
+  .dialog-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--spacing-3) var(--spacing-4);
+      border-bottom: 1px solid var(--color-border-primary);
+  }
+
+  .dialog-header h4 {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+      margin: 0;
+  }
+
+  .dialog-content {
+      padding: var(--spacing-4);
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-3);
+  }
+
+  .param-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+  }
+
+  .param-label {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      text-transform: capitalize;
+  }
+
+  .param-input {
+      width: 80px;
+      padding: var(--spacing-2);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-primary);
+      background: var(--color-bg-tertiary);
+      border: 1px solid var(--color-border-primary);
+      border-radius: var(--radius-md);
+      text-align: center;
+  }
+
+  .param-input:focus {
+      outline: none;
+      border-color: var(--color-accent-500);
+  }
+
+  .dialog-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--spacing-2);
+      padding: var(--spacing-3) var(--spacing-4);
+      border-top: 1px solid var(--color-border-primary);
+  }
+
+  .btn-secondary {
+      padding: var(--spacing-2) var(--spacing-4);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-secondary);
+      background: var(--color-bg-tertiary);
+      border: 1px solid var(--color-border-primary);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+  }
+
+  .btn-primary {
+      padding: var(--spacing-2) var(--spacing-4);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: white;
+      background: var(--gradient-primary);
+      border: none;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+  }

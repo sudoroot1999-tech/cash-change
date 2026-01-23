@@ -22,8 +22,12 @@
       // this path commented because we use workspace compiled libs and not path libs
       // see package.json for each service "@exchange/common": "workspace:*"
       // "@exchange/common": ["libs/common"],
-      "@exchange/contracts": ["libs/contracts/src"]
+      "@exchange/contracts": [
+        "libs/contracts/src"
+      ]
     },
   },
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }

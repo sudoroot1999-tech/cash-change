@@ -1,8 +1,9 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ColdWallet, ColdWalletType, ColdWalletStatus } from '../entities/cold-wallet.entity';
+import { ColdWallet  } from '../entities/cold-wallet.entity';
 import Decimal from 'decimal.js';
+import { COLD_WALLET_STATUS, COLD_WALLET_TYPES, ColdWalletStatus, ColdWalletType } from '@exchange/common';
 
 export interface CreateColdWalletDto {
   currency: string;
@@ -31,7 +32,7 @@ export class ColdWalletService {
    */
   async createColdWallet(data: CreateColdWalletDto): Promise<ColdWallet> {
     // Validate multi-sig config
-    if (data.type === ColdWalletType.MULTI_SIG && !data.multiSigConfig) {
+    if (data.type === COLD_WALLET_TYPES.MULTI_SIG && !data.multiSigConfig) {
       throw new BadRequestException('Multi-sig configuration required');
     }
 
@@ -49,7 +50,7 @@ export class ColdWalletService {
 
     const wallet = this.coldWalletRepository.create({
       ...data,
-      status: ColdWalletStatus.ACTIVE,
+      status: COLD_WALLET_STATUS.ACTIVE,
       balance: '0',
     });
 
@@ -138,7 +139,7 @@ export class ColdWalletService {
     const wallets = await this.coldWalletRepository.find({
       where: {
         currency,
-        status: ColdWalletStatus.ACTIVE,
+        status: COLD_WALLET_STATUS.ACTIVE,
       },
     });
 
@@ -159,7 +160,7 @@ export class ColdWalletService {
   ): Promise<boolean> {
     const wallet = await this.getColdWallet(address);
     
-    if (!wallet || wallet.type !== ColdWalletType.MULTI_SIG) {
+    if (!wallet || wallet.type !== COLD_WALLET_TYPES.MULTI_SIG) {
       return false;
     }
 
@@ -183,8 +184,8 @@ export class ColdWalletService {
     const wallet = this.coldWalletRepository.create({
       currency: data.currency,
       address: data.address,
-      type: ColdWalletType.HARDWARE,
-      status: ColdWalletStatus.ACTIVE,
+      type: COLD_WALLET_TYPES.HARDWARE,
+      status: COLD_WALLET_STATUS.ACTIVE,
       balance: '0',
       metadata: {
         deviceType: data.deviceType,
@@ -232,7 +233,7 @@ export class ColdWalletService {
 
     const wallets = await this.coldWalletRepository.find({
       where: {
-        status: ColdWalletStatus.ACTIVE,
+        status: COLD_WALLET_STATUS.ACTIVE,
       },
     });
 

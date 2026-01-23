@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 
 export interface AnomalyConfig {
@@ -24,8 +25,8 @@ export class AnomalyDetectorService {
   private redis: Redis;
   private config: AnomalyConfig;
 
-  constructor(redisUrl: string, config?: Partial<AnomalyConfig>) {
-    this.redis = new Redis(redisUrl);
+  constructor(private configService: ConfigService, config?: Partial<AnomalyConfig>) {
+    this.redis = new Redis(configService.get('REDIS_URL'));
     this.config = {
       withdrawalThreshold: config?.withdrawalThreshold || 3,
       loginAttemptsThreshold: config?.loginAttemptsThreshold || 5,
@@ -72,7 +73,7 @@ export class AnomalyDetectorService {
       }
 
       return { isAnomalous: false, score: zScore };
-    } catch (error:any) {
+    } catch (error: any) {
       this.logger.error(`Error detecting withdrawal anomaly: ${error.message}`);
       return { isAnomalous: false, score: 0 };
     }
@@ -132,7 +133,7 @@ export class AnomalyDetectorService {
       }
 
       return { isAnomalous, reasons, score };
-    } catch (error:any) {
+    } catch (error: any) {
       this.logger.error(`Error detecting login anomaly: ${error.message}`);
       return { isAnomalous: false, reasons: [], score: 0 };
     }
@@ -165,7 +166,7 @@ export class AnomalyDetectorService {
       }
 
       return { isAbuse: false };
-    } catch (error:any) {
+    } catch (error: any) {
       this.logger.error(`Error detecting API abuse: ${error.message}`);
       return { isAbuse: false };
     }
@@ -186,7 +187,7 @@ export class AnomalyDetectorService {
       await this.redis.lpush(key, entry);
       await this.redis.ltrim(key, 0, 99); // Keep last 100 entries
       await this.redis.expire(key, 30 * 24 * 60 * 60); // 30 days
-    } catch (error:any) {
+    } catch (error: any) {
       this.logger.error(`Error tracking behavior: ${error.message}`);
     }
   }
@@ -299,7 +300,7 @@ export class AnomalyDetectorService {
       const averageLoginTime =
         logins.length > 0
           ? logins.reduce((sum, l) => sum + new Date(JSON.parse(l).timestamp).getHours(), 0) /
-            logins.length
+          logins.length
           : 12;
 
       const commonLocations = await this.redis.smembers(`user_behavior:${userId}:locations`);
@@ -315,7 +316,7 @@ export class AnomalyDetectorService {
         commonDevices,
         averageApiCalls,
       };
-    } catch (error:any) {
+    } catch (error: any) {
       this.logger.error(`Error getting user behavior: ${error.message}`);
       return {
         userId,

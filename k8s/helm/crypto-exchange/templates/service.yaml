@@ -1,0 +1,29 @@
+{{- range $serviceName, $service := .Values.services }}
+{{- if $service.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $service.name }}
+  namespace: {{ $.Values.namespace }}
+  labels:
+    app: {{ $service.name }}
+    {{- include "crypto-exchange.labels" $ | nindent 4 }}
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "{{ $service.port }}"
+spec:
+  type: ClusterIP
+  ports:
+  - port: {{ $service.port }}
+    targetPort: http
+    protocol: TCP
+    name: http
+  selector:
+    app: {{ $service.name }}
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800
+{{- end }}
+{{- end }}

@@ -1,17 +1,18 @@
 import { IsBoolean, IsEnum, IsOptional, IsString, IsArray, IsObject } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { NotificationChannel, NotificationType } from '../../notifications/entities';
+import { NOTIFICATION_CHANNELS, NOTIFICATION_TYPES, NotificationChannel, NotificationType } from '@exchange/common';
+
 
 export class UpdatePreferencesDto {
-  @ApiPropertyOptional({ enum: NotificationType })
+  @ApiPropertyOptional({ enum: NOTIFICATION_TYPES })
   @IsOptional()
-  @IsEnum(NotificationType)
+  @IsEnum(NOTIFICATION_TYPES)
   notificationType?: NotificationType;
 
-  @ApiPropertyOptional({ enum: NotificationChannel, isArray: true })
+  @ApiPropertyOptional({ enum: NOTIFICATION_CHANNELS, isArray: true })
   @IsOptional()
   @IsArray()
-  @IsEnum(NotificationChannel, { each: true })
+  @IsEnum(NOTIFICATION_CHANNELS, { each: true })
   enabledChannels?: NotificationChannel[];
 
   @ApiPropertyOptional()

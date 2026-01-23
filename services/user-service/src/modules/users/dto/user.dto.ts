@@ -92,11 +92,11 @@ export class UserResponseDto {
 
   @ApiProperty()
   emailVerificationToken: string;
-  
+
   @ApiProperty()
   antiPhishingCode: string;
-  
-   @ApiProperty()
+
+  @ApiProperty()
   lastLoginAt?: Date;
 
   @ApiProperty()
@@ -114,4 +114,10 @@ export class PaginationQueryDto {
   @ApiPropertyOptional({ default: 20, maximum: 100 })
   @IsOptional()
   limit?: number;
+}
+
+export class VerifyEmailDto {
+  @ApiProperty()
+  @IsString()
+  token: string;
 }

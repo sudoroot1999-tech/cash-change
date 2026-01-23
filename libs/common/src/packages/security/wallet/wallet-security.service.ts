@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import Redis from 'ioredis';
 
@@ -28,8 +29,15 @@ export class WalletSecurityService {
   private readonly logger = new Logger(WalletSecurityService.name);
   private redis: Redis;
 
-  constructor(redisUrl: string) {
-    this.redis = new Redis(redisUrl);
+  constructor(private configService: ConfigService) {
+    this.redis = new Redis(configService.get('REDIS_URL'), {
+      maxRetriesPerRequest: 3,
+      enableReadyCheck: true,
+      retryStrategy: (times) => {
+        const delay = Math.min(times * 50, 2000);
+        return delay;
+      },
+    });
   }
 
   /**
@@ -49,7 +57,7 @@ export class WalletSecurityService {
         default:
           return { isValid: false, error: 'Unsupported currency' };
       }
-    } catch (error:any) {
+    } catch (error: any) {
       this.logger.error(`Address validation failed: ${error.message}`);
       return { isValid: false, error: error.message };
     }
@@ -283,7 +291,7 @@ export class WalletSecurityService {
     // This is a placeholder - in production, use proper HD wallet generation
     // and store the address in secure cold storage
     const randomBytes = crypto.randomBytes(20);
-    
+
     switch (currency.toUpperCase()) {
       case 'BTC':
         return `bc1${randomBytes.toString('hex')}`;

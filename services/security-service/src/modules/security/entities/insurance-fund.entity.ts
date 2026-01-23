@@ -10,11 +10,11 @@ import {
 
 
 @Entity('insurance_fund_transactions')
-@Index(['currency', 'createdAt'])
 export class InsuranceFundTransaction {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Index(['currency'])
   @Column()
   currency: string;
 
@@ -27,7 +27,7 @@ export class InsuranceFundTransaction {
   @Column({ type: 'decimal', precision: 36, scale: 18 })
   amount: string;
 
-  @Column({ type: 'decimal', precision: 36, scale: 18 })
+  @Column({ type: 'decimal', precision: 36, scale: 18, name: 'balance_after' })
   balanceAfter: string;
 
   @Column({ type: 'text', nullable: true })
@@ -39,6 +39,7 @@ export class InsuranceFundTransaction {
   @Column({ type: 'jsonb', nullable: true })
   metadata: Record<string, any>;
 
+  @Index()
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 }

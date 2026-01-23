@@ -8,21 +8,22 @@ import {
 import { LOGIN_STATUS, LoginStatus } from '@exchange/common';
 
 @Entity('login_history')
-@Index(['userId', 'createdAt'])
 export class LoginHistory {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column({ name: 'user_id' })
-  @Index()
+  @Index(['user_id'])
   userId: string;
 
+  @Index(['status'])
   @Column({
     type: 'enum',
     enum: Object.values(LOGIN_STATUS),
   })
   status: LoginStatus;
 
+  @Index(['ip_address'])
   @Column({ name: 'ip_address' })
   ipAddress: string;
 

@@ -1,9 +1,11 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, ParseUUIDPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { TemplateService } from './templates.service';
+import { RequireAuth } from '@exchange/common';
 
 @ApiTags('Templates')
 @Controller('templates')
+@RequireAuth()
 @ApiBearerAuth()
 export class TemplatesController {
   constructor(private readonly templatesService: TemplateService) {}

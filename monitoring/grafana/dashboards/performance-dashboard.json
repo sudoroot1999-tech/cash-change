@@ -1,0 +1,269 @@
+{
+  "dashboard": {
+    "title": "Crypto Exchange Performance Dashboard",
+    "tags": ["performance", "trading", "monitoring"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "API Response Time (p95)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{route}}"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "s",
+            "label": "Response Time"
+          }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [0.2],
+                "type": "gt"
+              },
+              "query": {
+                "params": ["A", "5m", "now"]
+              },
+              "type": "query"
+            }
+          ],
+          "name": "High API Response Time"
+        }
+      },
+      {
+        "id": 2,
+        "title": "Request Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total[1m])) by (method)",
+            "legendFormat": "{{method}}"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Error Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(http_request_errors_total[5m])) by (error_type)",
+            "legendFormat": "{{error_type}}"
+          }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [0.01],
+                "type": "gt"
+              }
+            }
+          ],
+          "name": "High Error Rate"
+        }
+      },
+      {
+        "id": 4,
+        "title": "Database Query Duration (p95)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(db_query_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{query_type}} - {{table}}"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "s",
+            "label": "Query Time"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Database Connection Pool",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "db_connection_pool",
+            "legendFormat": "{{state}}"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Cache Hit Rate",
+        "type": "singlestat",
+        "targets": [
+          {
+            "expr": "sum(rate(cache_hits_total[5m])) / (sum(rate(cache_hits_total[5m])) + sum(rate(cache_misses_total[5m]))) * 100"
+          }
+        ],
+        "format": "percent",
+        "thresholds": "80,90"
+      },
+      {
+        "id": 7,
+        "title": "Cache Operations Latency",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.99, rate(cache_operation_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{operation}} - {{cache_layer}}"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Active WebSocket Connections",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "websocket_connections"
+          }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [50000],
+                "type": "gt"
+              }
+            }
+          ],
+          "name": "High WebSocket Connections"
+        }
+      },
+      {
+        "id": 9,
+        "title": "WebSocket Message Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(websocket_messages_sent_total[1m])",
+            "legendFormat": "Sent - {{event_type}}"
+          },
+          {
+            "expr": "rate(websocket_messages_received_total[1m])",
+            "legendFormat": "Received - {{event_type}}"
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Order Matching Latency",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(order_matching_duration_seconds_bucket[1m]))",
+            "legendFormat": "{{symbol}}"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "s",
+            "label": "Matching Time",
+            "max": 0.001
+          }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [0.001],
+                "type": "gt"
+              }
+            }
+          ],
+          "name": "Slow Order Matching"
+        }
+      },
+      {
+        "id": 11,
+        "title": "Orders Created vs Matched",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(orders_created_total[1m])",
+            "legendFormat": "Created"
+          },
+          {
+            "expr": "rate(orders_matched_total[1m])",
+            "legendFormat": "Matched"
+          }
+        ]
+      },
+      {
+        "id": 12,
+        "title": "Trading Volume (24h)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "trading_volume{time_window=\"24h\"}",
+            "legendFormat": "{{symbol}}"
+          }
+        ]
+      },
+      {
+        "id": 13,
+        "title": "Queue Job Processing Time",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(job_processing_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{queue_name}} - {{job_type}}"
+          }
+        ]
+      },
+      {
+        "id": 14,
+        "title": "Queue Status",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "jobs_queued_total - jobs_processed_total",
+            "legendFormat": "Pending - {{queue_name}}"
+          }
+        ]
+      },
+      {
+        "id": 15,
+        "title": "Active Users",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "active_users",
+            "legendFormat": "{{time_window}}"
+          }
+        ]
+      },
+      {
+        "id": 16,
+        "title": "System Resources",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "process_cpu_seconds_total",
+            "legendFormat": "CPU"
+          },
+          {
+            "expr": "process_resident_memory_bytes",
+            "legendFormat": "Memory"
+          }
+        ]
+      }
+    ],
+    "refresh": "10s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    }
+  }
+}

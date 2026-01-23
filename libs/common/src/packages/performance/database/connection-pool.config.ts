@@ -12,8 +12,10 @@ export interface DatabasePoolConfig {
 export const getOptimizedDatabaseConfig = (
   configService: ConfigService,
   options: {
-    database: string;
-    entities: any[];
+    entities?: any[];
+    schema?: string;
+    migrations?: string[];
+    migrationsRun?: boolean;
     poolConfig?: Partial<DatabasePoolConfig>;
   },
 ): TypeOrmModuleOptions => {
@@ -29,36 +31,38 @@ export const getOptimizedDatabaseConfig = (
 
   return {
     type: 'postgres',
-    host: configService.get('DB_HOST', 'localhost'),
-    port: configService.get('DB_PORT', 5432),
-    username: configService.get('DB_USER', 'postgres'),
-    password: configService.get('DB_PASSWORD', 'postgres'),
-    database: options.database,
+    url: configService.get('DATABASE_URL'),
     entities: options.entities,
-    synchronize: false, // Never use in production
-    logging: configService.get('DB_LOGGING') === 'true',
+    synchronize: true, // Never use in production
+    logging: true,
     logger: 'advanced-console',
     maxQueryExecutionTime: 1000, // Log slow queries > 1s
-    ssl: configService.get('DB_SSL') === 'true' 
-      ? { rejectUnauthorized: false } 
+    ssl: configService.get('DB_SSL') === 'true'
+      ? { rejectUnauthorized: false }
       : false,
-    
+
+    schema: options.schema,
+
+    migrations: options.migrations,
+
+    migrationsRun: options.migrationsRun,
+
     // Connection pooling
     extra: {
       // Pool configuration
-      min: poolConfig.min,
-      max: poolConfig.max,
-      idleTimeoutMillis: poolConfig.idleTimeoutMillis,
-      connectionTimeoutMillis: poolConfig.connectionTimeoutMillis,
-      
+      min: poolConfig.min || 1,
+      max: poolConfig.max || 2,
+      idleTimeoutMillis: poolConfig.idleTimeoutMillis || 30000,
+      connectionTimeoutMillis: poolConfig.connectionTimeoutMillis || 5000,
+
       // Performance optimizations
       statement_timeout: configService.get('DB_STATEMENT_TIMEOUT', 30000),
       query_timeout: configService.get('DB_QUERY_TIMEOUT', 30000),
-      
+
       // Connection health checks
       keepAlive: true,
       keepAliveInitialDelayMillis: 10000,
-      
+
       // Application name for monitoring
       application_name: configService.get('APP_NAME', 'crypto-exchange'),
     },
@@ -74,12 +78,9 @@ export const getOptimizedDatabaseConfig = (
     cache: {
       type: 'redis',
       options: {
-        host: configService.get('REDIS_HOST', 'localhost'),
-        port: configService.get('REDIS_PORT', 6379),
-        password: configService.get('REDIS_PASSWORD'),
-        db: configService.get('REDIS_QUERY_CACHE_DB', 1),
+        url: configService.get('REDIS_URL'),
       },
-      duration: 30000, // 30 seconds default cache
+      duration: 60000, // 60 seconds default cache
       ignoreErrors: true, // Don't fail queries if Redis is down
     },
   };
@@ -96,22 +97,19 @@ export const getReadReplicaConfig = (
   },
 ): TypeOrmModuleOptions[] => {
   const replicaHosts = configService.get('DB_REPLICA_HOSTS', '').split(',').filter(Boolean);
-  
+
   if (replicaHosts.length === 0) {
     return [];
   }
 
-  return replicaHosts.map((host, index) => ({
+  return replicaHosts.map((url, index) => ({
     name: `replica_${index}`,
     type: 'postgres',
-    host: host.trim(),
-    port: configService.get('DB_PORT', 5432),
-    username: configService.get('DB_USER', 'postgres'),
-    password: configService.get('DB_PASSWORD', 'postgres'),
+    url: url.trim(),
     database: options.database,
     entities: options.entities,
     synchronize: false,
-    
+
     extra: {
       min: 5,
       max: 20,

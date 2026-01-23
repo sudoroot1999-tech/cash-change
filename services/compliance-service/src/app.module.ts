@@ -1,10 +1,11 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule, ValidationPipe } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { KycModule } from './modules/kyc/kyc.module';
-import { AmlModule } from './modules/aml/aml.module';
 import { AuthModule } from './modules/auth/auth.module';
-import { StorageModule } from '@exchange/common';
+import { APMInterceptor, CompressionInterceptor, DeviceContextMiddleware, DeviceFingerprintMiddleware, ETagInterceptor, KafkaModule, PerformanceModule, RabbitMQModule, RequestContextInterceptor, SecurityModule, StorageModule } from '@exchange/common';
+import { ComplianceModule } from './modules/compliance/compliance.module';
+import { APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -12,21 +13,20 @@ import { StorageModule } from '@exchange/common';
       isGlobal: true,
       envFilePath: ['.env', '../.env', '../../.env']
     }),
+
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-        host: configService.get('POSTGRES_HOST'),
-        port: configService.get('POSTGRES_PORT'),
-        username: configService.get('POSTGRES_USER'),
-        password: configService.get('POSTGRES_PASSWORD'),
-        database: configService.get('POSTGRES_DB'),
+        url: configService.get('DATABASE_URL'),
         autoLoadEntities: true,
         synchronize: configService.get('NODE_ENV') === 'development',
+        logging: true,
         schema: 'compliance',
       }),
     }),
+
     StorageModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -38,9 +38,67 @@ import { StorageModule } from '@exchange/common';
         secretKey: configService.get('MINIO_ROOT_PASSWORD', 'minio_dev_password'),
       }),
     }),
+
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get('JWT_SECRET'),
+        signOptions: { expiresIn: configService.get('JWT_EXPIRES_IN', '15m') },
+      }),
+    }),
+
+    RabbitMQModule.forRoot({
+      url: process.env.RABBITMQ_URL || 'amqp://exchange:rabbitmq_dev_password@localhost:5672/',
+      connectionName: 'user-service',
+      prefetch: 10,
+    }),
+
+    KafkaModule.forRoot({
+      clientId: 'user-service',
+      brokers: (process.env.KAFKA_BROKERS || 'localhost:29092').split(','),
+    }),
+
     KycModule,
-    AmlModule,
+    ComplianceModule,
     AuthModule,
+    PerformanceModule,
+    SecurityModule
   ],
+  providers:[
+    {
+      provide: APP_PIPE,
+      useValue: new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+        transformOptions: {
+          enableImplicitConversion: true,
+        },
+      }),
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: RequestContextInterceptor
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: APMInterceptor
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ETagInterceptor
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: CompressionInterceptor
+    }
+  ]
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(DeviceFingerprintMiddleware, DeviceContextMiddleware)
+      .forRoutes('*');
+  }
+ }

@@ -1,8 +1,9 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan } from 'typeorm';
-import { WithdrawalWhitelist, WhitelistStatus } from '../entities/withdrawal-whitelist.entity';
-import { SecurityEvent, SecurityEventType, RiskLevel } from '../entities/security-event.entity';
+import { WithdrawalWhitelist } from '../entities/withdrawal-whitelist.entity';
+import { SecurityEvent } from '../entities/security-event.entity';
+import { RISK_LEVELS, SECURITY_EVENT_TYPES, SecurityEventType, WHITE_LIST_STATUS } from '@exchange/common';
 
 @Injectable()
 export class WithdrawalWhitelistService {
@@ -34,7 +35,7 @@ export class WithdrawalWhitelistService {
       where: { userId, address, currency },
     });
 
-    if (existing && existing.status === WhitelistStatus.ACTIVE) {
+    if (existing && existing.status === WHITE_LIST_STATUS.ACTIVE) {
       throw new BadRequestException('Address already in whitelist');
     }
 
@@ -43,7 +44,7 @@ export class WithdrawalWhitelistService {
       address,
       currency,
       label,
-      status: WhitelistStatus.PENDING,
+      status: WHITE_LIST_STATUS.PENDING,
       coolingPeriodHours: coolingPeriodHours || this.DEFAULT_COOLING_PERIOD_HOURS,
       createdByIp: ipAddress,
       confirmedViaEmail: false,
@@ -53,7 +54,7 @@ export class WithdrawalWhitelistService {
     await this.whitelistRepository.save(whitelist);
 
     // Log security event
-    await this.logSecurityEvent(userId, SecurityEventType.WHITELIST_ADDRESS_ADDED, {
+    await this.logSecurityEvent(userId, SECURITY_EVENT_TYPES.WHITELIST_ADDRESS_ADDED, {
       address,
       currency,
       label,
@@ -115,7 +116,7 @@ export class WithdrawalWhitelistService {
       coolingEndTime.setHours(coolingEndTime.getHours() + whitelist.coolingPeriodHours);
 
       if (new Date() >= coolingEndTime) {
-        whitelist.status = WhitelistStatus.ACTIVE;
+        whitelist.status = WHITE_LIST_STATUS.ACTIVE;
         whitelist.activatedAt = new Date();
       }
     }
@@ -136,7 +137,7 @@ export class WithdrawalWhitelistService {
         userId,
         address,
         currency,
-        status: WhitelistStatus.ACTIVE,
+        status: WHITE_LIST_STATUS.ACTIVE,
       },
     });
 
@@ -176,7 +177,7 @@ export class WithdrawalWhitelistService {
       throw new BadRequestException('Whitelist entry not found');
     }
 
-    whitelist.status = WhitelistStatus.REVOKED;
+    whitelist.status = WHITE_LIST_STATUS.REVOKED;
     await this.whitelistRepository.save(whitelist);
 
     this.logger.log(`Address removed from whitelist for user ${userId}: ${whitelistId}`);
@@ -206,7 +207,7 @@ export class WithdrawalWhitelistService {
   async activatePendingWhitelists(): Promise<void> {
     const pending = await this.whitelistRepository.find({
       where: {
-        status: WhitelistStatus.PENDING,
+        status: WHITE_LIST_STATUS.PENDING,
         confirmedViaEmail: true,
         confirmedViaSms: true,
       },
@@ -217,7 +218,7 @@ export class WithdrawalWhitelistService {
       coolingEndTime.setHours(coolingEndTime.getHours() + whitelist.coolingPeriodHours);
 
       if (new Date() >= coolingEndTime) {
-        whitelist.status = WhitelistStatus.ACTIVE;
+        whitelist.status = WHITE_LIST_STATUS.ACTIVE;
         whitelist.activatedAt = new Date();
         await this.whitelistRepository.save(whitelist);
         this.logger.log(`Whitelist activated: ${whitelist.id}`);
@@ -236,7 +237,7 @@ export class WithdrawalWhitelistService {
     const event = this.securityEventRepository.create({
       userId,
       eventType,
-      riskLevel: RiskLevel.MEDIUM,
+      riskLevel: RISK_LEVELS.MEDIUM,
       details,
     });
 

@@ -6,9 +6,10 @@ import {
   OrderFilledEvent,
   OrderCancelledEvent,
   TradeExecutedEvent,
+  NOTIFICATION_TYPES,
+  NOTIFICATION_CHANNELS,
 } from '@exchange/common';
 import { NotificationCoreService } from '../modules/notifications/notifications.service';
-import { NotificationChannel, NotificationType } from '../modules/notifications/entities';
 
 
 /**
@@ -22,7 +23,7 @@ export class TradingEventsConsumer implements OnModuleInit {
   constructor(
     private readonly rabbitmq: RabbitMQService,
     private readonly notificationService: NotificationCoreService,
-  ) {}
+  ) { }
 
   async onModuleInit() {
     // Subscribe to order matched events
@@ -68,11 +69,11 @@ export class TradingEventsConsumer implements OnModuleInit {
       this.logger.log(`Order matched: ${event.orderId} - ${event.status}`);
 
       // Determine notification type based on status
-      if (event.status === 'partial') {
+      if (event.status === 'partially_filled') {
         await this.notificationService.sendNotification({
           userId: event.userId,
-          type:NotificationType.INFO,
-          channels:[NotificationChannel.EMAIL,NotificationChannel.IN_APP,NotificationChannel.PUSH],
+          type: NOTIFICATION_TYPES.INFO,
+          channels: [NOTIFICATION_CHANNELS.EMAIL, NOTIFICATION_CHANNELS.IN_APP, NOTIFICATION_CHANNELS.PUSH],
           subject: 'Order Partially Filled',
           content: `Your ${event.pair} order has been partially filled.`,
           data: {
@@ -86,8 +87,8 @@ export class TradingEventsConsumer implements OnModuleInit {
       } else if (event.status === 'filled') {
         await this.notificationService.sendNotification({
           userId: event.userId,
-          type:NotificationType.INFO,
-          channels:[NotificationChannel.EMAIL,NotificationChannel.IN_APP,NotificationChannel.PUSH],
+          type: NOTIFICATION_TYPES.INFO,
+          channels: [NOTIFICATION_CHANNELS.EMAIL, NOTIFICATION_CHANNELS.IN_APP, NOTIFICATION_CHANNELS.PUSH],
           subject: 'Order Filled',
           content: `Your ${event.pair} order has been completely filled.`,
           data: {
@@ -113,8 +114,8 @@ export class TradingEventsConsumer implements OnModuleInit {
 
       await this.notificationService.sendNotification({
         userId: event.userId,
-        type:NotificationType.INFO,
-        channels:[NotificationChannel.EMAIL,NotificationChannel.IN_APP,NotificationChannel.PUSH],
+        type: NOTIFICATION_TYPES.INFO,
+        channels: [NOTIFICATION_CHANNELS.EMAIL, NOTIFICATION_CHANNELS.IN_APP, NOTIFICATION_CHANNELS.PUSH],
         subject: 'Order Completed Successfully',
         content: `Your ${event.pair} order for ${event.totalQuantity} has been completed at an average price of ${event.averagePrice}.`,
         data: {
@@ -139,8 +140,8 @@ export class TradingEventsConsumer implements OnModuleInit {
 
       await this.notificationService.sendNotification({
         userId: event.userId,
-        type:NotificationType.INFO,
-        channels: [NotificationChannel.PUSH], // Just push notification for cancellations
+        type: NOTIFICATION_TYPES.INFO,
+        channels: [NOTIFICATION_CHANNELS.PUSH], // Just push notification for cancellations
         subject: 'Order Cancelled',
         content: `Your ${event.pair} order has been cancelled.`,
         data: {
@@ -165,8 +166,8 @@ export class TradingEventsConsumer implements OnModuleInit {
       // Notify buyer
       await this.notificationService.sendNotification({
         userId: event.buyUserId,
-        type:NotificationType.INFO,
-        channels:[NotificationChannel.EMAIL,NotificationChannel.IN_APP,NotificationChannel.PUSH],
+        type: NOTIFICATION_TYPES.INFO,
+        channels: [NOTIFICATION_CHANNELS.EMAIL, NOTIFICATION_CHANNELS.IN_APP, NOTIFICATION_CHANNELS.PUSH],
         subject: 'Trade Executed',
         content: `You bought ${event.quantity} ${event.pair.split('/')[0]} at ${event.price}.`,
         data: {
@@ -183,8 +184,8 @@ export class TradingEventsConsumer implements OnModuleInit {
       // Notify seller
       await this.notificationService.sendNotification({
         userId: event.sellUserId,
-        type: NotificationType.INFO,
-        channels:[NotificationChannel.EMAIL,NotificationChannel.IN_APP,NotificationChannel.PUSH],
+        type: NOTIFICATION_TYPES.INFO,
+        channels: [NOTIFICATION_CHANNELS.EMAIL, NOTIFICATION_CHANNELS.IN_APP, NOTIFICATION_CHANNELS.PUSH],
         subject: 'Trade Executed',
         content: `You sold ${event.quantity} ${event.pair.split('/')[0]} at ${event.price}.`,
         data: {

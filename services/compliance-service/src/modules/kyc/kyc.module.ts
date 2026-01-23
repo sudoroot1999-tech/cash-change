@@ -1,16 +1,25 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { RABBITMQ } from '@exchange/common';
 import { join } from 'path';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
-import { KycRequest } from './entities/kyc-request.entity';
 import { KycService } from './kyc.service';
 import { KycController } from './kyc.controller';
+import { AuditService } from './services/audit.service';
+import { KycProviderService } from './services/kyc-provider.service';
+import { OcrService } from './services/ocr.service';
+import { KycEventsService } from './services/kyc-events.service';
+import { KycDocument } from './entities/kyc-document.entity';
+import { KycVerificationRequest } from './entities/kyc-verification-request.entity';
+import { KycAuditLog } from './entities/kyc-audit-log.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([KycRequest]),
+    TypeOrmModule.forFeature([
+      KycDocument,
+      KycVerificationRequest,
+      KycAuditLog,
+    ]),
     ClientsModule.registerAsync([
       {
         name: 'USER_PACKAGE',
@@ -25,24 +34,16 @@ import { KycController } from './kyc.controller';
           },
         }),
       },
-      {
-        name: 'COMPLIANCE_PACKAGE',
-        imports: [ConfigModule],
-        inject: [ConfigService],
-        useFactory: (configService: ConfigService) => ({
-          transport: Transport.RMQ,
-          options: {
-            urls: [configService.get<string>('RABBITMQ_URL', 'amqp://localhost:5672')],
-            queue: RABBITMQ.QUEUES.KYC_UPDATED,
-            queueOptions: {
-              durable: true,
-            },
-          },
-        }),
-      },
     ]),
   ],
   controllers: [KycController],
-  providers: [KycService],
+  providers: [
+    KycService, 
+    AuditService,
+    KycProviderService,
+    OcrService,
+    KycEventsService
+  ],
+  exports: [KycService],
 })
-export class KycModule {}
+export class KycModule { }

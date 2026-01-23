@@ -11,7 +11,6 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
 
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.setGlobalPrefix('api/v1');
   app.use(requestLogger('security-service'));
 
@@ -24,20 +23,6 @@ async function bootstrap() {
       .build();
     SwaggerModule.setup('docs', app, SwaggerModule.createDocument(app, config));
   }
-  // Connect RabbitMQ microservice
-  const configService = app.get(ConfigService);
-  const rmqUrl = configService.get<string>('RABBITMQ_URL', 'amqp://localhost:5672');
-
-  app.connectMicroservice<MicroserviceOptions>({
-    transport: Transport.RMQ,
-    options: {
-      urls: [rmqUrl],
-      queue: 'security_service_queue',
-      queueOptions: {
-        durable: true,
-      },
-    },
-  });
 
   // Connect gRPC microservice
   app.connectMicroservice<MicroserviceOptions>({

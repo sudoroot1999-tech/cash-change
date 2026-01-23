@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserNotificationPreference } from './entities/preference.entity';
-import { NotificationChannel, NotificationType } from '../notifications/entities';
+import { NOTIFICATION_CHANNELS, NOTIFICATION_TYPES, NotificationChannel, NotificationType } from '@exchange/common';
 
 @Injectable()
 export class PreferenceService {
@@ -58,7 +58,7 @@ export class PreferenceService {
     // Check if we're in quiet hours
     if (this.isInQuietHours(preference)) {
       // Only allow critical notifications during quiet hours
-      if (notificationType === NotificationType.SECURITY || notificationType === NotificationType.TRANSACTIONAL) {
+      if (notificationType === NOTIFICATION_TYPES.SECURITY || notificationType === NOTIFICATION_TYPES.TRANSACTIONAL) {
         return preference.enabledChannels;
       }
       return [];
@@ -117,31 +117,31 @@ export class PreferenceService {
     const defaultPreferences: Array<Partial<UserNotificationPreference>> = [
       {
         userId,
-        notificationType: NotificationType.TRANSACTIONAL,
-        enabledChannels: [NotificationChannel.EMAIL, NotificationChannel.IN_APP],
+        notificationType: NOTIFICATION_TYPES.TRANSACTIONAL,
+        enabledChannels: [NOTIFICATION_CHANNELS.EMAIL, NOTIFICATION_CHANNELS.IN_APP],
         isEnabled: true,
         email,
         phoneNumber,
       },
       {
         userId,
-        notificationType: NotificationType.SECURITY,
-        enabledChannels: [NotificationChannel.EMAIL, NotificationChannel.SMS, NotificationChannel.IN_APP],
+        notificationType: NOTIFICATION_TYPES.SECURITY,
+        enabledChannels: [NOTIFICATION_CHANNELS.EMAIL, NOTIFICATION_CHANNELS.SMS, NOTIFICATION_CHANNELS.IN_APP],
         isEnabled: true,
         email,
         phoneNumber,
       },
       {
         userId,
-        notificationType: NotificationType.MARKETING,
-        enabledChannels: [NotificationChannel.EMAIL],
+        notificationType: NOTIFICATION_TYPES.MARKETING,
+        enabledChannels: [NOTIFICATION_CHANNELS.EMAIL],
         isEnabled: false,
         email,
       },
       {
         userId,
-        notificationType: NotificationType.PRICE_ALERT,
-        enabledChannels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
+        notificationType: NOTIFICATION_TYPES.PRICE_ALERT,
+        enabledChannels: [NOTIFICATION_CHANNELS.PUSH, NOTIFICATION_CHANNELS.IN_APP],
         isEnabled: true,
       },
     ];

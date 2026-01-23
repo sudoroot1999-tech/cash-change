@@ -4,12 +4,11 @@ import { join } from 'path';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
-import { JWTAuthService, MultiLayerCacheService, PerformanceModule, RateLimiterService } from '@exchange/common';
 import { AuthEventsService } from './services/auth-events.service';
 import { UserGrpcAdapter } from './adapters/user-grpc.adapter';
 import { SECURITY_PORT, USER_PORT } from './tokens/auth.tokens';
 import { SecurityGrpcAdapter } from './adapters/security-grpc.adaptor';
-import { JwtStrategy } from './sterategies/jwt.strategy';
+import { NotificationEventsService } from './services/notification-events.service';
 
 @Module({
   imports: [
@@ -41,18 +40,14 @@ import { JwtStrategy } from './sterategies/jwt.strategy';
         }),
       },
     ]),
-       PerformanceModule
   ],
   controllers: [AuthController],
   providers: [
     AuthService,
     AuthEventsService,
-    RateLimiterService,
-    JWTAuthService,
-    MultiLayerCacheService,
+    NotificationEventsService,
     UserGrpcAdapter,
     SecurityGrpcAdapter,
-    JwtStrategy,
     {
       provide: USER_PORT,
       useExisting: UserGrpcAdapter,

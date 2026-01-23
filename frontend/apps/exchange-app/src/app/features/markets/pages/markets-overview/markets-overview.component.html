@@ -1,0 +1,105 @@
+<div class="markets-page">
+    <div class="page-header">
+        <h1 class="page-title">Markets</h1>
+        <p class="page-subtitle">Explore cryptocurrency prices, market cap, and trading volume</p>
+    </div>
+
+    <!-- Market Stats -->
+    <div class="market-stats">
+        <ui-card variant="elevated">
+            <div class="stat-grid">
+                <div class="stat-item">
+                    <span class="stat-value">$2.34T</span>
+                    <span class="stat-label">Total Market Cap</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">$78.5B</span>
+                    <span class="stat-label">24h Trading Volume</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value positive">+2.34%</span>
+                    <span class="stat-label">BTC Dominance</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">326</span>
+                    <span class="stat-label">Active Markets</span>
+                </div>
+            </div>
+        </ui-card>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="filters-section">
+        <div class="filter-tabs">
+            @for (tab of tabs; track tab) {
+            <button class="filter-tab" [class.active]="activeTab() === tab" (click)="activeTab.set(tab)">
+                {{ tab }}
+            </button>
+            }
+        </div>
+
+        <div class="search-container">
+            <ui-input type="search" placeholder="Search markets..." prefix="🔍" />
+        </div>
+    </div>
+
+    <!-- Markets Table -->
+    <ui-card variant="elevated" [noPadding]="true">
+        <div class="table-container">
+            <table class="markets-table">
+                <thead>
+                    <tr>
+                        <th class="sortable" (click)="sort('rank')">#</th>
+                        <th class="sortable" (click)="sort('name')">Name</th>
+                        <th class="sortable text-right" (click)="sort('price')">Price</th>
+                        <th class="sortable text-right" (click)="sort('change24h')">24h Change</th>
+                        <th class="sortable text-right" (click)="sort('volume24h')">24h Volume</th>
+                        <th class="sortable text-right" (click)="sort('marketCap')">Market Cap</th>
+                        <th class="text-right">Last 7 Days</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (market of markets(); track market.symbol; let i = $index) {
+                    <tr class="market-row">
+                        <td class="rank">{{ i + 1 }}</td>
+                        <td>
+                            <div class="coin-info">
+                                <div class="coin-icon" [style.background]="getCoinColor(market.symbol)">
+                                    {{ market.symbol.charAt(0) }}
+                                </div>
+                                <div class="coin-details">
+                                    <span class="coin-name">{{ market.name }}</span>
+                                    <span class="coin-symbol">{{ market.symbol }}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-right price">{{ market.price | number: '1.2-2' }}</td>
+                        <td class="text-right">
+                            <span class="change" [class.positive]="market.change24h >= 0"
+                                [class.negative]="market.change24h < 0">
+                                {{ market.change24h >= 0 ? '+' : ''
+                                }}{{ market.change24h | number: '1.2-2' }}%
+                            </span>
+                        </td>
+                        <td class="text-right volume">{{ formatVolume(market.volume24h) }}</td>
+                        <td class="text-right market-cap">{{ formatVolume(market.marketCap) }}</td>
+                        <td class="text-right">
+                            <div class="mini-chart" [class.up]="market.change24h >= 0">
+                                <!-- Mini sparkline placeholder -->
+                                <svg viewBox="0 0 100 30" class="sparkline">
+                                    <polyline fill="none" stroke="currentColor" stroke-width="2"
+                                        points="0,20 20,15 40,22 60,10 80,18 100,8" />
+                                </svg>
+                            </div>
+                        </td>
+                        <td class="text-right">
+                            <a [routerLink]="['/trade', market.symbol + 'USDT']" class="trade-btn">Trade</a>
+                        </td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </ui-card>
+</div>

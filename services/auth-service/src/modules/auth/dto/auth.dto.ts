@@ -51,6 +51,12 @@ export class LoginDto {
   trustDevice?: boolean;
 }
 
+export class LogoutDto {
+  @ApiProperty({ example: 'SecureP@ssw0rd' })
+  @IsString()
+  sessionId: string;
+}
+
 export class VerifyEmailDto {
   @ApiProperty()
   @IsString()

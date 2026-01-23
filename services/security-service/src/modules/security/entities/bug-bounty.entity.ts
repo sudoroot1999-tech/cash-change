@@ -9,13 +9,12 @@ import {
 } from 'typeorm';
 
 @Entity('bug_bounty_submissions')
-@Index(['reporterId', 'status'])
 export class BugBountySubmission {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column({ name: 'reporter_id' })
-  @Index()
+  @Index(['reporter_id'])
   reporterId: string;
 
   @Column({ name: 'reporter_email' })
@@ -36,6 +35,7 @@ export class BugBountySubmission {
   })
   severity: BugSeverity;
 
+  @Index()
   @Column({
     type: 'enum',
     enum: BUGBOUNTY_STATUS,
@@ -43,7 +43,7 @@ export class BugBountySubmission {
   })
   status: BugBountyStatus;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, name: 'reward_amount' })
   rewardAmount: number;
 
   @Column({ name: 'reward_currency', nullable: true })
@@ -55,7 +55,7 @@ export class BugBountySubmission {
   @Column({ type: 'jsonb', nullable: true })
   attachments: string[];
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: 'text', nullable: true, name: 'internal_notes' })
   internalNotes: string;
 
   @Column({ name: 'resolved_at', type: 'timestamp', nullable: true })

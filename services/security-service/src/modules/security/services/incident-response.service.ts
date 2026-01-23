@@ -2,12 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
-  Incident,
-  IncidentType,
-  IncidentSeverity,
-  IncidentStatus,
+  Incident
 } from '../entities/incident.entity';
-import { SecurityEvent, SecurityEventType, RiskLevel } from '../entities/security-event.entity';
+import { SecurityEvent } from '../entities/security-event.entity';
+import { INCIDENT_SEVERITY, INCIDENT_STATUS, IncidentSeverity, IncidentStatus, IncidentType, RISK_LEVELS, SecurityEventType } from '@exchange/common';
 
 export interface CreateIncidentDto {
   title: string;
@@ -35,7 +33,7 @@ export class IncidentResponseService {
   async createIncident(data: CreateIncidentDto): Promise<Incident> {
     const incident = this.incidentRepository.create({
       ...data,
-      status: IncidentStatus.DETECTED,
+      status: INCIDENT_STATUS.DETECTED,
       detectedAt: new Date(),
       actions: [],
     });
@@ -43,7 +41,7 @@ export class IncidentResponseService {
     await this.incidentRepository.save(incident);
     this.logger.error(`SECURITY INCIDENT: ${incident.title} [${incident.severity}]`);
 
-    if (incident.severity === IncidentSeverity.CRITICAL) {
+    if (incident.severity === INCIDENT_SEVERITY.CRITICAL) {
       await this.triggerCircuitBreaker(incident.id);
     }
 
@@ -70,9 +68,9 @@ export class IncidentResponseService {
       performedBy,
     }];
 
-    if (status === IncidentStatus.CONTAINED) {
+    if (status === INCIDENT_STATUS.CONTAINED) {
       incident.containedAt = new Date();
-    } else if (status === IncidentStatus.RESOLVED) {
+    } else if (status === INCIDENT_STATUS.RESOLVED) {
       incident.resolvedAt = new Date();
     }
 
@@ -100,9 +98,9 @@ export class IncidentResponseService {
   async getActiveIncidents(): Promise<Incident[]> {
     return await this.incidentRepository.find({
       where: [
-        { status: IncidentStatus.DETECTED },
-        { status: IncidentStatus.INVESTIGATING },
-        { status: IncidentStatus.CONTAINED },
+        { status: INCIDENT_STATUS.DETECTED },
+        { status: INCIDENT_STATUS.INVESTIGATING },
+        { status: INCIDENT_STATUS.CONTAINED },
       ],
       order: { detectedAt: 'DESC' },
     });
@@ -121,7 +119,7 @@ export class IncidentResponseService {
     const event = this.securityEventRepository.create({
       userId: 'system',
       eventType,
-      riskLevel: RiskLevel.CRITICAL,
+      riskLevel: RISK_LEVELS.CRITICAL,
       details,
     });
 

@@ -36,7 +36,7 @@ export class SecurityMiddleware implements NestMiddleware {
         policy: 'strict-origin-when-cross-origin',
       },
       hidePoweredBy: true,
-    })(req, res, () => {});
+    })(req, res, () => { });
 
     // Additional security headers
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -44,7 +44,7 @@ export class SecurityMiddleware implements NestMiddleware {
     res.setHeader('X-XSS-Protection', '1; mode=block');
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
     res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
-    
+
     // Remove identifying headers
     res.removeHeader('X-Powered-By');
     res.removeHeader('Server');
@@ -134,7 +134,7 @@ export class DeviceContextMiddleware implements NestMiddleware {
   use(req: Request & { context?: RequestContext }, _: Response, next: NextFunction) {
     const ip =
       (req.headers['x-forwarded-for'] as string)?.split(',')[0] ||
-      req.socket.remoteAddress;
+      req.socket.remoteAddress || '127.0.0.1';
 
     req.context = {
       fingerprint: (req as any).deviceFingerprint,

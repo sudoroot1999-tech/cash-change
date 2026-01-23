@@ -2,23 +2,25 @@ import {
   Injectable,
   ConflictException,
   NotFoundException,
-  Logger,
   Inject
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ClientGrpc } from '@nestjs/microservices';
 
 import { User } from './entities/user.entity';
-import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
+import { CreateUserDto, UpdateUserDto, VerifyEmailDto } from './dto/user.dto';
 import { UserProfile } from './entities/profile.entity';
 import { UserPreferences } from './entities/user-preferences.entity';
 import { UserLimits } from './entities/user-limits.entity';
-import { BadRequestError, CacheLayer, JWTAuthService, KYC_LEVELS, KycLevel, MultiLayerCacheService, NotFoundError, PasswordService, RateLimiterService, RequestContext, ServiceUnavailableError, StorageService, UnauthorizedError, USER_STATUS } from '@exchange/common';
+import { BadRequestError, JWTAuthService, KYC_LEVELS, KycLevel, Logger, MultiLayerCacheService, NotFoundError, PasswordService, RateLimiterService, RequestContext, ServiceUnavailableError, StorageService, UnauthorizedError, USER_STATUS } from '@exchange/common';
 import { UpdateUserPreferencesDto } from './dto/update-user-preferences.dto';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import { ChangePasswordDto, ForgotPasswordDto, ResetPasswordDto } from './dto/user-password.dto';
 import { SecurityPort } from './ports/security.ports';
+import { ReferralService } from '../referral/referral.service';
+import { FraudDetectionService } from '../referral/services';
+import { NotificationEventsService } from './services/notification-events.service';
+import { UserEventsService } from './services/user-events.service'
 
 
 @Injectable()
@@ -35,11 +37,15 @@ export class UsersService {
     @InjectRepository(UserLimits)
     private limitsRepository: Repository<UserLimits>,
     @Inject('SECURITY_PACKAGE') private readonly security: SecurityPort,
+    private readonly notificationEvents: NotificationEventsService,
+    private readonly referralService: ReferralService,
+    private readonly fraudService: FraudDetectionService,
     private readonly storageService: StorageService,
     private readonly passwordService: PasswordService,
     private readonly tokenService: JWTAuthService,
     private readonly rateLimitService: RateLimiterService,
     private readonly cacheService: MultiLayerCacheService,
+    private readonly userEvents: UserEventsService
   ) { }
 
 
@@ -76,49 +82,57 @@ export class UsersService {
         }
       }
 
-      // Find referrer if referral code provided
-      let referredBy: string | null = null;
-      if (createUserDto.referralCode) {
-        const referrer = await this.userRepository.findOne({
-          where: { referralCode: createUserDto.referralCode },
-        });
-        if (referrer) {
-          referredBy = referrer.id;
-        }
-      }
-
       // Hash password
       const passwordHash = await this.passwordService.hashPassword(createUserDto.password);
 
       // Generate verification token
-      const email_verification_token = this.tokenService.generateRandomToken();
-
-      // Generate referral code
-      const referralCode = this.generateReferralCode();
+      const emailVerificationToken = this.tokenService.generateRandomToken();
 
       // Create user
       const user = this.userRepository.create({
         email: createUserDto.email,
-        username: createUserDto.username || null,
+        username: createUserDto.username,
         phone: createUserDto.phone || null,
         passwordHash,
-        referralCode,
-        referredBy,
-        status: USER_STATUS.PENDING,
-        emailVerificationToken: email_verification_token,
+        emailVerificationToken
       });
+
+      // Find referrer if referral code provided
+      if (createUserDto.referralCode) {
+        const referralCode = await this.referralService.findReferralByCode({ code: createUserDto.referralCode });
+
+        if (referralCode) {
+          const fraudCheck = await this.fraudService.checkNewReferral(
+            referralCode.userId,
+            user.id,
+          );
+
+          if (fraudCheck.isSuspicious && fraudCheck.riskScore >= 0.9) {
+            throw new ServiceUnavailableError('Unable to process referral. Please contact support.')
+          }
+
+          await this.referralService.useReferralCode(user.id, {
+            code: createUserDto.referralCode
+          });
+          user.referredBy = referralCode.userId;
+        }
+      }
+
+      // Generate referral code
+      const referralCode = await this.referralService.getUserReferralCode(user.id);
 
       // Generate or use provided anti-phishing code
       const phishingCode = await this.security.generateRandomCode();
       const antiPhishingCode = await this.security.setAntiPhishingCode({
-        user_id: user.id,
-        phishing_code: phishingCode.code
+        userId: user.id,
+        phishingCode: phishingCode.code
       });
 
       user.antiPhishingCode = antiPhishingCode.phishingCode;
+      user.referralCode = referralCode.code;
 
       const savedUser = await this.userRepository.save(user);
-      this.logger.log(`User created: ${savedUser.id}`);
+      this.logger.info(`User created: ${savedUser.id}`);
 
       // create Defaults
       await this.createUserProfile(savedUser.id)
@@ -154,17 +168,6 @@ export class UsersService {
       return await this.userRepository.findOne({ where: { email } });
     }
     catch (error: any) {
-      throw new NotFoundError('user not found')
-    }
-  }
-
-  /**
-   * Find user by referral code
-   */
-  async findByReferralCode(referralCode: string): Promise<User | null> {
-    try {
-      return this.userRepository.findOne({ where: { referralCode } });
-    } catch (error: any) {
       throw new NotFoundError('user not found')
     }
   }
@@ -207,13 +210,41 @@ export class UsersService {
   /**
    * Verify user email
    */
-  async verifyEmail(id: string): Promise<User> {
-    const user = await this.findById(id);
-    user.emailVerified = true;
-    if (user.status === USER_STATUS.PENDING) {
+  async verifyEmail(dto: VerifyEmailDto) {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { emailVerificationToken: dto.token },
+      });
+
+      if (!user) {
+        throw new BadRequestError('Invalid verification token');
+      }
+
+      user.emailVerified = true;
+      user.emailVerificationToken = null;
       user.status = USER_STATUS.ACTIVE;
+
+      await this.userEvents.publishUserActivated({
+        eventId: this.tokenService.generateRandomToken(),
+        timestamp: new Date(),
+        userId: user.id,
+        version: "1",
+        activatedBy: "user"
+      })
+
+      await this.userRepository.save(user);
+
+      return {
+        success: true,
+        message: 'Email verified successfully',
+      };
     }
-    return this.userRepository.save(user);
+    catch (error: any) {
+      return {
+        success: true,
+        error
+      };
+    }
   }
 
   /**
@@ -244,40 +275,6 @@ export class UsersService {
     catch (error) {
       throw new BadRequestError('failed to update kyc')
     }
-  }
-
-  /**
-   * Get referrals for a user
-   */
-  async getReferrals(
-    userId: string,
-    page: number = 1,
-    limit: number = 20,
-  ): Promise<{ items: User[]; total: number }> {
-    try {
-      const [items, total] = await this.userRepository.findAndCount({
-        where: { referredBy: userId },
-        skip: (page - 1) * limit,
-        take: limit,
-        order: { createdAt: 'DESC' },
-      });
-      return { items, total };
-    }
-    catch (error) {
-      throw new BadRequestError('failed to get referrals')
-    }
-  }
-
-  /**
-   * Generate a unique referral code
-   */
-  private generateReferralCode(): string {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let code = '';
-    for (let i = 0; i < 8; i++) {
-      code += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return code;
   }
 
   /**
@@ -362,22 +359,24 @@ export class UsersService {
 
       // Generate reset token
       const resetToken = this.tokenService.generateRandomToken();
-      await this.cacheService.set(`password_reset:${resetToken}`, { userId: user.id }, { ttl: 3600 }); // 1 hour
+      await this.cacheService.set(`password_reset:${resetToken}`, { userId: user.id }, { ttl: 60 * 60 }); // 1 hour
 
-      // Send reset email
-      // await this.emailService.sendPasswordResetEmail(
-      //   user.email,
-      //   resetToken,
-      //   user.anti_phishing_code,
-      // );
+      await this.notificationEvents.publishEmailNotification({
+        eventId: this.tokenService.generateRandomToken(),
+        timestamp: new Date(),
+        data: {
+          antiphishingCode: user.antiPhishingCode,
+          resetUrl: `${resetToken}`,
+          expiresInMinutes: 60
+        },
+        subject: 'Email Verification',
+        userId: user.id,
+        template: "1",
+        to: user.email,
+        version: "1",
+      });
 
-      // this.logger.logAuthEvent({
-      //   type: 'PASSWORD_RESET_REQUESTED',
-      //   userId: user.id,
-      //   email: user.email,
-      //   ip,
-      //   success: true,
-      // });
+      this.logger.logAuth('PASSWORD_RESET_REQUESTED successfully', user.id, true);
 
       return {
         success: true,
@@ -452,18 +451,6 @@ export class UsersService {
       });
 
       if (!user) {
-        throw new UnauthorizedError('Invalid credentials')
-      };
-
-      const isPasswordValid = await this.passwordService.verifyPassword(user.passwordHash, password);
-      if (!isPasswordValid) {
-
-        await this.security.logLoginAttempt({
-          user_id: user.id,
-          success: false,
-          failure_reason: 'Invalid credentials',
-          ip_address: ctx?.ipAddress || ''
-        });
 
         await this.rateLimitService.checkRateLimit(user.id, {
           windowMs: 5 * 60 * 1000,
@@ -471,6 +458,27 @@ export class UsersService {
           blockDurationMs: 15 * 60 * 1000,
           keyPrefix: 'user'
         });
+
+        throw new UnauthorizedError('Invalid credentials')
+      };
+
+      const isPasswordValid = await this.passwordService.verifyPassword(user.passwordHash, password);
+      if (!isPasswordValid) {
+
+        await this.rateLimitService.checkRateLimit(user.id, {
+          windowMs: 5 * 60 * 1000,
+          maxRequests: 10,
+          blockDurationMs: 15 * 60 * 1000,
+          keyPrefix: 'user'
+        });
+
+        await this.security.logLoginAttempt({
+          userId: user.id,
+          success: false,
+          failureReason: 'Invalid credentials',
+          ipAddress: ctx?.ipAddress || ''
+        });
+
         throw new UnauthorizedError('Invalid credentials');
       };
       return user;
@@ -536,6 +544,8 @@ export class UsersService {
         where: { userId },
       });
 
+      const updatedFields = {};
+
       if (!profile) {
         // Create new profile if it doesn't exist
         profile = this.profileRepository.create({
@@ -546,16 +556,51 @@ export class UsersService {
       }
 
       // Update fields
-      if (updateDto.firstName) profile.firstName = updateDto.firstName;
-      if (updateDto.lastName) profile.lastName = updateDto.lastName;
-      if (updateDto.dateOfBirth) profile.dateOfBirth = new Date(updateDto.dateOfBirth);
-      if (updateDto.country) profile.country = updateDto.country;
-      if (updateDto.city) profile.city = updateDto.city;
-      if (updateDto.address) profile.address = updateDto.address;
-      if (updateDto.postalCode) profile.postalCode = updateDto.postalCode;
-      if (updateDto.bio !== undefined) profile.bio = updateDto.bio;
+      if (updateDto.firstName) {
+        profile.firstName = updateDto.firstName;
+        Object.assign(updatedFields, { firstName: updateDto.firstName });
+      };
+      if (updateDto.lastName) {
+        profile.lastName = updateDto.lastName;
+        Object.assign(updatedFields, { lastName: updateDto.lastName });
+      };
+      if (updateDto.dateOfBirth) {
+        profile.dateOfBirth = new Date(updateDto.dateOfBirth);
+        Object.assign(updatedFields, { dateOfBirth: updateDto.dateOfBirth });
+      };
+      if (updateDto.country) {
+        profile.country = updateDto.country;
+        Object.assign(updatedFields, { country: updateDto.country });
+      };
+      if (updateDto.city) {
+        profile.city = updateDto.city;
+        Object.assign(updatedFields, { city: updateDto.city });
+      };
+      if (updateDto.address) {
+        profile.address = updateDto.address;
+        Object.assign(updatedFields, { address: updateDto.address });
+      };
+      if (updateDto.postalCode) {
+        profile.postalCode = updateDto.postalCode;
+        Object.assign(updatedFields, { postalCode: updateDto.postalCode });
+      }
+      if (updateDto.bio !== undefined) {
+        profile.bio = updateDto.bio;
+        Object.assign(updatedFields, { bio: updateDto.bio });
+      };
 
-      return await this.profileRepository.save(profile);
+      const updatedProfile = await this.profileRepository.save(profile);
+
+      await this.userEvents.publishProfileUpdated({
+        version: "1",
+        eventId: this.tokenService.generateRandomToken(),
+        timestamp: new Date(),
+        userId: userId,
+        updatedFields: Object.keys(updatedFields),
+        changes: updatedFields
+      });
+
+      return updatedProfile;
     }
     catch (error) {
       throw new ServiceUnavailableError('failed to update profile')
@@ -578,7 +623,7 @@ export class UsersService {
       }
 
       // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
+      if (file.size > 10 * 1024 * 1024) {
         throw new BadRequestError('File size exceeds 5MB limit');
       }
 
@@ -609,6 +654,15 @@ export class UsersService {
           console.error('Failed to delete old avatar:', error);
         }
       }
+
+      await this.userEvents.publishAvatarUploaded({
+        avatarUrl: objectName,
+        previousAvatarUrl: profile.avatarUrl,
+        eventId: this.tokenService.generateRandomToken(),
+        timestamp: new Date(),
+        userId,
+        version: "1"
+      });
 
       profile.avatarUrl = objectName;
       await this.profileRepository.save(profile);
@@ -658,6 +712,14 @@ export class UsersService {
         preferences.tradingAutoCompound = updateDto.tradingAutoCompound;
       if (updateDto.tradingDefaultOrderType !== undefined)
         preferences.tradingDefaultOrderType = updateDto.tradingDefaultOrderType;
+
+      await this.userEvents.publishPreferencesUpdated({
+        eventId: this.tokenService.generateRandomToken(),
+        timestamp: new Date(),
+        userId,
+        version: "1",
+        preferences: { ...preferences }
+      })
 
       return await this.preferencesRepository.save(preferences);
     }

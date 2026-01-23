@@ -10,14 +10,16 @@ import {
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { NotificationCoreService } from './notifications.service';
 import { SendNotificationDto, RegisterPushTokenDto } from './dto/notification.dto';
-import { NotificationType, NotificationChannel } from './entities';
+import { NOTIFICATION_TYPES, NotificationChannel, NotificationType, QUEUES, RabbitMQService, RequireAuth } from '@exchange/common';
 
 @ApiTags('Notifications')
 @Controller('notification')
+@RequireAuth()
 export class NotificationController {
   constructor(
-    private readonly notificationService: NotificationCoreService
-  ) {}
+    private readonly notificationService: NotificationCoreService,
+    private readonly rabbitmq: RabbitMQService,
+  ) { }
 
   @Post('send')
   @ApiOperation({ summary: 'Send a notification' })
@@ -149,7 +151,7 @@ export class NotificationController {
   ) {
     const queueIds = await this.notificationService.sendNotification({
       userId: body.userId,
-      type: NotificationType.NEWS,
+      type: NOTIFICATION_TYPES.NEWS,
       channels: [body.channel],
       content: body.message,
       subject: 'Test Notification',
@@ -162,26 +164,27 @@ export class NotificationController {
     };
   }
 
-    @Get('queue/stats')
+  @Get('queue/stats')
   @ApiOperation({ summary: 'Get queue statistics' })
   async getQueueStats() {
-    // const stats = await Promise.all([
-    //   this.rabbitMQService.getQueueStats('notification.email.send'),
-    //   this.rabbitMQService.getQueueStats('notification.sms.send'),
-    //   this.rabbitMQService.getQueueStats('notification.push.send'),
-    //   this.rabbitMQService.getQueueStats('notification.telegram.send'),
-    //   this.rabbitMQService.getQueueStats('notification.whatsapp.send'),
-    // ]);
+    const stats = await Promise.all([
+      this.rabbitmq.getQueueStats(QUEUES.EMAIL_SEND),
+      this.rabbitmq.getQueueStats(QUEUES.SMS_SEND),
+      this.rabbitmq.getQueueStats(QUEUES.PUSH_SEND),
+      this.rabbitmq.getQueueStats(QUEUES.TELEGRAM_SEND),
+      this.rabbitmq.getQueueStats(QUEUES.WHATSAPP_SEND),
+      this.rabbitmq.getQueueStats(QUEUES.IN_APP_NOTIFICATION),
+    ]);
 
     return {
       success: true,
       data: {
-        
-        // email: stats[0],
-        // sms: stats[1],
-        // push: stats[2],
-        // telegram: stats[3],
-        // whatsapp: stats[4],
+        email: stats[0],
+        sms: stats[1],
+        push: stats[2],
+        telegram: stats[3],
+        whatsapp: stats[4],
+        inapp: stats[5]
       },
     };
   }

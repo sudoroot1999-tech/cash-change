@@ -1,8 +1,10 @@
 import { Controller, Get, Post, Delete, Param, UseGuards, Req } from '@nestjs/common';
 import { LoginSecurityService } from '../services/login-security.service';
 import { DeviceFingerprintService } from '../services/device-fingerprint.service';
+import { RequireAuth } from '@exchange/common';
 
 @Controller('security/login')
+@RequireAuth()
 export class LoginSecurityController {
   constructor(
     private readonly loginSecurityService: LoginSecurityService,

@@ -5,12 +5,13 @@ import {
   Inject,
 } from '@nestjs/common';
 import { AuthEventsService } from './services/auth-events.service';
-import { CacheLayer, createServiceLogger, JWTAuthService, Logger, MultiLayerCacheService, NotFoundError, RateLimit, RateLimiterService, RequestContext, ServiceUnavailableError, User, USER_STATUS, UserProfile } from '@exchange/common';
+import { CacheLayer, createServiceLogger, JWTAuthService, Logger, MultiLayerCacheService, NotFoundError, QUEUES, RateLimit, RateLimiterService, RequestContext, ServiceUnavailableError, User, USER_STATUS, UserProfile } from '@exchange/common';
 import { ChangePasswordDto, ForgotPasswordDto, RefreshTokenDto, RegisterDto, ResetPasswordDto, Verify2FADto } from './dto/auth.dto';
 import { LoginDto } from './dto/auth.dto';
 import { SECURITY_PORT, USER_PORT } from './tokens/auth.tokens';
 import { UserPort } from './ports/user.port';
 import { SecurityPort } from './ports/security.port';
+import { NotificationEventsService } from './services/notification-events.service';
 
 @Injectable()
 export class AuthService {
@@ -21,6 +22,7 @@ export class AuthService {
     @Inject(USER_PORT) private readonly users: UserPort,
     @Inject(SECURITY_PORT) private readonly security: SecurityPort,
     private readonly authEvents: AuthEventsService,
+    private readonly notificationEvents: NotificationEventsService,
     private readonly tokenService: JWTAuthService,
     private readonly cacheService: MultiLayerCacheService
   ) { }
@@ -37,14 +39,44 @@ export class AuthService {
           email: dto.email,
           password: dto.password,
           username: dto.username,
-          referral_code: dto.referralCode,
+          referralCode: dto.referralCode,
         })
 
-      await this.authEvents.publishUserRegistered(
-        user.id,
-        user.email,
-        user.username,
-      );
+      await this.authEvents.publishUserRegistered({
+        name: QUEUES.USER_REGISTERED,
+        eventId: this.tokenService.generateRandomToken(),
+        timestamp: new Date(),
+        email: user.email,
+        userId: user.id,
+        username: user.username,
+        version: "1",
+        registeredAt: user.createdAt,
+        referralCode: user.referralCode
+      });
+
+      await this.notificationEvents.publishEmailNotification({
+        eventId: this.tokenService.generateRandomToken(),
+        timestamp: new Date(),
+        data: {
+          antiphishingCode: user.antiPhishingCode,
+          verificationUrl: `${user.emailVerificationToken}`,
+          expiresInMinutes: 20
+        },
+        subject: 'Email Verification',
+        userId: user.id,
+        template: "1",
+        to: user.email,
+        version: "1",
+      });
+
+      await this.authEvents.publishEmailVerificationRequested({
+        version: "1",
+        eventId: this.tokenService.generateRandomToken(),
+        timestamp: new Date(),
+        email: user.email,
+        userId: user.id,
+        requestedAt: new Date()
+      });
 
       this.logger.logAuth('User registered successfully', user.id, true);
 
@@ -54,7 +86,7 @@ export class AuthService {
         data: {
           userId: user.id,
           email: user.email,
-          antiPhishingCode: user.antiPhishingCode,
+          emailVerificationToken: user.emailVerificationToken
         }
       }
     } catch (error: any) {
@@ -94,7 +126,7 @@ export class AuthService {
           `2fa:${tempToken}`,
           { userId: user.id, ipAddress: ctx.ipAddress },
           {
-            ttl: 300,
+            ttl: 5 * 60,
             layer: CacheLayer.L3_SESSION,
             compress: false,
           }
@@ -145,40 +177,15 @@ export class AuthService {
     user: User,
     ctx: Partial<RequestContext>
   ) {
-    // check if device is trusted
-    const isTrusted = (await this.security.isDeviceTrusted(
-      user.id,
-      ctx.fingerprint,
-    ))?.isTrusted;
 
-    let device;
-
-    if (!isTrusted) {
-      // register device
-      device = await this.security.registerDevice(
-        {
-          user_id: user.id,
-          fingerprint: ctx.fingerprint,
-          userAgent: ctx.userAgent,
-          browser: ctx.browser,
-          os: ctx.os,
-          device: ctx.device,
-          screenResolution: ctx.screenResolution,
-          timezone: ctx.timezone,
-          language: ctx.language,
-          ipAddress: ctx.ipAddress,
-        }
-      );
-    }
-    else {
-      device = { fingerprint: ctx.fingerprint };
-    }
     // create session
     const session = await this.security.createSession({
       userId: user.id,
       ipAddress: ctx.ipAddress,
-      deviceFingerprint: device.fingerprint,
+      deviceFingerprint: ctx.fingerprint,
+      userAgent: ctx.userAgent,
     });
+
     // generate tokens
     const tokens = await this.tokenService.generateTokenPair({
       email: user.email,
@@ -193,28 +200,44 @@ export class AuthService {
       emailVerified: user.emailVerified,
       phoneVerified: user.phoneVerified,
     });
+
     // update session with refresh token
     const updateSession = await this.security.updateSession(
       session.id,
       tokens.refreshToken
-    )
-    // cache session
-    await this.cacheService.set(`session:${session.id}`, {
-      userId: user.id,
-      fingerprint: device.fingerprint,
-      accessToken: tokens.accessToken,
+    );
+
+    await this.cacheService.set(`refresh_token:${user.id}:${session.id}`, {
       refreshToken: tokens.refreshToken,
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // optional, match TTL
+      sessionId: session.id,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // optional, match TTL
     }, {
       layer: CacheLayer.L3_SESSION,
-      ttl: 24 * 60 * 60, // 24 hours
+      ttl: 7 * 24 * 60 * 60, // 7 Days
     });
+
     // publish user login event
-    await this.authEvents.publishUserLogin(
-      user.id,
-      user.email,
-      ctx.ipAddress,
-    );
+    await this.authEvents.publishUserLogin({
+      userId: user.id,
+      email: user.email,
+      version: "1",
+      eventId: this.tokenService.generateRandomToken(),
+      timestamp: new Date(),
+      userAgent: ctx.userAgent,
+      ipAddress: ctx.ipAddress,
+      success: true,
+      loginAt: new Date(),
+      country: ctx.locationCountry,
+      deviceId: ctx.device
+    });
+
+    await this.security.logLoginAttempt({
+      userId: user.id,
+      ipAddress: ctx.ipAddress,
+      success: true,
+      userAgent: ctx.userAgent,
+      deviceFingerprint: ctx.fingerprint
+    });
 
     return {
       accessToken: tokens.accessToken,
@@ -272,10 +295,10 @@ export class AuthService {
 
       if (!isValid) {
         await this.security.logLoginAttempt({
-          user_id: user.id,
-          ip_address: ctx.ipAddress,
+          userId: user.id,
+          ipAddress: ctx.ipAddress,
           success: false,
-          failure_reason: `invalid 2fa code`
+          failureReason: `invalid 2fa code`
         });
         throw new UnauthorizedException('Invalid 2FA code');
       }
@@ -331,9 +354,9 @@ export class AuthService {
   /**
    * Confirm 2FA setup
    */
-  async confirm2FA(userId: string, token: string) {
+  async confirm2FA(user: User, token: string) {
     try {
-      const twoFactorAuth = await this.security.findTwoFactorByUserId(userId);
+      const twoFactorAuth = await this.security.findTwoFactorByUserId(user.id);
 
       if (!twoFactorAuth) {
         throw new BadRequestException('2FA setup not initiated');
@@ -345,7 +368,7 @@ export class AuthService {
 
       // Verify token
       const isValid = (await this.security.verifyToken(
-        userId,
+        user.id,
         token,
       ))?.isValid;
 
@@ -356,12 +379,21 @@ export class AuthService {
       // Enable 2FA
       twoFactorAuth.isEnabled = true;
       await this.security.updateTwoFactor(
-        userId,
+        user.id,
         twoFactorAuth.isEnabled,
         new Date()
       );
 
-      const user = await this.users.findById(userId);
+      await this.authEvents.publishTwoFactorEnabled({
+        version: "1",
+        eventId: this.tokenService.generateRandomToken(),
+        timestamp: new Date(),
+        userId: user.id,
+        method: "totp",
+        enabledAt: new Date(),
+        email: user.email
+      });
+
       // await this.emailService.send2FAEnabledNotification(user.email, user.anti_phishing_code);
 
       return {
@@ -402,7 +434,7 @@ export class AuthService {
       }
 
       // Verify in Redis
-      const isValid = await this.cacheService.get(`session:${currentSession.id}`, {
+      const isValid = await this.cacheService.get(`refresh_token:${userId}:${currentSession.id}`, {
         layer: CacheLayer.L3_SESSION
       });
 
@@ -429,6 +461,12 @@ export class AuthService {
         }
       );
 
+      // update session with refresh token
+      await this.security.updateSession(
+        currentSession.id,
+        pairTokens.refreshToken
+      )
+
       return {
         success: true,
         data: {
@@ -446,13 +484,23 @@ export class AuthService {
   /**
    * Change password
    */
-  async changePassword(userId: string, dto: ChangePasswordDto) {
+  async changePassword(user: User, dto: ChangePasswordDto) {
     try {
-      return await this.users.changePassword({
-        user_id: userId,
+      const response = await this.users.changePassword({
+        userId: user.id,
         currentPassword: dto.currentPassword,
         newPassword: dto.newPassword,
       });
+      await this.authEvents.publishPasswordChanged({
+        version: "1",
+        eventId: this.tokenService.generateRandomToken(),
+        timestamp: new Date(),
+        changedAt: new Date(),
+        changedBy: 'user',
+        userId: user.id,
+        email: user.email
+      });
+      return response;
     }
     catch (error) {
       throw new ServiceUnavailableError('failed to change password')
@@ -474,12 +522,20 @@ export class AuthService {
   /**
    * Reset password
    */
-  async resetPassword(dto: ResetPasswordDto) {
+  async resetPassword(dto: ResetPasswordDto, user: User) {
     try {
-      return await this.users.resetPassword({
+      const response = await this.users.resetPassword({
         token: dto.token,
         newPassword: dto.newPassword,
       });
+      await this.authEvents.publishPasswordResetRequested({
+        version: "1",
+        eventId: this.tokenService.generateRandomToken(),
+        timestamp: new Date(),
+        userId: user.id,
+        email: user.email
+      });
+      return response;
     }
     catch (error) {
       throw new ServiceUnavailableError('failed to reset password')
@@ -489,19 +545,36 @@ export class AuthService {
   /**
    * Logout
    */
-  // async logout(userId: string, sessionId: string) {
-  //   // Mark session as inactive
-  //   await this.sessionRepository.update({ session_id: sessionId }, { is_active: false });
+  async logout(user: User, sessionId: string) {
+    try {
+      // Mark session as inactive
+      await this.security.killSession(user.id, sessionId);
 
-  //   // Delete from Redis
-  //   await this.redisService.revokeRefreshToken(userId, sessionId);
-  //   await this.redisService.deleteSession(sessionId);
+      // Delete from Redis
+      await this.cacheService.delete(`refresh_token:${user.id}:${sessionId}`, {
+        layer: CacheLayer.L3_SESSION
+      });
 
-  //   return {
-  //     success: true,
-  //     message: 'Logged out successfully',
-  //   };
-  // }
+      await this.authEvents.publishUserLogout({
+        version: "1",
+        eventId: this.tokenService.generateRandomToken(),
+        timestamp: new Date(),
+        userId: user.id,
+        email: user.email
+      })
+
+      return {
+        success: true,
+        message: 'Logged out successfully',
+      };
+    }
+    catch (error: any) {
+      return {
+        success: false,
+        error
+      };
+    }
+  }
 
   /**
   * Logout all sessions for a user

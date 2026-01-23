@@ -4,16 +4,12 @@ import { Repository, LessThanOrEqual, In } from 'typeorm';
 import {
   NotificationQueue,
   NotificationHistory,
-  NotificationStatus,
-  DeliveryStatus,
-  NotificationChannel,
-  NotificationType,
   PushToken,
 } from './entities';
 import { EmailProvider, SmsProvider, PushProvider, TelegramProvider, WhatsAppProvider } from '../../providers';
 import { TemplateService } from '../templates/templates.service';
 import { PreferenceService } from '../preferences/preferences.service';
-import { BadRequestError, QueueNames, QueueService } from '@exchange/common';
+import { BadRequestError, NOTIFICATION_CHANNELS, NotificationChannel, NotificationType, QueueNames, QueueService,NotificationStatus,NOTIFICAION_STATUS, DELIVERY_STATUS, DeliveryStatus } from '@exchange/common';
 
 export interface SendNotificationOptions {
   userId: string;
@@ -102,14 +98,14 @@ export class NotificationCoreService {
 
   private getChannelType(channel: NotificationChannel): 'email' | 'sms' | 'push' {
     switch (channel) {
-      case NotificationChannel.EMAIL:
+      case NOTIFICATION_CHANNELS.EMAIL:
         return 'email';
-      case NotificationChannel.SMS:
-      case NotificationChannel.TELEGRAM:
-      case NotificationChannel.WHATSAPP:
+      case NOTIFICATION_CHANNELS.SMS:
+      case NOTIFICATION_CHANNELS.TELEGRAM:
+      case NOTIFICATION_CHANNELS.WHATSAPP:
         return 'sms';
-      case NotificationChannel.PUSH:
-      case NotificationChannel.IN_APP:
+      case NOTIFICATION_CHANNELS.PUSH:
+      case NOTIFICATION_CHANNELS.IN_APP:
         return 'push';
       default:
         return 'email';
@@ -130,7 +126,7 @@ export class NotificationCoreService {
       scheduledAt: options.scheduledAt || new Date(),
       metadata: options.metadata,
       priority: options.priority || 5,
-      status: NotificationStatus.PENDING,
+      status: NOTIFICAION_STATUS.PENDING,
     });
 
     const saved = await this.queueRepository.save(queueItem);
@@ -153,7 +149,7 @@ export class NotificationCoreService {
   async processQueue(): Promise<void> {
     const pendingNotifications = await this.queueRepository.find({
       where: {
-        status: NotificationStatus.PENDING,
+        status: NOTIFICAION_STATUS.PENDING,
         scheduledAt: LessThanOrEqual(new Date()),
       },
       order: {
@@ -173,7 +169,7 @@ export class NotificationCoreService {
   async processNotification(notification: NotificationQueue): Promise<void> {
     try {
       // Update status to processing
-      notification.status = NotificationStatus.PROCESSING;
+      notification.status = NOTIFICAION_STATUS.PROCESSING;
       await this.queueRepository.save(notification);
 
       // Get user preferences for recipient info
@@ -185,22 +181,22 @@ export class NotificationCoreService {
       let result: { success: boolean; messageId?: string; error?: string };
 
       switch (notification.channel) {
-        case NotificationChannel.EMAIL:
+        case NOTIFICATION_CHANNELS.EMAIL:
           result = await this.sendEmail(notification, preferences?.email);
           break;
-        case NotificationChannel.SMS:
+        case NOTIFICATION_CHANNELS.SMS:
           result = await this.sendSms(notification, preferences?.phoneNumber);
           break;
-        case NotificationChannel.PUSH:
+        case NOTIFICATION_CHANNELS.PUSH:
           result = await this.sendPush(notification);
           break;
-        case NotificationChannel.TELEGRAM:
+        case NOTIFICATION_CHANNELS.TELEGRAM:
           result = await this.sendTelegram(notification, preferences?.telegramChatId);
           break;
-        case NotificationChannel.WHATSAPP:
+        case NOTIFICATION_CHANNELS.WHATSAPP:
           result = await this.sendWhatsApp(notification, preferences?.whatsappNumber);
           break;
-        case NotificationChannel.IN_APP:
+        case NOTIFICATION_CHANNELS.IN_APP:
           result = await this.saveInApp(notification);
           break;
         default:
@@ -208,12 +204,12 @@ export class NotificationCoreService {
       }
 
       if (result.success) {
-        notification.status = NotificationStatus.SENT;
+        notification.status = NOTIFICAION_STATUS.SENT;
         notification.sentAt = new Date();
         await this.queueRepository.save(notification);
 
         // Save to history
-        await this.saveToHistory(notification, DeliveryStatus.SENT, result.messageId);
+        await this.saveToHistory(notification, DELIVERY_STATUS.SENT, result.messageId);
       } else {
         await this.handleFailure(notification, result.error);
       }
@@ -337,11 +333,11 @@ export class NotificationCoreService {
     notification.errorMessage = errorMessage;
 
     if (notification.retryCount >= notification.maxRetries) {
-      notification.status = NotificationStatus.FAILED;
-      await this.saveToHistory(notification, DeliveryStatus.FAILED);
+      notification.status = NOTIFICAION_STATUS.FAILED;
+      await this.saveToHistory(notification, DELIVERY_STATUS.FAILED);
       this.logger.error(`Notification ${notification.id} failed after ${notification.retryCount} attempts`);
     } else {
-      notification.status = NotificationStatus.PENDING;
+      notification.status = NOTIFICAION_STATUS.PENDING;
       this.logger.warn(
         `Notification ${notification.id} failed, will retry (${notification.retryCount}/${notification.maxRetries})`,
       );
@@ -367,7 +363,7 @@ export class NotificationCoreService {
       externalId,
       metadata: notification.metadata,
       sentAt: notification.sentAt,
-      isRead: notification.channel === NotificationChannel.IN_APP ? false : undefined,
+      isRead: notification.channel === NOTIFICATION_CHANNELS.IN_APP ? false : undefined,
     });
 
     await this.historyRepository.save(history);
@@ -416,7 +412,7 @@ export class NotificationCoreService {
       const count = await this.historyRepository.count({
         where: {
           userId,
-          channel: NotificationChannel.IN_APP,
+          channel: NOTIFICATION_CHANNELS.IN_APP,
           isRead: false,
         },
       });

@@ -1,0 +1,125 @@
+<div class="orders-page">
+    <div class="page-header">
+        <h1 class="page-title">Orders</h1>
+        <p class="page-subtitle">View and manage your trading orders</p>
+    </div>
+
+    <!-- Order Tabs -->
+    <div class="order-tabs">
+        @for (tab of tabs(); track tab.key) {
+        <button class="tab-btn" [class.active]="activeTab() === tab.key" (click)="activeTab.set(tab.key)">
+            {{ tab.label }}
+            @if (tab.count > 0) {
+            <span class="tab-count">{{ tab.count }}</span>
+            }
+        </button>
+        }
+    </div>
+
+    <!-- Orders Table -->
+    <ui-card variant="elevated" [noPadding]="true">
+        <div class="table-container">
+            <table class="orders-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Pair</th>
+                        <th>Type</th>
+                        <th>Side</th>
+                        <th class="text-right">Price</th>
+                        <th class="text-right">Amount</th>
+                        <th class="text-right">Filled</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (isLoading()) {
+                    <tr>
+                        <td colspan="9" class="empty-state">
+                            <div class="empty-content">
+                                <span class="empty-text">Loading...</span>
+                            </div>
+                        </td>
+                    </tr>
+                    } @else {
+                    @if (activeTab() === 'trades') {
+                    @for (trade of trades(); track trade.id) {
+                    <tr class="order-row">
+                        <td class="date">{{ trade.createdAt | date: 'yyyy-MM-dd HH:mm' }}</td>
+                        <td class="pair">{{ trade.symbol }}</td>
+                        <td class="type">Trade</td>
+                        <td>
+                            <span class="side" [class.buy]="trade.side === 'buy'" [class.sell]="trade.side === 'sell'">
+                                {{ trade.side | titlecase }}
+                            </span>
+                        </td>
+                        <td class="text-right mono">{{ trade.price | number: '1.2-2' }}</td>
+                        <td class="text-right mono">{{ trade.quantity | number: '1.4-4' }}</td>
+                        <td class="text-right mono">100%</td>
+                        <td>
+                            <ui-badge variant="success">Filled</ui-badge>
+                        </td>
+                        <td></td>
+                    </tr>
+                    } @empty {
+                    <tr>
+                        <td colspan="9" class="empty-state">
+                            <div class="empty-content">
+                                <span class="empty-icon">📋</span>
+                                <span class="empty-text">No trades found</span>
+                            </div>
+                        </td>
+                    </tr>
+                    }
+                    } @else {
+                    @for (order of filteredOrders(); track order.id) {
+                    <tr class="order-row">
+                        <td class="date">{{ order.createdAt | date: 'yyyy-MM-dd HH:mm' }}</td>
+                        <td class="pair">{{ order.symbol || 'N/A' }}</td>
+                        <td class="type">{{ order.type | titlecase }}</td>
+                        <td>
+                            <span class="side" [class.buy]="order.side === 'buy'" [class.sell]="order.side === 'sell'">
+                                {{ order.side | titlecase }}
+                            </span>
+                        </td>
+                        <td class="text-right mono">
+                            {{ order.price ? (order.price | number: '1.2-2') : 'Market' }}
+                        </td>
+                        <td class="text-right mono">{{ order.quantity | number: '1.4-4' }}</td>
+                        <td class="text-right mono">
+                            {{
+                            (Number(order.filledQuantity) / Number(order.quantity)) * 100
+                            | number: '1.0-0'
+                            }}%
+                        </td>
+                        <td>
+                            <ui-badge [variant]="getStatusVariant(order.status)">{{
+                                order.status | titlecase
+                                }}</ui-badge>
+                        </td>
+                        <td class="text-right">
+                            @if (order.status === 'OPEN' || order.status === 'PENDING') {
+                            <button class="cancel-btn" (click)="cancelOrder(order.id, order.symbol || '')">
+                                Cancel
+                            </button>
+                            }
+                        </td>
+                    </tr>
+                    } @empty {
+                    <tr>
+                        <td colspan="9" class="empty-state">
+                            <div class="empty-content">
+                                <span class="empty-icon">📋</span>
+                                <span class="empty-text">No orders found</span>
+                            </div>
+                        </td>
+                    </tr>
+                    }
+                    }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </ui-card>
+</div>

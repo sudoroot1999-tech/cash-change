@@ -1,0 +1,158 @@
+<div class="security-page">
+    <div class="security-header">
+        <h1 class="page-title">Security</h1>
+        <p class="page-subtitle">Manage your account security settings</p>
+    </div>
+
+    <div class="security-content">
+        <!-- Two-Factor Authentication -->
+        <ui-card variant="elevated">
+            <div class="security-section">
+                <div class="section-header">
+                    <div class="section-icon">🔐</div>
+                    <div class="section-info">
+                        <h3 class="section-title">Two-Factor Authentication</h3>
+                        <p class="section-desc">Add an extra layer of security to your account</p>
+                    </div>
+                    <ui-badge [variant]="twoFactorEnabled() ? 'success' : 'warning'">
+                        {{ twoFactorEnabled() ? 'Enabled' : 'Disabled' }}
+                    </ui-badge>
+                </div>
+
+                @if (!twoFactorEnabled()) {
+                <div class="section-content">
+                    <p class="setup-text">
+                        Protect your account with TOTP-based two-factor authentication. Use an
+                        authenticator app like Google Authenticator or Authy.
+                    </p>
+                    <ui-button variant="primary" (click)="setupTwoFactor()"> Enable 2FA </ui-button>
+                </div>
+                } @else {
+                <div class="section-content">
+                    <div class="two-fa-methods">
+                        <div class="method-item">
+                            <span class="method-icon">📱</span>
+                            <div class="method-info">
+                                <span class="method-name">Authenticator App</span>
+                                <span class="method-status">Active</span>
+                            </div>
+                            <ui-button variant="ghost" size="sm">Change</ui-button>
+                        </div>
+                    </div>
+                    <ui-button variant="danger" (click)="disableTwoFactor()"> Disable 2FA </ui-button>
+                </div>
+                }
+            </div>
+        </ui-card>
+
+        <!-- Change Password -->
+        <ui-card variant="elevated" title="Change Password">
+            <form class="password-form" (ngSubmit)="changePassword()">
+                <div class="form-group">
+                    <label class="form-label">Current Password</label>
+                    <ui-input type="password" placeholder="Enter current password" [ngModel]="passwordForm.current"
+                        (ngModelChange)="passwordForm.current = $event" [ngModelOptions]="{ standalone: true }" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">New Password</label>
+                    <ui-input type="password" placeholder="Enter new password" [ngModel]="passwordForm.new"
+                        (ngModelChange)="passwordForm.new = $event" [ngModelOptions]="{ standalone: true }" />
+                    <div class="password-strength">
+                        <div class="strength-bar">
+                            <div class="strength-fill" [style.width.%]="passwordStrength()"></div>
+                        </div>
+                        <span class="strength-label">{{ passwordStrengthLabel() }}</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Confirm New Password</label>
+                    <ui-input type="password" placeholder="Confirm new password" [ngModel]="passwordForm.confirm"
+                        (ngModelChange)="passwordForm.confirm = $event" [ngModelOptions]="{ standalone: true }" />
+                </div>
+
+                <ui-button type="submit" variant="primary">Update Password</ui-button>
+            </form>
+        </ui-card>
+
+        <!-- Anti-Phishing Code -->
+        <ui-card variant="elevated">
+            <div class="security-section">
+                <div class="section-header">
+                    <div class="section-icon">🛡️</div>
+                    <div class="section-info">
+                        <h3 class="section-title">Anti-Phishing Code</h3>
+                        <p class="section-desc">Add a code to identify official CryptoX emails</p>
+                    </div>
+                    <ui-badge [variant]="antiPhishingEnabled() ? 'success' : 'default'">
+                        {{ antiPhishingEnabled() ? 'Active' : 'Not Set' }}
+                    </ui-badge>
+                </div>
+
+                <div class="section-content">
+                    @if (antiPhishingEnabled()) {
+                    <p class="phishing-info">
+                        Your anti-phishing code: <strong>{{ antiPhishingCode() }}</strong>
+                    </p>
+                    }
+                    <ui-button variant="secondary" (click)="setupAntiPhishing()">
+                        {{ antiPhishingEnabled() ? 'Change Code' : 'Set Anti-Phishing Code' }}
+                    </ui-button>
+                </div>
+            </div>
+        </ui-card>
+
+        <!-- Active Sessions -->
+        <ui-card variant="elevated" title="Active Sessions">
+            <div class="sessions-list">
+                @for (session of sessions(); track session.id) {
+                <div class="session-item" [class.current]="session.current">
+                    <div class="session-icon">
+                        @if (session.device.includes('Mobile')) {
+                        📱
+                        } @else {
+                        💻
+                        }
+                    </div>
+                    <div class="session-info">
+                        <span class="session-device">{{ session.browser }} on {{ session.device }}</span>
+                        <span class="session-meta">{{ session.location }} · {{ session.ip }}</span>
+                        <span class="session-time">{{ session.lastActive }}</span>
+                    </div>
+                    <div class="session-actions">
+                        @if (session.current) {
+                        <ui-badge variant="success">Current</ui-badge>
+                        } @else {
+                        <ui-button variant="ghost" size="sm" (click)="revokeSession(session.id)">
+                            Revoke
+                        </ui-button>
+                        }
+                    </div>
+                </div>
+                }
+            </div>
+
+            <div class="sessions-footer">
+                <ui-button variant="danger" (click)="revokeAllSessions()">
+                    Revoke All Other Sessions
+                </ui-button>
+            </div>
+        </ui-card>
+
+        <!-- Account Deletion -->
+        <ui-card variant="elevated">
+            <div class="danger-zone">
+                <div class="danger-icon">⚠️</div>
+                <div class="danger-info">
+                    <h3 class="danger-title">Delete Account</h3>
+                    <p class="danger-desc">
+                        Permanently delete your account and all associated data. This action cannot be
+                        undone.
+                    </p>
+                </div>
+                <ui-button variant="danger" (click)="deleteAccount()">Delete Account</ui-button>
+            </div>
+        </ui-card>
+    </div>
+</div>

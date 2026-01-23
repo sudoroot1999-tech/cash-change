@@ -9,18 +9,19 @@ import {
 } from 'typeorm';
 
 @Entity('withdrawal_whitelist')
-@Index(['userId', 'address', 'currency'])
 export class WithdrawalWhitelist {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column({ name: 'user_id' })
-  @Index()
+  @Index(['user_id'])
   userId: string;
 
+  @Index(['user_id'])
   @Column()
   address: string;
 
+  @Index()
   @Column()
   currency: string;
 

@@ -23,9 +23,9 @@ message Pagination{
   int32 page = 1;
   int32 limit = 2;
   int32 total = 3;
-  int32 totalPages = 4;
-  bool hasNext = 5;
-  bool hasPrev = 6;
+  int32 total_pages = 4;
+  bool has_next = 5;
+  bool has_prev = 6;
 }
 
 message ValidateUserRequest {
@@ -86,8 +86,8 @@ message UserResponse{
 
 message ChangePasswordRequest {
   string user_id = 1;
-  string currentPassword = 2;
-  string newPassword = 3;
+  string current_password = 2;
+  string new_password = 3;
 }
 
 message ForgotPasswordRequest {
@@ -96,26 +96,26 @@ message ForgotPasswordRequest {
 
 message ResetPasswordRequest {
   string token = 1;
-  string newPassword = 2;
+  string new_password = 2;
 }
 
 message ForgotPasswordResponse {
   bool success = 1;
-  string message = 2;
+  string data = 2;
   optional Error error = 3;
   optional Pagination meta = 4;
 }
 
 message ResetPasswordResponse {
   bool success = 1;
-  string message = 2;
+  string data = 2;
   optional Error error = 3;
   optional Pagination meta = 4;
 }
 
 message ChangePasswordResponse {
   bool success = 1;
-  string message = 2;
+  string data = 2;
   optional Error error = 3;
   optional Pagination meta = 4;
 }

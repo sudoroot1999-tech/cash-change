@@ -1,0 +1,50 @@
+apiVersion: v2
+name: crypto-exchange
+description: A Helm chart for Crypto Exchange Platform
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - crypto
+  - exchange
+  - microservices
+maintainers:
+  - name: DevOps Team
+    email: devops@crypto-exchange.com
+dependencies:
+  - name: postgresql
+    version: 13.2.24
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled
+  - name: redis
+    version: 18.4.0
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled
+  - name: rabbitmq
+    version: 12.10.0
+    repository: https://charts.bitnami.com/bitnami
+    condition: rabbitmq.enabled
+  - name: mongodb
+    version: 14.4.3
+    repository: https://charts.bitnami.com/bitnami
+    condition: mongodb.enabled
+  - name: elasticsearch
+    version: 19.16.0
+    repository: https://charts.bitnami.com/bitnami
+    condition: elasticsearch.enabled
+  - name: kafka
+    version: 26.6.2
+    repository: https://charts.bitnami.com/bitnami
+    condition: kafka.enabled
+  - name: prometheus
+    version: 25.8.0
+    repository: https://prometheus-community.github.io/helm-charts
+    condition: prometheus.enabled
+  - name: grafana
+    version: 7.0.19
+    repository: https://grafana.github.io/helm-charts
+    condition: grafana.enabled
+  - name: jaeger
+    version: 0.73.0
+    repository: https://jaegertracing.github.io/helm-charts
+    condition: jaeger.enabled

@@ -27,7 +27,15 @@ export interface PreferencesUpdatedEvent extends BaseEvent {
     language?: string;
     timezone?: string;
     currency?: string;
-    notifications?: boolean;
+    notificationEmail?: boolean;
+    notificationSms?: boolean;
+    notificationPush?: boolean;
+    notificationTradingAlerts?: boolean;
+    notificationPriceAlerts?: boolean;
+    notificationNewsletters?: boolean;
+    tradingConfirmations?: boolean;
+    tradingAutoCompound?: boolean;
+    tradingDefaultOrderType?: string;
   };
 }
 

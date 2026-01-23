@@ -6,10 +6,11 @@ import { InsuranceFundService } from '../../services/insurance-fund.service';
 import { ColdWalletService } from '../../services/cold-wallet.service';
 import { BugBountyService } from '../../services/bug-bounty.service';
 import { CreateIncidentDto } from '../../dto/incident.dto';
-import { BugBountyStatus } from '../../entities/bug-bounty.entity';
-import { IncidentStatus } from '../../entities/incident.entity';
+import { AdminGuard, BugBountyStatus, IncidentStatus, RequireAuth } from '@exchange/common';
 
 @Controller('admin/security')
+@RequireAuth()
+@UseGuards(AdminGuard)
 export class SecurityAdminController {
   constructor(
     private readonly monitoringService: TransactionMonitoringService,

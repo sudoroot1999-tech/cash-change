@@ -129,7 +129,7 @@ message UserSessionData {
 
 message GetActiveSessionResponse {
   bool success = 1;
-  repeated UserSession data = 2;
+  repeated UserSessionData data = 2;
   optional Error error = 3;
   optional Pagination meta = 4;
 }
@@ -162,7 +162,7 @@ message GenerateQRCodeData {
 
 message GenerateQRCodeResponse {
   bool success = 1;
-  GenerateQRCodeData data = 2
+  GenerateQRCodeData data = 2;
   optional Error error = 3;
   optional Pagination meta = 4;
 }
@@ -179,7 +179,7 @@ message VerifyTokenData {
 
 message VerifyTokenResponse {
   bool success = 1;
-  VerifyTokenData data = 2
+  VerifyTokenData data = 2;
   optional Error error = 3;
   optional Pagination meta = 4;
 }
@@ -195,7 +195,7 @@ message VerifyBackupCodeData {
 
 message VerifyBackupCodeResponse {
   bool success = 1;
-  VerifyBackupCodeData data = 2
+  VerifyBackupCodeData data = 2;
   optional Error error = 3;
   optional Pagination meta = 4;
 }
@@ -206,7 +206,7 @@ message Disable2FARequest {
 
 message Disable2FAResponse {
   bool success = 1;
-  string data = 2
+  string data = 2;
   optional Error error = 3;
   optional Pagination meta = 4;
 }
@@ -232,7 +232,7 @@ message UpdateTwoFactorResponseData {
 
 message UpdateTwoFactorResponse {
   bool success = 1;
-  UpdateTwoFactorResponseData data = 2
+  UpdateTwoFactorResponseData data = 2;
   optional Error error = 3;
   optional Pagination meta = 4;
 }
@@ -252,7 +252,7 @@ message FindTwoFactorByUserIdData {
 
 message FindTwoFactorByUserIdResponse {
   bool success = 1;
-  FindTwoFactorByUserIdData data = 2
+  FindTwoFactorByUserIdData data = 2;
   optional Error error = 3;
   optional Pagination meta = 4;
 }
@@ -295,7 +295,7 @@ message RegisteredDeviceData {
 
 message RegisterDeviceResponse {
   bool success = 1;
-  RegisteredDeviceData data = 2
+  RegisteredDeviceData data = 2;
   optional Error error = 3;
   optional Pagination meta = 4;
 }
@@ -311,7 +311,7 @@ message IsDeviceTrustedData {
 
 message IsDeviceTrustedResponse {
   bool success = 1;
-  IsDeviceTrustedData data = 2
+  IsDeviceTrustedData data = 2;
   optional Error error = 3;
   optional Pagination meta = 4;
 }
@@ -330,7 +330,7 @@ message AntiPhishingData {
 
 message SetAntiPhishingCodeResponse {
   bool success = 1;
-  AntiPhishingData data = 2
+  AntiPhishingData data = 2;
   optional Error error = 3;
   optional Pagination meta = 4;
 }

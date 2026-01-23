@@ -1,0 +1,368 @@
+# ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: matching-engine-api-config
+  labels:
+    app: matching-engine-api
+    name: matching-engine
+data:
+  NODE_ENV: "production"
+  JWT_EXPIRES_IN: 15m
+  JWT_REFRESH_EXPIRES_IN: 7d
+  KAFKA_LISTENERS: "PLAINTEXT://kafka:9092"
+  PORT: 3010
+  GRPC_PORT: 5010
+  WEBSOCKET_PORT: 6010
+  # Instance Configuration
+  INSTANCE_ID: matching-engine
+  # Performance Tuning
+  MAX_WORKERS: 10
+  ORDER_QUEUE_SIZE: 100000
+  CANCEL_QUEUE_SIZE: 10000
+---
+
+# Secrets
+apiVersion: v1
+kind: Secret
+metadata:
+  name:  matching-engine-api-secret
+  labels:
+    app: matching-engine-api
+    name: matching-engine
+type: Opaque
+stringData:
+  database-url: "postgresql://exchange-user:exchange-password@postgresql:5432/exchange"
+  redis-url: "redis://:exchange-password@redis-master:6379"
+  rabbitmq-url: "amqp://exchange-user:exchange-password@rabbitmq:5672"
+  mongodb-url: "mongodb://root:exchange-password@mongodb:27017"
+  jwt-secret: "dev-jwt-secret-change-in-production"
+---
+
+# Horizontal Pod Autoscaler
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: matching-engine-api-hpa
+  labels:
+    app: matching-engine-api
+    name: matching-engine
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: matching-engine-api
+  minReplicas: 1
+  maxReplicas: 1
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+      - type: Pods
+        value: 2
+        periodSeconds: 60
+      selectPolicy: Min
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 30
+      - type: Pods
+        value: 4
+        periodSeconds: 30
+      selectPolicy: Max
+---
+
+# Pod Disruption Budget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: matching-engine-api-pdb
+  labels:
+    app: matching-engine-api
+    name: matching-engine
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: matching-engine-api
+---
+
+# Network Policy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: matching-engine-api-netpol
+  labels:
+    app: matching-engine-api
+    name: matching-engine
+spec:
+  podSelector:
+    matchLabels:
+     app: matching-engine-api
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: nginx-ingress
+    ports:
+    - protocol: TCP
+      port: 3010
+  egress:
+  # Allow DNS
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+  # Allow PostgreSQL
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: postgresql
+    ports:
+    - protocol: TCP
+      port: 5432
+  # Allow Redis
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+  # Allow RabbitMQ
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: rabbitmq
+    ports:
+    - protocol: TCP
+      port: 5672
+  # Allow MongoDB
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: mongodb
+    ports:
+    - protocol: TCP
+      port: 27017
+  # Allow Elasticsearch
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: elasticsearch
+    ports:
+    - protocol: TCP
+      port: 9200
+  # Allow Kafka
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: kafka
+    ports:
+    - protocol: TCP
+      port: 9092
+  # Allow Jaeger
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: jaeger
+    ports:
+    - protocol: TCP
+      port: 4318
+  # Allow external HTTPS
+  - to:
+    # - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 6010
+  # Allow inter-service communication
+  - to:
+    - podSelector: 
+        matchLabels:
+          app : matching-engine-api
+    ports:
+    - protocol: TCP
+      port: 3010
+    - protocol: TCP
+      port: 5010
+---
+
+# Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: matching-engine-api
+  labels:
+    app: matching-engine-api
+    name: matching-engine
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "3010"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3010
+    targetPort: 3010
+    protocol: TCP
+    name: http
+  - port: 5010
+    targetPort: 5010
+    protocol: TCP
+    name: grpc
+  selector:
+    app: matching-engine-api
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800
+---
+
+# Websocket Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: matching-engine-api
+  labels:
+    app: matching-engine-api
+    name: matching-engine
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 6010
+    targetPort: 6010
+    protocol: TCP
+    name: ws
+  selector:
+    app: matching-engine-api
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800
+---
+
+# Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: matching-engine-api
+  labels:
+    app: matching-engine-api
+    name: matching-engine
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: matching-engine-api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: matching-engine-api
+        name: matching-engine
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3010"
+        prometheus.io/path: "/metrics"
+    spec:
+      # serviceAccountName:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+        capabilities:
+          drop:
+            - ALL
+        readOnlyRootFilesystem: true
+      containers:
+      - name: matching-engine-api
+        image: {{ include "crypto-exchange.image" (dict "Values" $.Values "image" $service.image) }}
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 3010
+          protocol: TCP
+        - name: grpc
+          containerPort: 5010
+          protocol: TCP
+        - name: ws
+          containerPort: 6010
+          protocol: TCP
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: matching-engine-api-secret
+              key: database-url
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: matching-engine-api-secret
+              key: redis-url
+        - name: RABBITMQ_URL
+          valueFrom:
+            secretKeyRef:
+              name: matching-engine-api-secret
+              key: rabbitmq-url
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: matching-engine-api-secret
+              key: jwt-secret
+        envFrom:
+        - configMapRef:
+            name: matching-engine-api-config
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        # resources:
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: logs
+          mountPath: /var/log
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: logs
+        emptyDir: {}
+      # imagePullSecrets:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - matching-engine-api
+              topologyKey: kubernetes.io/hostname

@@ -2,8 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan } from 'typeorm';
 import { RiskScore } from '../entities/risk-score.entity';
-import { SecurityEvent, SecurityEventType, RiskLevel } from '../entities/security-event.entity';
+import { SecurityEvent } from '../entities/security-event.entity';
 import Decimal from 'decimal.js';
+import { RISK_LEVELS, SECURITY_EVENT_TYPES, SecurityEventType } from '@exchange/common';
 
 export interface TransactionData {
   userId: string;
@@ -30,7 +31,7 @@ export class TransactionMonitoringService {
     private riskScoreRepository: Repository<RiskScore>,
     @InjectRepository(SecurityEvent)
     private securityEventRepository: Repository<SecurityEvent>,
-  ) {}
+  ) { }
 
   /**
    * Analyze transaction for anomalies
@@ -72,7 +73,7 @@ export class TransactionMonitoringService {
     if (isAnomaly) {
       await this.logSecurityEvent(
         transaction.userId,
-        SecurityEventType.SUSPICIOUS_ACTIVITY,
+        SECURITY_EVENT_TYPES.SUSPICIOUS_ACTIVITY,
         {
           transaction,
           riskScore,
@@ -114,7 +115,7 @@ export class TransactionMonitoringService {
 
     const avgVolume = history.length > 0
       ? history.reduce((sum, tx) => sum.plus(new Decimal(tx.amount)), new Decimal(0))
-          .dividedBy(history.length)
+        .dividedBy(history.length)
       : new Decimal(0);
 
     if (recentVolume.greaterThan(avgVolume.times(5))) {
@@ -145,7 +146,7 @@ export class TransactionMonitoringService {
     // Check for similar amounts in sequence
     const recentAmounts = history.slice(0, 5).map(tx => tx.amount);
     const sameAmountCount = recentAmounts.filter(a => a === transaction.amount).length;
-    
+
     if (sameAmountCount >= 3) {
       score += 15;
       factors.push('Multiple identical transactions');
@@ -155,7 +156,7 @@ export class TransactionMonitoringService {
     if (history.length > 0) {
       const lastTx = history[0];
       const timeDiff = transaction.timestamp.getTime() - lastTx.timestamp.getTime();
-      
+
       if (timeDiff < 10000) { // Less than 10 seconds
         score += 10;
         factors.push('Rapid sequential transactions');
@@ -191,7 +192,7 @@ export class TransactionMonitoringService {
       .dividedBy(history.length);
 
     const currentAmount = new Decimal(transaction.amount);
-    
+
     if (currentAmount.greaterThan(avgAmount.times(10))) {
       score += 25;
       factors.push('Transaction amount 10x higher than average');
@@ -203,7 +204,7 @@ export class TransactionMonitoringService {
     // Check for sudden change in transaction type
     const recentTypes = history.slice(0, 10).map(tx => tx.type);
     const commonType = this.getMostCommon(recentTypes);
-    
+
     if (commonType && transaction.type !== commonType) {
       score += 5;
       factors.push('Unusual transaction type');
@@ -264,7 +265,7 @@ export class TransactionMonitoringService {
     if (history.length >= 10) {
       const userHours = history.map(tx => tx.timestamp.getHours());
       const avgHour = userHours.reduce((a, b) => a + b, 0) / userHours.length;
-      
+
       if (Math.abs(hour - avgHour) > 6) {
         score += 10;
         factors.push('Transaction at unusual time for user');
@@ -345,7 +346,7 @@ export class TransactionMonitoringService {
     // For now, return a simple heuristic
 
     const amount = new Decimal(transaction.amount);
-    
+
     if (amount.greaterThan(100000)) {
       return {
         isFraud: true,
@@ -364,13 +365,13 @@ export class TransactionMonitoringService {
   // Helper methods
   private getMostCommon(arr: string[]): string | null {
     if (arr.length === 0) return null;
-    
+
     const counts: Record<string, number> = {};
     arr.forEach(item => {
       counts[item] = (counts[item] || 0) + 1;
     });
-    
-    return Object.keys(counts).reduce((a, b) => 
+
+    return Object.keys(counts).reduce((a, b) =>
       counts[a] > counts[b] ? a : b
     );
   }
@@ -398,7 +399,7 @@ export class TransactionMonitoringService {
     const event = this.securityEventRepository.create({
       userId,
       eventType,
-      riskLevel: RiskLevel.HIGH,
+      riskLevel: RISK_LEVELS.HIGH,
       details,
     });
 

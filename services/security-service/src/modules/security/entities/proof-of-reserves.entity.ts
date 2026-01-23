@@ -7,21 +7,21 @@ import {
 } from 'typeorm';
 
 @Entity('proof_of_reserves')
-@Index(['currency', 'createdAt'])
 export class ProofOfReserves {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Index(['currency'])
   @Column()
   currency: string;
 
-  @Column({ type: 'decimal', precision: 36, scale: 18 })
+  @Column({ type: 'decimal', precision: 36, scale: 18, name: 'total_reserves' })
   totalReserves: string;
 
-  @Column({ type: 'decimal', precision: 36, scale: 18 })
+  @Column({ type: 'decimal', precision: 36, scale: 18, name:'total_liabilities' })
   totalLiabilities: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({ type: 'decimal', precision: 10, scale: 2, name:'reserve_ratio'})
   reserveRatio: number;
 
   @Column({ name: 'merkle_root' })
@@ -36,7 +36,7 @@ export class ProofOfReserves {
   @Column({ name: 'block_height', nullable: true })
   blockHeight: string;
 
-  @Column({ type: 'jsonb', nullable: true })
+  @Column({ type: 'jsonb', nullable: true, name:'wallet_addresses'})
   walletAddresses: string[];
 
   @Column({ name: 'is_verified', default: false })
@@ -45,6 +45,7 @@ export class ProofOfReserves {
   @Column({ name: 'verified_at', type: 'timestamp', nullable: true })
   verifiedAt: Date;
 
+  @Index(['created_at'])
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 }

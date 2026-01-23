@@ -1,0 +1,209 @@
+<div class="verification-page">
+    <div class="page-header">
+        <h1 class="page-title">Identity Verification</h1>
+        <p class="page-subtitle">Complete KYC to unlock higher limits and features</p>
+    </div>
+
+    <!-- Current Status -->
+    <ui-card variant="elevated" class="status-card">
+        <div class="status-content">
+            <div class="status-icon" [class]="currentStatus()">
+                @switch (currentStatus()) {
+                @case ('verified') {
+                ✓
+                }
+                @case ('pending') {
+                ⏳
+                }
+                @case ('rejected') {
+                ✗
+                }
+                @default {
+                ?
+                }
+                }
+            </div>
+            <div class="status-info">
+                <h2 class="status-title">{{ statusTitle() }}</h2>
+                <p class="status-desc">{{ statusDescription() }}</p>
+            </div>
+            <ui-badge [variant]="statusBadge().variant">{{ statusBadge().label }}</ui-badge>
+        </div>
+    </ui-card>
+
+    <!-- Verification Tiers -->
+    <div class="tiers-section">
+        <h3 class="section-title">Verification Tiers</h3>
+        <div class="tiers-grid">
+            @for (tier of tiers; track tier.level) {
+            <div class="tier-card" [class.active]="currentTier() >= tier.level">
+                <div class="tier-header">
+                    <span class="tier-level">Level {{ tier.level }}</span>
+                    <span class="tier-name">{{ tier.name }}</span>
+                    @if (currentTier() >= tier.level) {
+                    <ui-badge variant="success">Unlocked</ui-badge>
+                    }
+                </div>
+                <div class="tier-limits">
+                    <div class="limit">
+                        <span class="limit-label">Daily Withdraw</span>
+                        <span class="limit-value">{{ tier.limits.dailyWithdraw }}</span>
+                    </div>
+                    <div class="limit">
+                        <span class="limit-label">Daily Deposit</span>
+                        <span class="limit-value">{{ tier.limits.dailyDeposit }}</span>
+                    </div>
+                </div>
+                <div class="tier-requirements">
+                    @for (req of tier.requirements; track req) {
+                    <div class="requirement">
+                        <span class="requirement-check">
+                            @if (currentTier() >= tier.level) {
+                            ✓
+                            } @else {
+                            ○
+                            }
+                        </span>
+                        {{ req }}
+                    </div>
+                    }
+                </div>
+            </div>
+            }
+        </div>
+    </div>
+
+    <!-- Verification Steps -->
+    @if (currentStatus() !== 'verified') {
+    <ui-card variant="elevated" title="Complete Verification">
+        <div class="steps-progress">
+            @for (step of steps; track step.id; let i = $index) {
+            <div class="step" [class.completed]="isStepCompleted(step.id)" [class.current]="currentStep() === step.id">
+                <div class="step-number">
+                    @if (isStepCompleted(step.id)) {
+                    ✓
+                    } @else {
+                    {{ i + 1 }}
+                    }
+                </div>
+                <div class="step-info">
+                    <span class="step-name">{{ step.name }}</span>
+                    <span class="step-desc">{{ step.description }}</span>
+                </div>
+            </div>
+            @if (i < steps.length - 1) { <div class="step-connector" [class.completed]="isStepCompleted(step.id)">
+        </div>
+        }
+        }
+</div>
+
+<!-- Step Content -->
+@switch (currentStep()) {
+@case ('personal') {
+<div class="step-content">
+    <h4>Personal Information</h4>
+    <p>
+        Please provide your legal name and date of birth as they appear on your
+        government-issued ID.
+    </p>
+    <div class="form-row">
+        <div class="form-field">
+            <label>First Name</label>
+            <input type="text" class="form-input" placeholder="Enter first name" />
+        </div>
+        <div class="form-field">
+            <label>Last Name</label>
+            <input type="text" class="form-input" placeholder="Enter last name" />
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-field">
+            <label>Date of Birth</label>
+            <input type="date" class="form-input" />
+        </div>
+        <div class="form-field">
+            <label>Nationality</label>
+            <select class="form-input">
+                <option value="">Select country</option>
+                <option value="US">United States</option>
+                <option value="GB">United Kingdom</option>
+                <option value="SG">Singapore</option>
+            </select>
+        </div>
+    </div>
+    <ui-button variant="primary" (click)="nextStep()">Continue</ui-button>
+</div>
+}
+
+@case ('identity') {
+<div class="step-content">
+    <h4>Identity Document</h4>
+    <p>
+        Upload a clear photo of your government-issued ID (passport, driver's license, or
+        national ID).
+    </p>
+
+    <div class="document-options">
+        <button class="document-option" [class.selected]="selectedDocType() === 'passport'"
+            (click)="selectedDocType.set('passport')">
+            🛂 Passport
+        </button>
+        <button class="document-option" [class.selected]="selectedDocType() === 'license'"
+            (click)="selectedDocType.set('license')">
+            🪪 Driver's License
+        </button>
+        <button class="document-option" [class.selected]="selectedDocType() === 'id'"
+            (click)="selectedDocType.set('id')">
+            🆔 National ID
+        </button>
+    </div>
+
+    <div class="upload-area">
+        <div class="upload-icon">📷</div>
+        <p>Drag and drop or click to upload</p>
+        <span class="upload-hint">JPG, PNG, or PDF (max 10MB)</span>
+    </div>
+
+    <div class="step-actions">
+        <ui-button variant="secondary" (click)="prevStep()">Back</ui-button>
+        <ui-button variant="primary" (click)="nextStep()">Continue</ui-button>
+    </div>
+</div>
+}
+
+@case ('address') {
+<div class="step-content">
+    <h4>Proof of Address</h4>
+    <p>
+        Upload a document showing your current address (utility bill, bank statement,
+        etc.) dated within the last 3 months.
+    </p>
+
+    <div class="upload-area">
+        <div class="upload-icon">📄</div>
+        <p>Drag and drop or click to upload</p>
+        <span class="upload-hint">JPG, PNG, or PDF (max 10MB)</span>
+    </div>
+
+    <div class="step-actions">
+        <ui-button variant="secondary" (click)="prevStep()">Back</ui-button>
+        <ui-button variant="primary" (click)="submitVerification()">Submit for Review</ui-button>
+    </div>
+</div>
+}
+
+@case ('complete') {
+<div class="step-content complete">
+    <div class="complete-icon">🎉</div>
+    <h4>Verification Submitted</h4>
+    <p>
+        Your documents have been submitted for review. This usually takes 1-3 business
+        days.
+    </p>
+    <p class="complete-note">We'll notify you by email once the review is complete.</p>
+</div>
+}
+}
+</ui-card>
+}
+</div>

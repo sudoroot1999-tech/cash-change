@@ -1,0 +1,286 @@
+  .settings-page {
+      padding: var(--spacing-6);
+      max-width: 1000px;
+      margin: 0 auto;
+  }
+
+  .settings-header {
+      margin-bottom: var(--spacing-8);
+  }
+
+  .page-title {
+      font-size: var(--font-size-2xl);
+      font-weight: var(--font-weight-bold);
+      color: var(--color-text-primary);
+      margin: 0 0 var(--spacing-2) 0;
+  }
+
+  .page-subtitle {
+      font-size: var(--font-size-base);
+      color: var(--color-text-secondary);
+      margin: 0;
+  }
+
+  .settings-layout {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: var(--spacing-6);
+  }
+
+  .settings-nav {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-1);
+  }
+
+  .nav-item {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-3);
+      padding: var(--spacing-3) var(--spacing-4);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-secondary);
+      background: transparent;
+      border: none;
+      border-radius: var(--radius-lg);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      text-align: left;
+  }
+
+  .nav-item:hover {
+      color: var(--color-text-primary);
+      background: var(--color-bg-card);
+  }
+
+  .nav-item.active {
+      color: var(--color-text-primary);
+      background: var(--color-bg-card);
+      border-left: 2px solid var(--color-accent-500);
+  }
+
+  .nav-icon {
+      font-size: var(--font-size-base);
+  }
+
+  .settings-form {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-5);
+  }
+
+  .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-2);
+  }
+
+  .form-label {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-secondary);
+  }
+
+  .form-hint {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+  }
+
+  .form-select {
+      padding: var(--spacing-3);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-primary);
+      background: var(--color-bg-tertiary);
+      border: 1px solid var(--color-border-primary);
+      border-radius: var(--radius-lg);
+      cursor: pointer;
+  }
+
+  .form-select:focus {
+      outline: none;
+      border-color: var(--color-accent-500);
+  }
+
+  .form-actions {
+      margin-top: var(--spacing-6);
+      padding-top: var(--spacing-6);
+      border-top: 1px solid var(--color-border-primary);
+  }
+
+  .notifications-list {
+      display: flex;
+      flex-direction: column;
+  }
+
+  .notification-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--spacing-4) 0;
+      border-bottom: 1px solid var(--color-border-primary);
+  }
+
+  .notification-item:last-child {
+      border-bottom: none;
+  }
+
+  .notification-info {
+      display: flex;
+      flex-direction: column;
+  }
+
+  .notification-title {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-primary);
+  }
+
+  .notification-desc {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+  }
+
+  .toggle {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+  }
+
+  .toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+  }
+
+  .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--color-bg-tertiary);
+      border-radius: 24px;
+      transition: all var(--transition-fast);
+  }
+
+  .toggle-slider:before {
+      position: absolute;
+      content: '';
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: all var(--transition-fast);
+  }
+
+  .toggle input:checked+.toggle-slider {
+      background: var(--color-accent-500);
+  }
+
+  .toggle input:checked+.toggle-slider:before {
+      transform: translateX(20px);
+  }
+
+  .checkbox-group {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-2);
+  }
+
+  .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-2);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      cursor: pointer;
+  }
+
+  .checkbox-label input {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--color-accent-500);
+  }
+
+  .theme-selector {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--spacing-4);
+  }
+
+  .theme-option {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--spacing-2);
+      padding: var(--spacing-4);
+      background: var(--color-bg-card);
+      border: 2px solid var(--color-border-primary);
+      border-radius: var(--radius-lg);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+  }
+
+  .theme-option:hover {
+      border-color: var(--color-border-secondary);
+  }
+
+  .theme-option.active {
+      border-color: var(--color-accent-500);
+  }
+
+  .theme-preview {
+      width: 100%;
+      height: 80px;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+  }
+
+  .theme-preview.dark {
+      background: #0a0a0a;
+  }
+
+  .theme-preview.dark .preview-header {
+      height: 20px;
+      background: #121212;
+  }
+
+  .theme-preview.light {
+      background: #f5f5f5;
+  }
+
+  .theme-preview.light .preview-header {
+      height: 20px;
+      background: #ffffff;
+  }
+
+  .theme-preview.system {
+      background: linear-gradient(135deg, #0a0a0a 50%, #f5f5f5 50%);
+  }
+
+  .theme-name {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-primary);
+  }
+
+  @media (max-width: 768px) {
+      .settings-layout {
+          grid-template-columns: 1fr;
+      }
+
+      .settings-nav {
+          flex-direction: row;
+          overflow-x: auto;
+          padding-bottom: var(--spacing-2);
+      }
+
+      .nav-item {
+          white-space: nowrap;
+      }
+  }

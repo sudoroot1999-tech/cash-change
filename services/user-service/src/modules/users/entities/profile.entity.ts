@@ -11,12 +11,12 @@ import {
 import { User } from '../../users/entities/user.entity';
 
 @Entity('user_profiles')
-@Index(['userId'], { unique: true })
 export class UserProfile {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ name: 'user_id', type: 'uuid' , unique: true })
+  @Index(['user_id'], { unique: true })
+  @Column({ name: 'user_id', type: 'uuid', unique: true })
   userId!: string;
 
   @OneToOne(() => User)

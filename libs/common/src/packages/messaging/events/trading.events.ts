@@ -1,4 +1,4 @@
-import { OrderSide, OrderStatus, OrderType, TimeInForce } from 'libs/common/src/types';
+import { OrderSide, OrderStatus, OrderType, TimeInForce } from '../../../types';
 import { BaseEvent } from './base.event';
 
 

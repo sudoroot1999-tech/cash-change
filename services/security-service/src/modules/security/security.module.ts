@@ -1,4 +1,4 @@
-import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
+import { Module} from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 // Entities
@@ -46,8 +46,6 @@ import { SecurityGrpcController } from './controllers/security-grpc.controller';
 
 // Guards & Middleware
 import { ApiKeyGuard } from '../../guards/api-key.guard';
-import { QueueService, RateLimitGuard } from '@exchange/common';
-import { DeviceFingerprintMiddleware } from '../../middlewares/device-fingerprint.middleware';
 
 // Jobs
 import { WhitelistActivationJob } from './workers/whitelist-activation.job';
@@ -75,7 +73,7 @@ const entities = [
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature(entities),
+    TypeOrmModule.forFeature(entities)
   ],
   controllers: [
     AntiPhishingController,
@@ -88,7 +86,6 @@ const entities = [
   ],
   providers: [
     // Services
-    QueueService,
     AntiPhishingService,
     DeviceFingerprintService,
     WithdrawalWhitelistService,
@@ -104,7 +101,6 @@ const entities = [
 
     // Guards
     ApiKeyGuard,
-    RateLimitGuard,
 
     // Jobs
     WhitelistActivationJob,
@@ -126,10 +122,4 @@ const entities = [
     TwoFactorService,
   ],
 })
-export class SecurityModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(DeviceFingerprintMiddleware)
-      .forRoutes('*');
-  }
-}
+export class SecurityModule {}

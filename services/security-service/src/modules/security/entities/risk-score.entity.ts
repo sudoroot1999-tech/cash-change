@@ -8,7 +8,6 @@ import {
 } from 'typeorm';
 
 @Entity('risk_scores')
-@Index(['userId'])
 export class RiskScore {
   @PrimaryGeneratedColumn('uuid')
   id: string;

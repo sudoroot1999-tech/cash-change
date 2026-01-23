@@ -2,8 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TrustedDevice } from '../entities/trusted-device.entity';
-import { SecurityEvent, SecurityEventType, RiskLevel } from '../entities/security-event.entity';
+import { SecurityEvent } from '../entities/security-event.entity';
 import * as crypto from 'crypto';
+import { NotFoundError, RISK_LEVELS, SECURITY_EVENT_TYPES, SecurityEventType } from '@exchange/common';
 
 export interface DeviceInfo {
   fingerprint: string;
@@ -26,7 +27,7 @@ export class DeviceFingerprintService {
     private trustedDeviceRepository: Repository<TrustedDevice>,
     @InjectRepository(SecurityEvent)
     private securityEventRepository: Repository<SecurityEvent>,
-  ) {}
+  ) { }
 
   /**
    * Check if device is trusted
@@ -82,7 +83,7 @@ export class DeviceFingerprintService {
     await this.trustedDeviceRepository.save(device);
 
     // Log new device event
-    await this.logSecurityEvent(userId, SecurityEventType.NEW_DEVICE, {
+    await this.logSecurityEvent(userId, SECURITY_EVENT_TYPES.NEW_DEVICE, {
       fingerprint: deviceInfo.fingerprint,
       deviceInfo: deviceInfo,
       location,
@@ -104,7 +105,7 @@ export class DeviceFingerprintService {
     });
 
     if (!device) {
-      throw new Error('Device not found');
+      throw new NotFoundError('Device not found');
     }
 
     device.isTrusted = true;
@@ -169,7 +170,7 @@ export class DeviceFingerprintService {
     if (data.acceptLanguage) hash.update(data.acceptLanguage);
     if (data.acceptEncoding) hash.update(data.acceptEncoding);
     hash.update(data.ipAddress);
-    
+
     return hash.digest('hex');
   }
 
@@ -184,7 +185,7 @@ export class DeviceFingerprintService {
     const event = this.securityEventRepository.create({
       userId,
       eventType,
-      riskLevel: RiskLevel.MEDIUM,
+      riskLevel: RISK_LEVELS.MEDIUM,
       details,
     });
 

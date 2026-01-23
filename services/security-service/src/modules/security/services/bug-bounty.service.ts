@@ -2,10 +2,9 @@ import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
-  BugBountySubmission,
-  BugSeverity,
-  BugBountyStatus,
+  BugBountySubmission
 } from '../entities/bug-bounty.entity';
+import { BUG_SEVERITY, BUGBOUNTY_STATUS, BugBountyStatus, BugSeverity } from '@exchange/common';
 
 export interface CreateBugBountyDto {
   reporterId: string;
@@ -24,11 +23,11 @@ export class BugBountyService {
 
   // Reward tiers based on severity
   private readonly REWARD_TIERS = {
-    [BugSeverity.CRITICAL]: { min: 5000, max: 50000 },
-    [BugSeverity.HIGH]: { min: 2000, max: 10000 },
-    [BugSeverity.MEDIUM]: { min: 500, max: 2000 },
-    [BugSeverity.LOW]: { min: 100, max: 500 },
-    [BugSeverity.INFO]: { min: 0, max: 100 },
+    [BUG_SEVERITY.CRITICAL]: { min: 5000, max: 50000 },
+    [BUG_SEVERITY.HIGH]: { min: 2000, max: 10000 },
+    [BUG_SEVERITY.MEDIUM]: { min: 500, max: 2000 },
+    [BUG_SEVERITY.LOW]: { min: 100, max: 500 },
+    [BUG_SEVERITY.INFO]: { min: 0, max: 100 },
   };
 
   constructor(
@@ -42,7 +41,7 @@ export class BugBountyService {
   async submitReport(data: CreateBugBountyDto): Promise<BugBountySubmission> {
     const submission = this.submissionRepository.create({
       ...data,
-      status: BugBountyStatus.SUBMITTED,
+      status: BUGBOUNTY_STATUS.SUBMITTED,
     });
 
     await this.submissionRepository.save(submission);
@@ -73,7 +72,7 @@ export class BugBountyService {
       submission.internalNotes = internalNotes;
     }
 
-    if (status === BugBountyStatus.RESOLVED) {
+    if (status === BUGBOUNTY_STATUS.RESOLVED) {
       submission.resolvedAt = new Date();
     }
 
@@ -110,7 +109,7 @@ export class BugBountyService {
     submission.rewardAmount = rewardAmount;
     submission.rewardCurrency = rewardCurrency;
     submission.rewardedAt = new Date();
-    submission.status = BugBountyStatus.REWARDED;
+    submission.status = BUGBOUNTY_STATUS.REWARDED;
 
     await this.submissionRepository.save(submission);
     this.logger.log(
@@ -164,7 +163,7 @@ export class BugBountyService {
    */
   async getHallOfFame(limit: number = 20): Promise<any[]> {
     const submissions = await this.submissionRepository.find({
-      where: { status: BugBountyStatus.REWARDED },
+      where: { status: BUGBOUNTY_STATUS.REWARDED },
     });
 
     // Group by reporter
@@ -191,16 +190,16 @@ export class BugBountyService {
       reporterStats[key].totalReward += submission.rewardAmount || 0;
 
       switch (submission.severity) {
-        case BugSeverity.CRITICAL:
+        case BUG_SEVERITY.CRITICAL:
           reporterStats[key].criticalCount++;
           break;
-        case BugSeverity.HIGH:
+        case BUG_SEVERITY.HIGH:
           reporterStats[key].highCount++;
           break;
-        case BugSeverity.MEDIUM:
+        case BUG_SEVERITY.MEDIUM:
           reporterStats[key].mediumCount++;
           break;
-        case BugSeverity.LOW:
+        case BUG_SEVERITY.LOW:
           reporterStats[key].lowCount++;
           break;
       }
@@ -228,12 +227,12 @@ export class BugBountyService {
     };
 
     // Count by status
-    Object.values(BugBountyStatus).forEach(status => {
+    Object.values(BUGBOUNTY_STATUS).forEach(status => {
       stats.byStatus[status] = allSubmissions.filter(s => s.status === status).length;
     });
 
     // Count by severity
-    Object.values(BugSeverity).forEach(severity => {
+    Object.values(BUG_SEVERITY).forEach(severity => {
       stats.bySeverity[severity] = allSubmissions.filter(s => s.severity === severity).length;
     });
 

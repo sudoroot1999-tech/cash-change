@@ -1,4 +1,4 @@
-import { DocumentType, KycLevel } from 'libs/common/src/types';
+import { DocumentType, KycLevel } from '../../../types';
 import { BaseEvent } from './base.event';
 
 

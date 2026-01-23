@@ -1,10 +1,10 @@
 import { Controller } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
-import { WalletsService } from './wallets.service';
+import { WalletService } from './wallets.service';
 
 @Controller()
 export class WalletsGrpcController {
-  constructor(private readonly walletsService: WalletsService) {}
+  constructor(private readonly walletsService: WalletService) {}
 
   @GrpcMethod('WalletService', 'GetBalance')
   async getBalance(data: { user_id: string; asset_id: string }) {

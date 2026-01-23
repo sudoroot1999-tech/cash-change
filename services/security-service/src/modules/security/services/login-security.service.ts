@@ -1,10 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan } from 'typeorm';
 import { LoginHistory } from '../entities/login-history.entity';
 import { UserSession } from '../entities/user-session.entity';
-import { SecurityEvent, SecurityEventType, RiskLevel } from '../entities/security-event.entity';
-import { LOGIN_STATUS,LoginStatus } from '@exchange/common';
+import { SecurityEvent } from '../entities/security-event.entity';
+import { CacheLayer, Logger, LOGIN_STATUS, LoginStatus, MultiLayerCacheService, RateLimiterService, RISK_LEVELS, SECURITY_EVENT_TYPES, SecurityEventType } from '@exchange/common';
+import { DeviceFingerprintService } from './device-fingerprint.service';
 
 export interface LoginAttemptData {
   userId: string;
@@ -35,6 +36,9 @@ export class LoginSecurityService {
     private userSessionRepository: Repository<UserSession>,
     @InjectRepository(SecurityEvent)
     private securityEventRepository: Repository<SecurityEvent>,
+    private readonly cacheService: MultiLayerCacheService,
+    private readonly rateLimitService: RateLimiterService,
+    private readonly deviceService: DeviceFingerprintService,
   ) { }
 
   /**
@@ -71,7 +75,7 @@ export class LoginSecurityService {
     });
 
     if (failedAttempts >= this.MAX_FAILED_ATTEMPTS) {
-      await this.logSecurityEvent(userId, SecurityEventType.ACCOUNT_LOCKED, {
+      await this.logSecurityEvent(userId, SECURITY_EVENT_TYPES.ACCOUNT_LOCKED, {
         reason: 'Too many failed login attempts',
         failedAttempts,
         ipAddress,
@@ -112,7 +116,7 @@ export class LoginSecurityService {
     await this.enforceConcurrentSessionLimit(data.userId);
 
     const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + (data.expiresInHours || 24));
+    expiresAt.setHours(expiresAt.getHours() + (data.expiresInHours || 7 * 24));
 
     const session = this.userSessionRepository.create({
       ...data,
@@ -120,6 +124,40 @@ export class LoginSecurityService {
       expiresAt,
       lastActivityAt: new Date(),
     });
+
+    // cache session
+    await this.cacheService.set(`session:${session.id}`, {
+      userId: data.userId,
+      fingerprint: data.deviceFingerprint,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // optional, match TTL
+    }, {
+      layer: CacheLayer.L3_SESSION,
+      ttl: 7 * 24 * 60 * 60, // 7 Days
+    });
+
+    await this.logLoginAttempt({
+      userId: data.userId,
+      status: LOGIN_STATUS.SUCCESS,
+      ipAddress: data.ipAddress,
+      deviceFingerprint: data.deviceFingerprint,
+      userAgent: data.userAgent
+    });
+
+    await this.rateLimitService.checkRateLimit(data.ipAddress, {
+      keyPrefix: 'ip',
+      windowMs: 60 * 60 * 1000,
+      maxRequests: 5,
+      blockDurationMs: 60 * 60 * 1000,
+    });
+
+    await this.deviceService.registerDevice(
+      data.userId,
+      {
+        fingerprint: data.deviceFingerprint,
+        ipAddress: data.ipAddress,
+        userAgent: data.userAgent
+      }
+    );
 
     return await this.userSessionRepository.save(session);
   }
@@ -142,7 +180,7 @@ export class LoginSecurityService {
         await this.userSessionRepository.save(session);
       }
 
-      this.logger.log(`Deactivated old sessions for user ${userId}`);
+      this.logger.info(`Deactivated old sessions for user ${userId}`);
     }
   }
 
@@ -227,7 +265,8 @@ export class LoginSecurityService {
     if (session) {
       session.isActive = false;
       await this.userSessionRepository.save(session);
-      this.logger.log(`Session killed: ${sessionId}`);
+      await this.cacheService.delete(`session:${session.id}`, { layer: CacheLayer.L3_SESSION });
+      this.logger.info(`Session killed: ${sessionId}`);
     }
 
     return {
@@ -253,7 +292,7 @@ export class LoginSecurityService {
       await this.userSessionRepository.save(session);
     }
 
-    this.logger.log(`All sessions killed for user ${userId}`);
+    this.logger.info(`All sessions killed for user ${userId}`);
 
     return {
       success: true,
@@ -329,7 +368,7 @@ export class LoginSecurityService {
     const event = this.securityEventRepository.create({
       userId,
       eventType,
-      riskLevel: RiskLevel.HIGH,
+      riskLevel: RISK_LEVELS.HIGH,
       details,
     });
 

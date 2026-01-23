@@ -7,31 +7,31 @@ import {
   Index,
 } from 'typeorm';
 
-@Index(['user_id'], { unique: true })
-@Index(['enabled'])
 @Entity('user_two_factors')
 export class UserTwoFactor {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'uuid', unique: true })
+  @Index(['user_id'], { unique: true })
+  @Column({ type: 'uuid', unique: true, name: 'user_id' })
   userId: string;
 
   @Column()
   secret: string; // base32 (encrypted در prod)
 
-  @Column({ type: 'jsonb', default: [] })
+  @Column({ type: 'jsonb', default: [], name:'backup_codes'})
   backupCodes: string[]; // hashed, single-use
 
-  @Column({ default: false })
+  @Index(['is_enabled'])
+  @Column({ default: false, name:'is_enabled'})
   isEnabled: boolean;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamp', nullable: true, name:'last_verified_at'})
   lastVerifiedAt: Date;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name:'created_at'})
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ name:'updated_at'})
   updatedAt: Date;
 }

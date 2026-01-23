@@ -65,7 +65,8 @@ CREATE TABLE IF NOT EXISTS notification_queue (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_notification_queue_status ON notification_queue(status, scheduled_at);
+CREATE INDEX IF NOT EXISTS idx_notification_queue_status ON notification_queue(status);
+CREATE INDEX IF NOT EXISTS idx_notification_queue_scheduled_at ON notification_queue(scheduled_at);
 CREATE INDEX IF NOT EXISTS idx_notification_queue_user_id ON notification_queue(user_id);
 CREATE INDEX IF NOT EXISTS idx_notification_queue_type ON notification_queue(type);
 
@@ -92,8 +93,10 @@ CREATE TABLE IF NOT EXISTS notification_history (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_notification_history_user_id ON notification_history(user_id, created_at);
-CREATE INDEX IF NOT EXISTS idx_notification_history_type_channel ON notification_history(type, channel);
+CREATE INDEX IF NOT EXISTS idx_notification_history_user_id ON notification_history(user_id);
+CREATE INDEX IF NOT EXISTS idx_notification_history_created_at ON notification_history(created_at);
+CREATE INDEX IF NOT EXISTS idx_notification_history_type ON notification_history(type);
+CREATE INDEX IF NOT EXISTS idx_notification_history_channel ON notification_history(channel);
 CREATE INDEX IF NOT EXISTS idx_notification_history_status ON notification_history(status);
 
 -- Create push_tokens table
@@ -115,6 +118,24 @@ CREATE TABLE IF NOT EXISTS push_tokens (
 CREATE INDEX IF NOT EXISTS idx_push_tokens_user_id ON push_tokens(user_id);
 CREATE INDEX IF NOT EXISTS idx_push_tokens_token ON push_tokens(token);
 CREATE INDEX IF NOT EXISTS idx_push_tokens_platform ON push_tokens(platform);
+
+-- Create notificationa table
+CREATE TABLE IF NOT EXISTS notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id VARCHAR(255) NOT NULL,
+    template_id VARCHAR(255),
+    channel VARCHAR(50) NOT NULL,
+    priority INTEGER NOT NULL DEFAULT 5,
+    status VARCHAR(50) DEFAULT 'pending',
+    subject VARCHAR(255),
+    content TEXT,
+    metadata JSONB,
+    read_at TIMESTAMP,
+    sent_at TIMESTAMP,
+    error_message TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 -- Create trigger function for updating updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()

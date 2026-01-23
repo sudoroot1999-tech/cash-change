@@ -1,12 +1,13 @@
 import { Controller, Get, Put, Body, Post, Query, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { RequireAuth, CurrentUser, AuthenticatedUser } from '@exchange/common';
+import { RequireAuth} from '@exchange/common';
 import { PreferenceService } from './preferences.service';
-import { NotificationChannel, NotificationType } from '../notifications/entities';
+import { NotificationChannel, NotificationType } from '@exchange/common';
 import { UpdatePreferencesDto } from './dto/update-preferences.dto';
 
 @ApiTags('Preferences')
 @Controller('preferences')
+@RequireAuth()
 @RequireAuth()
 export class PreferencesController {
   constructor(private readonly preferenceService: PreferenceService) {}

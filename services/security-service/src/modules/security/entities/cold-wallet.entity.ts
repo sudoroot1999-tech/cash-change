@@ -10,11 +10,11 @@ import {
 
 
 @Entity('cold_wallets')
-@Index(['currency', 'status'])
 export class ColdWallet {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Index(['currency'])
   @Column()
   currency: string;
 
@@ -27,6 +27,7 @@ export class ColdWallet {
   })
   type: ColdWalletType;
 
+  @Index(['status'])
   @Column({
     type: 'enum',
     enum: COLD_WALLET_STATUS,

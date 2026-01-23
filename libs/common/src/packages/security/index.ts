@@ -44,3 +44,6 @@ export * from "./hash/password.service"
 
 // interceptors
 export * from "./interceptor/request-context.Interceptor"
+
+
+export * from "./security.module"

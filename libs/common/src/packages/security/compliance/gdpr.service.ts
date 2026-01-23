@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import Redis from 'ioredis';
 import * as crypto from 'crypto';
+import { ConfigService } from '@nestjs/config';
 
 export interface DataExportRequest {
   id: string;
@@ -37,10 +38,9 @@ export class GDPRService {
   private readonly logger = new Logger(GDPRService.name);
   private redis: Redis;
 
-  constructor(redisUrl: string) {
-    this.redis = new Redis(redisUrl);
+  constructor(private configService: ConfigService) {
+    this.redis = new Redis(configService.get('REDIS_URL'));
   }
-
   /**
    * Request data export (GDPR Article 15 - Right of Access)
    */
@@ -86,10 +86,10 @@ export class GDPRService {
       // In production, this would collect all user data from various services
       // and create a downloadable archive
       const exportData = await this.collectUserData(request.userId);
-      
+
       // Generate download URL (in production, upload to S3 or similar)
       const downloadUrl = `/api/data-export/${requestId}/download`;
-      
+
       request.status = 'completed';
       request.completedAt = new Date();
       request.downloadUrl = downloadUrl;
@@ -99,7 +99,7 @@ export class GDPRService {
       await this.redis.srem('pending_data_exports', requestId);
 
       this.logger.log(`Data export completed for request ${requestId}`);
-    } catch (error:any) {
+    } catch (error: any) {
       request.status = 'failed';
       await this.redis.set(`data_export:${requestId}`, JSON.stringify(request));
       this.logger.error(`Data export failed for request ${requestId}: ${error.message}`);
@@ -114,7 +114,7 @@ export class GDPRService {
     immediate: boolean = false,
   ): Promise<DataDeletionRequest> {
     const id = crypto.randomBytes(16).toString('hex');
-    
+
     // Check if there are legal retention requirements
     const retentionReason = await this.checkRetentionRequirements(userId);
 
@@ -174,7 +174,7 @@ export class GDPRService {
       await this.redis.srem('pending_data_deletions', requestId);
 
       this.logger.log(`Data deletion completed for request ${requestId}`);
-    } catch (error:any) {
+    } catch (error: any) {
       request.status = 'failed';
       await this.redis.set(`data_deletion:${requestId}`, JSON.stringify(request));
       this.logger.error(`Data deletion failed for request ${requestId}: ${error.message}`);
@@ -258,11 +258,11 @@ export class GDPRService {
   async anonymizeUserData(userId: string): Promise<void> {
     // In production, this would anonymize PII while keeping transaction records
     // for legal/compliance requirements
-    
+
     const anonymizedId = crypto.createHash('sha256').update(userId).digest('hex');
-    
+
     await this.redis.set(`anonymized_user:${userId}`, anonymizedId);
-    
+
     this.logger.log(`User ${userId} data anonymized`);
   }
 
@@ -287,9 +287,9 @@ export class GDPRService {
   private async deleteUserData(userId: string): Promise<void> {
     // In production, this would trigger deletion across all services
     // Some data may need to be anonymized instead of deleted due to legal requirements
-    
+
     const retentionReason = await this.checkRetentionRequirements(userId);
-    
+
     if (retentionReason) {
       await this.anonymizeUserData(userId);
     } else {
@@ -320,7 +320,7 @@ export class GDPRService {
       const lastTx = JSON.parse(recentTransactions[0]);
       const txDate = new Date(lastTx.timestamp);
       const retentionPeriod = 7 * 365 * 24 * 60 * 60 * 1000; // 7 years
-      
+
       if (Date.now() - txDate.getTime() < retentionPeriod) {
         return 'Tax retention requirement (7 years)';
       }

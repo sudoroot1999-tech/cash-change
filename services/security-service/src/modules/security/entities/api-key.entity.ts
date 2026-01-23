@@ -10,13 +10,12 @@ import {
 
 
 @Entity('api_keys')
-@Index(['userId', 'isActive'])
 export class ApiKey {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column({ name: 'user_id' })
-  @Index()
+  @Index(['user_id'])
   userId: string;
 
   @Column({ name: 'key_name' })
@@ -35,6 +34,7 @@ export class ApiKey {
   @Column({ name: 'ip_whitelist', type: 'simple-array', nullable: true })
   ipWhitelist: string[];
 
+  @Index(['is_active'])
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
 

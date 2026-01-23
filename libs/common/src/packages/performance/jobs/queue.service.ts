@@ -26,11 +26,7 @@ export class QueueService implements OnModuleDestroy {
   private readonly connection: Redis;
 
   constructor(private readonly configService: ConfigService) {
-    this.connection = new Redis({
-      host: this.configService.get('REDIS_HOST', 'localhost'),
-      port: this.configService.get<number>('REDIS_PORT', 6379),
-      password: this.configService.get('REDIS_PASSWORD'),
-      db: this.configService.get<number>('REDIS_QUEUE_DB', 2),
+    this.connection = new Redis(configService.get('REDIS_URL'), {
       maxRetriesPerRequest: null, // Required by BullMQ
       enableReadyCheck: false,
     });
@@ -191,35 +187,35 @@ export class QueueService implements OnModuleDestroy {
     }
   }
 
-async getQueueStats(queueName: string) {
-  const queue = this.getQueue(queueName);
+  async getQueueStats(queueName: string) {
+    const queue = this.getQueue(queueName);
 
-  const [
-    waiting,
-    active,
-    completed,
-    failed,
-    delayed,
-    isPaused,
-  ] = await Promise.all([
-    queue.getWaitingCount(),
-    queue.getActiveCount(),
-    queue.getCompletedCount(),
-    queue.getFailedCount(),
-    queue.getDelayedCount(),
-    queue.isPaused(),
-  ]);
+    const [
+      waiting,
+      active,
+      completed,
+      failed,
+      delayed,
+      isPaused,
+    ] = await Promise.all([
+      queue.getWaitingCount(),
+      queue.getActiveCount(),
+      queue.getCompletedCount(),
+      queue.getFailedCount(),
+      queue.getDelayedCount(),
+      queue.isPaused(),
+    ]);
 
-  return {
-    waiting,
-    active,
-    completed,
-    failed,
-    delayed,
-    paused: isPaused,
-    total: waiting + active + delayed,
-  };
-}
+    return {
+      waiting,
+      active,
+      completed,
+      failed,
+      delayed,
+      paused: isPaused,
+      total: waiting + active + delayed,
+    };
+  }
 
   async pauseQueue(queueName: string) {
     await this.getQueue(queueName).pause();

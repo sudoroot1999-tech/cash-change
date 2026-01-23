@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as admin from 'firebase-admin';
 import * as apn from 'apn';
-import { DevicePlatform } from '../modules/notifications/entities';
+import { DEVICE_PLATFORM, DevicePlatform } from '@exchange/common';
 
 export interface PushPayload {
   token: string;
@@ -46,7 +46,7 @@ export class PushProvider {
         this.isConfigured = true;
         this.logger.log('✅ FCM initialized successfully');
       }
-    } catch (error:any) {
+    } catch (error: any) {
       this.logger.warn(`⚠️  FCM initialization failed: ${error.message}`);
     }
   }
@@ -72,10 +72,10 @@ export class PushProvider {
           this.logger.log('✅ APNS initialized successfully');
         }
       }
-    } catch (error:any) {
+    } catch (error: any) {
       this.logger.warn(`⚠️  APNS initialization failed: ${error.message}`);
     }
-    
+
     if (!this.fcmInitialized && !this.apnsProvider) {
       this.logger.warn('⚠️  No push notification provider configured - push features disabled');
     }
@@ -83,12 +83,12 @@ export class PushProvider {
 
   async send(payload: PushPayload): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
-      if (payload.platform === DevicePlatform.IOS) {
+      if (payload.platform === DEVICE_PLATFORM.IOS) {
         return await this.sendViaAPNS(payload);
       } else {
         return await this.sendViaFCM(payload);
       }
-    } catch (error:any) {
+    } catch (error: any) {
       this.logger.error(`Failed to send push notification: ${error.message}`, error.stack);
       return { success: false, error: error.message };
     }

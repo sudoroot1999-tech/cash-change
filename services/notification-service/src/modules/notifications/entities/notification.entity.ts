@@ -9,7 +9,7 @@ export class Notification {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Index()
+  @Index(['user_id'])
   @Column({ name: 'user_id', type: 'uuid' })
   userId!: string;
 

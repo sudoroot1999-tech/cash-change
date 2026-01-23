@@ -17,7 +17,6 @@ export interface UserRegisteredEvent extends BaseEvent {
  */
 export interface UserLoginEvent extends BaseEvent {
   userId: string;
-  ip?: string;
   userAgent: string;
   success?: boolean;
   failureReason?: string;

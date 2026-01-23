@@ -3,6 +3,7 @@ x-common-env: &common-env
   NODE_ENV: development
   JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret}
   JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
+  JWT_REFRESH_EXPIRES_IN: 7d
 
 x-postgres-env: &postgres-env
   POSTGRES_HOST: postgres
@@ -39,7 +40,7 @@ x-kafka-env: &kafka-env
   KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
   KAFKA_NUM_PARTITIONS: 1
   KAFKA_LOG_RETENTION_HOURS: 168
-  KAFKA_BROKERS: kafka:9092
+  KAFKA_BROKERS: kafka:29092
 
 x-timescale-env: &timescale-env
   TIMESCALE_HOST: timescaledb
@@ -67,7 +68,8 @@ x-service-urls: &service-urls
   MARKET_DATA_GRPC_URL: market-data-service:5005
   NOTIFICATION_URL: http://notification-service:3006
   COMPLIANCE_URL: http://compliance-service:3007
-  SECURITY_URL: http://security-service:3008
+  SECURITY_SERVICE_URL: http://security-service:3008
+  SECURITY_SERVICE_GRPC_URL: http://security-service:5008
   RESERVES_URL: http://proof-of-reserves-service:3009
   MATCHING_ENGINE_GRPC_URL: matching-engine:5010
   ADMIN_URL: http://admin-service:3011
@@ -78,6 +80,8 @@ x-common-depends: &common-depends
   redis:
     condition: service_healthy
   rabbitmq:
+    condition: service_healthy
+  kafka:
     condition: service_healthy
 
 services:
@@ -94,7 +98,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-exchange_user} -d ${POSTGRES_DB:-exchange}']
+      test: [ 'CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-exchange_user} -d ${POSTGRES_DB:-exchange}' ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -130,7 +134,7 @@ services:
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ['CMD', 'redis-cli', '-a', '${REDIS_PASSWORD:-redis_dev_password}', 'ping']
+      test: [ 'CMD', 'redis-cli', '-a', '${REDIS_PASSWORD:-redis_dev_password}', 'ping' ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -189,10 +193,10 @@ services:
     image: confluentinc/cp-kafka:7.5.0
     container_name: exchange-kafka
     ports:
-      - "29092:9092"  
-      - "9093:9093"    
+      - "29092:9092"
+      - "9093:9093"
     environment:
-        <<: *kafka-env
+      <<: *kafka-env
     volumes:
       - kafka_data:/var/lib/kafka/data
     networks:
@@ -211,7 +215,6 @@ services:
     networks:
       - exchange-network
 
-
   # ==================== Core Services ====================
   user-service:
     build:
@@ -220,9 +223,41 @@ services:
     container_name: exchange-user-service
     restart: unless-stopped
     environment:
-      <<: [*common-env, *postgres-env, *redis-env, *rabbitmq-env, *minio-env, *kafka-env]
+      <<: [ *common-env, *postgres-env, *redis-env, *rabbitmq-env, *minio-env, *kafka-env, *service-urls ]
       PORT: 3001
       GRPC_PORT: 5001
+      # Commission Rates (in percentage)
+      TIER1_COMMISSION_RATE: 20
+      TIER2_COMMISSION_RATE: 10
+      VIP_COMMISSION_RATE: 30
+      # Bonus Settings
+      SIGNUP_BONUS: 10
+      FIRST_TRADE_BONUS: 20
+      MINIMUM_TRADE_VOLUME_FOR_BONUS: 100
+      # Payout Settings
+      MINIMUM_PAYOUT_AMOUNT: 50
+      PAYOUT_SCHEDULE: weekly
+      PAYOUT_DAY: monday
+      AUTO_PAYOUT_ENABLED: true
+      # Referral Code Settings
+      REFERRAL_CODE_LENGTH: 8
+      REFERRAL_CODE_PREFIX: REF
+      # Fraud Detection Settings
+      MAX_SIGNUPS_PER_IP: 3
+      MAX_SIGNUPS_PER_DEVICE: 5
+      SUSPICIOUS_PATTERN_THRESHOLD: 0.7
+      ENABLE_FRAUD_DETECTION: true
+      # Trading Service Integration
+      # TRADING_SERVICE_URL: http://localhost:3003
+      # Notification Service Integration
+      # NOTIFICATION_SERVICE_URL: http://localhost:3006
+      # Analytics
+      ENABLE_ANALYTICS: true
+      ANALYTICS_RETENTION_DAYS: 365
+      # Affiliate Program
+      AFFILIATE_MIN_FOLLOWERS: 1000
+      AFFILIATE_CUSTOM_COMMISSION_ENABLED: true
+      AFFILIATE_APPROVAL_REQUIRED: true
     ports:
       - '3001:3001'
       - '5001:5001'
@@ -237,8 +272,10 @@ services:
     container_name: exchange-auth-service
     restart: unless-stopped
     environment:
-      <<: [*common-env, *postgres-env, *redis-env, *service-urls]
+      <<: [ *common-env, *postgres-env, *redis-env, *service-urls, *rabbitmq-env, *kafka-env ]
       PORT: 3002
+      # Application
+      APP_URL: http://localhost:3000
     ports:
       - '3002:3002'
     depends_on:
@@ -253,7 +290,7 @@ services:
     container_name: exchange-wallet-service
     restart: unless-stopped
     environment:
-      <<: [*common-env, *postgres-env, *redis-env, *rabbitmq-env]
+      <<: [ *common-env, *postgres-env, *redis-env, *rabbitmq-env ]
       PORT: 3003
       GRPC_PORT: 5003
     ports:
@@ -270,7 +307,7 @@ services:
     container_name: exchange-trading-service
     restart: unless-stopped
     environment:
-      <<: [*common-env, *postgres-env, *redis-env, *rabbitmq-env, *timescale-env, *service-urls]
+      <<: [ *common-env, *postgres-env, *redis-env, *rabbitmq-env, *timescale-env, *service-urls ]
       PORT: 3004
     ports:
       - '3004:3004'
@@ -285,7 +322,7 @@ services:
     container_name: exchange-market-data
     restart: unless-stopped
     environment:
-      <<: [*common-env, *redis-env, *rabbitmq-env, *timescale-env, *kafka-env]
+      <<: [ *common-env, *redis-env, *rabbitmq-env, *timescale-env, *kafka-env ]
       HTTP_PORT: 3005
       GRPC_PORT: 5005
       WEBSOCKET_PORT: 6005
@@ -336,17 +373,16 @@ services:
     container_name: exchange-matching-engine
     restart: unless-stopped
     environment:
-      <<: [*common-env, *redis-env, *rabbitmq-env, *postgres-env, *kafka-env]
+      <<: [ *common-env, *redis-env, *rabbitmq-env, *postgres-env, *kafka-env ]
       PORT: 3010
       GRPC_PORT: 5010
       WEBSOCKET_PORT: 6010
-      # Instance Configuration (NEW)
+      # Instance Configuration
       INSTANCE_ID: matching-engine-1
       # Performance Tuning
       MAX_WORKERS: 10
       ORDER_QUEUE_SIZE: 100000
       CANCEL_QUEUE_SIZE: 10000
-      CONSUMER_GROUP: matching-engine
     ports:
       - '3010:3010'
       - '5010:5010'
@@ -366,7 +402,7 @@ services:
     container_name: exchange-notification
     restart: unless-stopped
     environment:
-      <<: [*common-env, *postgres-env, *redis-env, *rabbitmq-env, *kafka-env]
+      <<: [ *common-env, *postgres-env, *redis-env, *rabbitmq-env, *kafka-env ]
       PORT: 3006
       # Email Configuration - SendGrid
       SENDGRID_API_KEY: your-sendgrid-api-key
@@ -380,7 +416,7 @@ services:
       # SMS Configuration - Twilio
       TWILIO_ACCOUNT_SID: your-twilio-account-sid
       TWILIO_AUTH_TOKEN: your-twilio-auth-token
-      TWILIO_PHONE_NUMBER: +1234567890
+      TWILIO_PHONE_NUMBER: 1234567890
       # SMS Configuration - Kavenegar (Iran)
       KAVENEGAR_API_KEY: your-kavenegar-api-key
       KAVENEGAR_SENDER: your-kavenegar-sender
@@ -417,7 +453,7 @@ services:
     container_name: exchange-compliance
     restart: unless-stopped
     environment:
-      <<: [*common-env, *postgres-env, *minio-env, *rabbitmq-env, *service-urls]
+      <<: [ *common-env, *postgres-env, *minio-env, *rabbitmq-env, *service-urls ]
       PORT: 3007
     ports:
       - '3007:3007'
@@ -434,7 +470,7 @@ services:
     container_name: exchange-security
     restart: unless-stopped
     environment:
-      <<: [*common-env, *postgres-env, *redis-env, *rabbitmq-env]
+      <<: [ *common-env, *postgres-env, *redis-env, *rabbitmq-env, *kafka-env ]
       PORT: 3008
       # Security email 
       CRITICAL_ALERT_EMAILS: security@exchange.com,admin@exchange.com
@@ -461,7 +497,7 @@ services:
     container_name: exchange-admin-service
     restart: unless-stopped
     environment:
-      <<: [*common-env, *postgres-env, *service-urls]
+      <<: [ *common-env, *postgres-env, *service-urls ]
       PORT: 3011
     ports:
       - '3011:3011'
@@ -479,7 +515,7 @@ services:
     container_name: exchange-api-gateway
     restart: unless-stopped
     environment:
-      <<: [*common-env, *redis-env, *rabbitmq-env, *service-urls]
+      <<: [ *common-env, *redis-env, *rabbitmq-env, *service-urls ]
       PORT: 3000
     ports:
       - '3000:3000'

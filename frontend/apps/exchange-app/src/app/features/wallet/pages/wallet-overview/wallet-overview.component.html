@@ -1,0 +1,183 @@
+<div class="wallet-page">
+    <!-- Loading State -->
+    @if (walletService.isLoading()) {
+    <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading wallets...</p>
+    </div>
+    }
+
+    <!-- Error State -->
+    @if (walletService.error()) {
+    <div class="error-state">
+        <div class="error-icon">⚠️</div>
+        <p class="error-message">{{ walletService.error() }}</p>
+        <ui-button variant="primary" (click)="retryLoad()">Retry</ui-button>
+    </div>
+    }
+
+    <!-- Content -->
+    @if (!walletService.isLoading() && !walletService.error()) {
+    <!-- Header -->
+    <div class="page-header">
+        <div class="header-content">
+            <h1 class="page-title">Wallet</h1>
+            <p class="page-subtitle">Manage your crypto assets</p>
+        </div>
+        <div class="header-actions">
+            <ui-button variant="secondary">Deposit</ui-button>
+            <ui-button variant="secondary">Withdraw</ui-button>
+            <ui-button variant="primary">Transfer</ui-button>
+        </div>
+    </div>
+
+    <!-- Portfolio Overview -->
+    <div class="portfolio-section">
+        <ui-card variant="elevated">
+            <div class="portfolio-content">
+                <div class="portfolio-main">
+                    <span class="portfolio-label">Total Balance</span>
+                    <div class="portfolio-value">
+                        <span class="currency-symbol">$</span>
+                        <span class="value-amount">{{ totalBalance() | number: '1.2-2' }}</span>
+                    </div>
+                    <div class="portfolio-change positive">
+                        <svg class="change-icon" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd"
+                                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                clip-rule="evenodd" transform="rotate(180 10 10)" />
+                        </svg>
+                        +$1,234.56 (2.34%) today
+                    </div>
+                </div>
+
+                <div class="portfolio-breakdown">
+                    <div class="breakdown-item">
+                        <span class="breakdown-label">Available</span>
+                        <span class="breakdown-value">{{ availableBalance() | number: '1.2-2' }}</span>
+                    </div>
+                    <div class="breakdown-item">
+                        <span class="breakdown-label">In Orders</span>
+                        <span class="breakdown-value">{{ lockedBalance() | number: '1.2-2' }}</span>
+                    </div>
+                    <div class="breakdown-item">
+                        <span class="breakdown-label">Assets</span>
+                        <span class="breakdown-value">{{ balances().length }}</span>
+                    </div>
+                </div>
+            </div>
+        </ui-card>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        <ui-card variant="interactive">
+            <div class="action-content">
+                <div class="action-icon">💳</div>
+                <div class="action-info">
+                    <span class="action-title">Buy Crypto</span>
+                    <span class="action-desc">Purchase with card or bank</span>
+                </div>
+            </div>
+        </ui-card>
+        <ui-card variant="interactive">
+            <div class="action-content">
+                <div class="action-icon">🔄</div>
+                <div class="action-info">
+                    <span class="action-title">Convert</span>
+                    <span class="action-desc">Swap between assets</span>
+                </div>
+            </div>
+        </ui-card>
+        <ui-card variant="interactive">
+            <div class="action-content">
+                <div class="action-icon">📊</div>
+                <div class="action-info">
+                    <span class="action-title">Earn</span>
+                    <span class="action-desc">Stake and earn rewards</span>
+                </div>
+            </div>
+        </ui-card>
+        <ui-card variant="interactive">
+            <div class="action-content">
+                <div class="action-icon">📜</div>
+                <div class="action-info">
+                    <span class="action-title">History</span>
+                    <span class="action-desc">View transactions</span>
+                </div>
+            </div>
+        </ui-card>
+    </div>
+
+    <!-- Balances Table -->
+    <ui-card variant="elevated" [noPadding]="true">
+        <div class="table-header">
+            <h2 class="table-title">Your Assets</h2>
+            <div class="table-filters">
+                <label class="hide-small-checkbox">
+                    <input type="checkbox" [checked]="hideSmallBalances()"
+                        (change)="hideSmallBalances.set(!hideSmallBalances())" />
+                    <span>Hide small balances</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="table-container">
+            @if (filteredBalances().length === 0) {
+            <div class="empty-state">
+                <div class="empty-icon">💰</div>
+                <p class="empty-message">No assets yet</p>
+                <p class="empty-description">Start by depositing some crypto</p>
+            </div>
+            } @else {
+            <table class="balances-table">
+                <thead>
+                    <tr>
+                        <th>Asset</th>
+                        <th class="text-right">Available</th>
+                        <th class="text-right">In Orders</th>
+                        <th class="text-right">USD Value</th>
+                        <th class="text-right">24h Change</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (balance of filteredBalances(); track balance.asset) {
+                    <tr class="balance-row">
+                        <td>
+                            <div class="asset-info">
+                                <div class="asset-icon" [style.background]="getCoinColor(balance.asset)">
+                                    {{ balance.asset.charAt(0) }}
+                                </div>
+                                <div class="asset-details">
+                                    <span class="asset-name">{{ balance.name }}</span>
+                                    <span class="asset-symbol">{{ balance.asset }}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-right mono">{{ balance.available | number: '1.4-4' }}</td>
+                        <td class="text-right mono text-muted">{{ balance.locked | number: '1.4-4' }}</td>
+                        <td class="text-right mono">{{ balance.usdValue | number: '1.2-2' }}</td>
+                        <td class="text-right">
+                            <span class="change" [class.positive]="balance.change24h >= 0"
+                                [class.negative]="balance.change24h < 0">
+                                {{ balance.change24h >= 0 ? '+' : ''
+                                }}{{ balance.change24h | number: '1.2-2' }}%
+                            </span>
+                        </td>
+                        <td class="text-right">
+                            <div class="row-actions">
+                                <a [routerLink]="['/trade', balance.asset + 'USDT']" class="action-link">Trade</a>
+                                <button class="action-link">Deposit</button>
+                                <button class="action-link">Withdraw</button>
+                            </div>
+                        </td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+            }
+        </div>
+    </ui-card>
+    }
+</div>

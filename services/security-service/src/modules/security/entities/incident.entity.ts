@@ -10,7 +10,6 @@ import {
 
 
 @Entity('incidents')
-@Index(['status', 'severity', 'createdAt'])
 export class Incident {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -27,12 +26,14 @@ export class Incident {
   })
   type: IncidentType;
 
+  @Index(['severity'])
   @Column({
     type: 'enum',
     enum: INCIDENT_SEVERITY,
   })
   severity: IncidentSeverity;
 
+  @Index(['status'])
   @Column({
     type: 'enum',
     enum: INCIDENT_STATUS,
@@ -80,6 +81,7 @@ export class Incident {
   @Column({ name: 'resolved_at', type: 'timestamp', nullable: true })
   resolvedAt: Date;
 
+  @Index(['created_at'])
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

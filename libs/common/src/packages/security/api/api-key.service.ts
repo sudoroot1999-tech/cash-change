@@ -1,4 +1,5 @@
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import Redis from 'ioredis';
 
@@ -35,8 +36,8 @@ export class APIKeyService {
   private readonly logger = new Logger(APIKeyService.name);
   private redis: Redis;
 
-  constructor(redisUrl: string) {
-    this.redis = new Redis(redisUrl);
+  constructor(private configService: ConfigService) {
+    this.redis = new Redis(configService.get('REDIS_URL'));
   }
 
   /**
@@ -45,7 +46,7 @@ export class APIKeyService {
   generateAPIKey(): { key: string; secret: string } {
     const key = `ak_${crypto.randomBytes(16).toString('hex')}`;
     const secret = crypto.randomBytes(32).toString('hex');
-    
+
     return { key, secret };
   }
 
@@ -178,7 +179,7 @@ export class APIKeyService {
   async revokeAPIKey(keyId: string, userId: string): Promise<void> {
     // Find the key
     const keys = await this.redis.smembers(`user_api_keys:${userId}`);
-    
+
     for (const id of keys) {
       const keyData = await this.redis.get(`api_key:${id}`);
       if (keyData) {
@@ -234,7 +235,7 @@ export class APIKeyService {
    */
   async rotateSecret(keyId: string, userId: string): Promise<{ key: string; secret: string }> {
     const keys = await this.redis.smembers(`user_api_keys:${userId}`);
-    
+
     for (const id of keys) {
       const keyData = await this.redis.get(`api_key:${id}`);
       if (keyData) {
@@ -242,11 +243,11 @@ export class APIKeyService {
         if (apiKey.id === keyId) {
           const newSecret = crypto.randomBytes(32).toString('hex');
           apiKey.secret = newSecret;
-          
+
           await this.redis.set(`api_key:${apiKey.key}`, JSON.stringify(apiKey));
-          
+
           this.logger.log(`Rotated secret for API key ${keyId}`);
-          
+
           return { key: apiKey.key, secret: newSecret };
         }
       }

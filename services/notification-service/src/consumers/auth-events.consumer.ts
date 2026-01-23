@@ -10,9 +10,10 @@ import {
   EmailVerificationRequestedEvent,
   EmailVerifiedEvent,
   AccountLockedEvent,
+  NOTIFICATION_TYPES,
+  NOTIFICATION_CHANNELS,
 } from '@exchange/common';
 import { NotificationCoreService } from '../modules/notifications/notifications.service';
-import { NotificationChannel, NotificationType } from '../modules/notifications/entities';
 
 
 /**
@@ -26,7 +27,7 @@ export class AuthEventsConsumer implements OnModuleInit {
   constructor(
     private readonly rabbitmq: RabbitMQService,
     private readonly notificationService: NotificationCoreService,
-  ) {}
+  ) { }
 
   async onModuleInit() {
     // Subscribe to user registered events
@@ -105,14 +106,17 @@ export class AuthEventsConsumer implements OnModuleInit {
 
       await this.notificationService.sendNotification({
         userId: event.userId,
-        type: NotificationType.COMMON,
-        channels: [NotificationChannel.EMAIL,NotificationChannel.IN_APP],
+        type: NOTIFICATION_TYPES.COMMON,
+        channels: [NOTIFICATION_CHANNELS.EMAIL, NOTIFICATION_CHANNELS.IN_APP],
         subject: 'Welcome to Our Crypto Exchange!',
-        content: `Welcome ${event.username || event.email}! Thank you for registering with us.`,
+        templateId: '1',
+        content: ``,
         data: {
-          username: event.username,
-          email: event.email,
+          userName: event.username,
+          userEmail: event.email,
           registeredAt: event.registeredAt,
+          companyName: 'CryptoX',
+          year: new Date().getFullYear()
         },
       });
     } catch (error) {
@@ -129,8 +133,8 @@ export class AuthEventsConsumer implements OnModuleInit {
 
       await this.notificationService.sendNotification({
         userId: event.userId,
-        type: NotificationType.SECURITY,
-        channels: [NotificationChannel.EMAIL],
+        type: NOTIFICATION_TYPES.SECURITY,
+        channels: [NOTIFICATION_CHANNELS.EMAIL],
         subject: 'Password Reset Request',
         content: 'You requested a password reset. Click the link to reset your password.',
         data: {
@@ -154,8 +158,8 @@ export class AuthEventsConsumer implements OnModuleInit {
 
       await this.notificationService.sendNotification({
         userId: event.userId,
-        type: NotificationType.SECURITY,
-        channels: [NotificationChannel.IN_APP,NotificationChannel.EMAIL],
+        type: NOTIFICATION_TYPES.SECURITY,
+        channels: [NOTIFICATION_CHANNELS.IN_APP, NOTIFICATION_CHANNELS.EMAIL],
         subject: 'Your Password Was Changed',
         content: 'Your account password has been successfully changed.',
         data: {
@@ -178,8 +182,8 @@ export class AuthEventsConsumer implements OnModuleInit {
 
       await this.notificationService.sendNotification({
         userId: event.userId,
-        type: NotificationType.SECURITY,
-        channels: [NotificationChannel.EMAIL,NotificationChannel.IN_APP],
+        type: NOTIFICATION_TYPES.SECURITY,
+        channels: [NOTIFICATION_CHANNELS.EMAIL, NOTIFICATION_CHANNELS.IN_APP],
         subject: 'Two-Factor Authentication Enabled',
         content: `Two-factor authentication via ${event.method} has been enabled on your account.`,
         data: {
@@ -202,8 +206,8 @@ export class AuthEventsConsumer implements OnModuleInit {
 
       await this.notificationService.sendNotification({
         userId: event.userId,
-        type: NotificationType.SECURITY,
-        channels: [NotificationChannel.EMAIL,NotificationChannel.IN_APP],
+        type: NOTIFICATION_TYPES.SECURITY,
+        channels: [NOTIFICATION_CHANNELS.EMAIL, NOTIFICATION_CHANNELS.IN_APP],
         subject: 'Two-Factor Authentication Disabled',
         content: 'Two-factor authentication has been disabled on your account. If this was not you, please contact support immediately.',
         data: {
@@ -226,8 +230,8 @@ export class AuthEventsConsumer implements OnModuleInit {
 
       await this.notificationService.sendNotification({
         userId: event.userId,
-        type: NotificationType.SECURITY,
-        channels: [NotificationChannel.EMAIL],
+        type: NOTIFICATION_TYPES.SECURITY,
+        channels: [NOTIFICATION_CHANNELS.EMAIL],
         subject: 'Verify Your Email Address',
         content: 'Please click the link below to verify your email address.',
         data: {
@@ -250,8 +254,8 @@ export class AuthEventsConsumer implements OnModuleInit {
 
       await this.notificationService.sendNotification({
         userId: event.userId,
-        type: NotificationType.INFO,
-        channels: [NotificationChannel.IN_APP],
+        type: NOTIFICATION_TYPES.INFO,
+        channels: [NOTIFICATION_CHANNELS.IN_APP],
         subject: 'Email Verified Successfully',
         content: 'Your email has been verified. You now have full access to all features.',
         data: {
@@ -273,8 +277,8 @@ export class AuthEventsConsumer implements OnModuleInit {
 
       await this.notificationService.sendNotification({
         userId: event.userId,
-        type: NotificationType.SECURITY,
-        channels: [NotificationChannel.EMAIL,NotificationChannel.IN_APP,NotificationChannel.PUSH],
+        type: NOTIFICATION_TYPES.SECURITY,
+        channels: [NOTIFICATION_CHANNELS.EMAIL, NOTIFICATION_CHANNELS.IN_APP, NOTIFICATION_CHANNELS.PUSH],
         subject: 'Account Locked',
         content: `Your account has been locked due to: ${event.reason}. Please contact support.`,
         data: {

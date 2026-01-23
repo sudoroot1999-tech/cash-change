@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 
 export interface RateLimitConfig {
@@ -18,10 +19,11 @@ export interface RateLimitResult {
 @Injectable()
 export class RateLimiterService {
   private readonly logger = new Logger(RateLimiterService.name);
+  private readonly config: ConfigService;
   private redis: Redis;
 
-  constructor(redisUrl: string) {
-    this.redis = new Redis(redisUrl, {
+  constructor(private configService: ConfigService) {
+    this.redis = new Redis(configService.get('REDIS_URL'), {
       maxRetriesPerRequest: 3,
       enableReadyCheck: true,
       retryStrategy: (times) => {
@@ -29,6 +31,12 @@ export class RateLimiterService {
         return delay;
       },
     });
+
+
+    this.redis.on('connect', () => {
+      this.logger.log('Connected to Redis');
+    });
+
 
     this.redis.on('error', (err) => {
       this.logger.error(`Redis connection error: ${err.message}`);
@@ -62,16 +70,16 @@ export class RateLimiterService {
 
       // Use sorted set for sliding window
       const multi = this.redis.multi();
-      
+
       // Remove old entries
       multi.zremrangebyscore(key, 0, windowStart);
-      
+
       // Count current requests
       multi.zcard(key);
-      
+
       // Add current request
       multi.zadd(key, now, `${now}-${Math.random()}`);
-      
+
       // Set expiry
       multi.pexpire(key, config.windowMs);
 
@@ -102,7 +110,7 @@ export class RateLimiterService {
         remaining: config.maxRequests - count - 1,
         resetTime: now + config.windowMs,
       };
-    } catch (error:any) {
+    } catch (error: any) {
       this.logger.error(`Rate limit check failed: ${error.message}`);
       // Fail open in case of Redis errors
       return {
@@ -160,7 +168,7 @@ export class RateLimiterService {
         resetTime: now + ((cost - tokens) / refillRate) * 1000,
         retryAfter: ((cost - tokens) / refillRate) * 1000,
       };
-    } catch (error:any) {
+    } catch (error: any) {
       this.logger.error(`Token bucket check failed: ${error.message}`);
       return {
         allowed: true,
@@ -176,7 +184,7 @@ export class RateLimiterService {
   async resetRateLimit(identifier: string, keyPrefix?: string): Promise<void> {
     const key = `${keyPrefix || 'rate_limit'}:${identifier}`;
     const blockKey = `${key}:blocked`;
-    
+
     await this.redis.del(key, blockKey);
   }
 
@@ -199,7 +207,7 @@ export class RateLimiterService {
         count,
         remaining: Math.max(0, config.maxRequests - count),
       };
-    } catch (error:any) {
+    } catch (error: any) {
       this.logger.error(`Failed to get rate limit status: ${error.message}`);
       return {
         count: 0,
@@ -218,7 +226,7 @@ export class RateLimiterService {
   ): Promise<void> {
     const blockKey = `rate_limit:${identifier}:blocked`;
     const value = reason || 'blocked';
-    
+
     await this.redis.set(blockKey, value, 'PX', durationMs);
     this.logger.warn(`Blocked ${identifier} for ${durationMs}ms. Reason: ${reason}`);
   }

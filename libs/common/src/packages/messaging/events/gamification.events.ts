@@ -1,4 +1,4 @@
-import { RewardType } from 'libs/common/src/types';
+import { RewardType } from '../../../types';
 import { BaseEvent } from './base.event';
 
 

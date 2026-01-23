@@ -9,6 +9,7 @@ import (
 )
 
 type Config struct {
+	Port          string
 	GRPCPort      string
 	DatabaseURL   string
 	KafkaBrokers  []string
@@ -26,6 +27,7 @@ func Load() *Config {
 	}
 
 	return &Config{
+		Port:          getEnv("PORT","3010")
 		GRPCPort:      getEnv("GRPC_PORT", "5010"),
 		DatabaseURL:   getEnv("DATABASE_URL", "postgres://exchange_user:exchange_dev_password@localhost:5432/exchange?sslmode=disable"),
 		KafkaBrokers:  strings.Split(getEnv("KAFKA_BROKERS", "localhost:29092"), ","),

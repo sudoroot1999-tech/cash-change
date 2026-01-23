@@ -66,10 +66,6 @@ interface Disable2FARequest {
     user_id: string;
 }
 
-interface Disable2FAResponse {
-    success: boolean;
-}
-
 // Device Interfaces
 interface DeviceInfo {
     fingerprint: string;
@@ -133,6 +129,93 @@ interface GetActiveSessionRequest {
     user_id: string;
 }
 
+interface SnakedUserSession {
+    id: string;
+    user_id: string;
+    session_token: string;
+    refresh_token?: string | null;
+    device_fingerprint?: string | null;
+    ip_address: string;
+    user_agent?: string | null;
+    metadata?: {
+        browser?: string;
+        os?: string;
+        device?: string;
+        location?: string;
+    } | null;
+    is_active: boolean;
+    expires_at: Date;
+    last_activity_at: Date;
+    created_at: Date;
+    updated_at: Date;
+}
+
+interface SnakedTrustedDevice {
+    id: string;
+    user_id: string;
+    device_name?: string | null;
+    fingerprint: string;
+    metadata?: {
+        browser?: string;
+        os?: string;
+        device?: string;
+        screen_resolution?: string;
+        timezone?: string;
+        language?: string;
+    } | null;
+    ip_address?: string | null;
+    location?: string | null;
+    country_code?: string | null;
+    city?: string | null;
+    is_trusted: boolean;
+    last_used_at?: Date | null;
+    created_at: Date;
+    updated_at: Date;
+}
+
+interface SnakedUserTwoFactor {
+    id: string;
+    user_id: string;
+    secret: string;
+    backup_codes: string[];
+    is_enabled: boolean;
+    last_verified_at?: Date | null;
+    created_at: Date;
+    updated_at: Date;
+}
+
+interface SnakedLoginHistory {
+    id: string;
+    user_id: string;
+    status: LoginStatus;
+    ip_address: string;
+    location?: string | null;
+    country_code?: string | null;
+    city?: string | null;
+    latitude?: string | null;
+    longitude?: string | null;
+    device_fingerprint?: string | null;
+    user_agent?: string | null;
+    metadata?: {
+        browser?: string;
+        os?: string;
+        device?: string;
+        is_trusted_device?: boolean;
+        is_new_device?: boolean;
+    } | null;
+    failure_reason?: string | null;
+    created_at: Date;
+}
+
+interface SnakedAntiPhishingCode {
+    id: string;
+    user_id: string;
+    phishing_code: string;
+    is_active: boolean;
+    created_at: Date;
+    updated_at: Date;
+}
+
 @Controller()
 export class SecurityGrpcController {
     constructor(
@@ -146,17 +229,18 @@ export class SecurityGrpcController {
 
     // Session Methods
     @GrpcMethod('SecurityService', 'CreateSession')
-    async createSession(data: CreateSessionRequest): Promise<ApiResponse<UserSession>> {
+    async createSession(data: CreateSessionRequest): Promise<ApiResponse<SnakedUserSession>> {
+        const transformedData = snakeToCamel<CreateSessionRequest>(data);
         try {
             const session = await this.loginSecurityService.createSession({
-                userId: data.user_id,
-                sessionToken: data.session_token,
-                refreshToken: data.refresh_token,
-                deviceFingerprint: data.device_fingerprint,
-                ipAddress: data.ip_address,
-                userAgent: data.user_agent,
-                metadata: data.metadata_json ? JSON.parse(data.metadata_json) : undefined,
-                expiresInHours: data.expires_in_hours,
+                userId: transformedData.userId,
+                sessionToken: transformedData.sessionToken,
+                refreshToken: transformedData.refreshToken,
+                deviceFingerprint: transformedData.deviceFingerprint,
+                ipAddress: transformedData.ipAddress,
+                userAgent: transformedData.userAgent,
+                metadata: transformedData.metadataJson ? JSON.parse(transformedData.metadataJson) : undefined,
+                expiresInHours: transformedData.expiresInHours,
             });
             return camelToSnake<ApiResponse<UserSession>>({
                 success: true,
@@ -170,9 +254,8 @@ export class SecurityGrpcController {
     }
 
     @GrpcMethod('SecurityService', 'UpdateSession')
-    async updateSession(data: UpdateSessionRequest): Promise<ApiResponse<UserSession>> {
+    async updateSession(data: UpdateSessionRequest): Promise<ApiResponse<SnakedUserSession>> {
         try {
-
             const session = await this.loginSecurityService.updateSession({
                 sessionId: data.session_id,
                 refreshToken: data.refresh_token,
@@ -190,7 +273,7 @@ export class SecurityGrpcController {
     }
 
     @GrpcMethod('SecurityService', 'GetActiveSession')
-    async getActiveSession(data: GetActiveSessionRequest): Promise<ApiResponse<UserSession[]>> {
+    async getActiveSession(data: GetActiveSessionRequest): Promise<ApiResponse<SnakedUserSession[]>> {
         try {
             const sessions = await this.loginSecurityService.getActiveSessions(data.user_id);
             return camelToSnake<ApiResponse<UserSession[]>>({ success: true, data: sessions })
@@ -204,7 +287,7 @@ export class SecurityGrpcController {
     async killSession(data: KillSessionRequest): Promise<ApiResponse<string>> {
         try {
             const response = await this.loginSecurityService.killSession(data.user_id, data.session_id);
-            return camelToSnake<ApiResponse<string>>({ ...response })
+            return camelToSnake<ApiResponse<string>>({ ...response, data: response.message })
         }
         catch (error: any) {
             return camelToSnake({ success: false, error })
@@ -223,7 +306,7 @@ export class SecurityGrpcController {
     }
 
     @GrpcMethod('SecurityService', 'FindTwoFactorByUserId')
-    async findTwoFactorByUserId(data: FindTwoFactorByUserIdRequest): Promise<ApiResponse<UserTwoFactor>> {
+    async findTwoFactorByUserId(data: FindTwoFactorByUserIdRequest): Promise<ApiResponse<SnakedUserTwoFactor>> {
         try {
             const twoFactor = await this.twoFactorService.findByUserId(data.user_id);
             return camelToSnake<ApiResponse<UserTwoFactor>>({
@@ -239,8 +322,8 @@ export class SecurityGrpcController {
     // 2FA Methods
     @GrpcMethod('SecurityService', 'GenerateSecret')
     async generateSecret(data: GenerateSecretRequest): Promise<ApiResponse<{
-        otpauthUrl: any;
-        backupCodes:
+        otpauth_url: any;
+        backup_codes:
         string[], secret: any
     }>> {
         try {
@@ -257,7 +340,7 @@ export class SecurityGrpcController {
     }
 
     @GrpcMethod('SecurityService', 'UpdateTwoFactor')
-    async updateTwoFactor(data: UpdateTwoFactorRequest): Promise<ApiResponse<UserTwoFactor>> {
+    async updateTwoFactor(data: UpdateTwoFactorRequest): Promise<ApiResponse<SnakedUserTwoFactor>> {
         try {
             const twoFactor = await this.twoFactorService.updateTwoFactor(data.user_id, data.data);
             return camelToSnake<ApiResponse<UserTwoFactor>>({
@@ -271,7 +354,7 @@ export class SecurityGrpcController {
     }
 
     @GrpcMethod('SecurityService', 'GenerateQRCode')
-    async generateQRCode(data: GenerateQRCodeRequest): Promise<ApiResponse<{ qrCodeDataUrl: string }>> {
+    async generateQRCode(data: GenerateQRCodeRequest): Promise<ApiResponse<{ qr_code_data_url: string }>> {
         try {
             const qrCode = await this.twoFactorService.generateQRCode(data.otpauth_url);
             return camelToSnake<ApiResponse<{ qrCodeDataUrl: string }>>({ success: true, data: { qrCodeDataUrl: qrCode } });
@@ -282,7 +365,7 @@ export class SecurityGrpcController {
     }
 
     @GrpcMethod('SecurityService', 'VerifyToken')
-    async verifyToken(data: VerifyTokenRequest): Promise<ApiResponse<{ isValid: boolean }>> {
+    async verifyToken(data: VerifyTokenRequest): Promise<ApiResponse<{ is_valid: boolean }>> {
         try {
             const isValid = await this.twoFactorService.verifyToken(data.user_id, data.token);
             return camelToSnake<ApiResponse<{ isValid: boolean }>>({
@@ -296,7 +379,7 @@ export class SecurityGrpcController {
     }
 
     @GrpcMethod('SecurityService', 'VerifyBackupCode')
-    async verifyBackupCode(data: VerifyBackupCodeRequest): Promise<ApiResponse<{ isValid: boolean }>> {
+    async verifyBackupCode(data: VerifyBackupCodeRequest): Promise<ApiResponse<{ is_valid: boolean }>> {
         try {
             const isValid = await this.twoFactorService.verifyBackupCode(data.user_id, data.code);
             return camelToSnake<ApiResponse<{ isValid: boolean }>>({
@@ -310,27 +393,30 @@ export class SecurityGrpcController {
     }
 
     @GrpcMethod('SecurityService', 'Disable2FA')
-    async disable2FA(data: Disable2FARequest): Promise<Disable2FAResponse> {
+    async disable2FA(data: Disable2FARequest): Promise<{
+        success: boolean;
+    }> {
         await this.twoFactorService.disable(data.user_id);
         return { success: true };
     }
 
     // Device Methods
     @GrpcMethod('SecurityService', 'RegisterDevice')
-    async registerDevice(data: RegisterDeviceRequest): Promise<ApiResponse<TrustedDevice>> {
+    async registerDevice(data: RegisterDeviceRequest): Promise<ApiResponse<SnakedTrustedDevice>> {
+        const transformedData = snakeToCamel<RegisterDeviceRequest>(data);
         try {
             const device = await this.deviceFingerprintService.registerDevice(
-                data.user_id,
+                transformedData.userId,
                 {
-                    fingerprint: data.device_info.fingerprint,
-                    browser: data.device_info.browser,
-                    os: data.device_info.os,
-                    device: data.device_info.device,
-                    screenResolution: data.device_info.screen_resolution,
-                    timezone: data.device_info.timezone,
-                    language: data.device_info.language,
-                    ipAddress: data.device_info.ip_address,
-                    userAgent: data.device_info.user_agent,
+                    fingerprint: transformedData.deviceInfo.fingerprint,
+                    browser: transformedData.deviceInfo.browser,
+                    os: transformedData.deviceInfo.os,
+                    device: transformedData.deviceInfo.device,
+                    screenResolution: transformedData.deviceInfo.screenResolution,
+                    timezone: transformedData.deviceInfo.timezone,
+                    language: transformedData.deviceInfo.language,
+                    ipAddress: transformedData.deviceInfo.ipAddress,
+                    userAgent: transformedData.deviceInfo.userAgent,
                 },
                 {
                     country: data.location?.country,
@@ -347,20 +433,9 @@ export class SecurityGrpcController {
         }
     }
 
-    @GrpcMethod('SecurityService', 'IsDeviceTrusted')
-    async isDeviceTrusted(data: IsDeviceTrustedRequest): Promise<ApiResponse<{ isTrusted: boolean }>> {
-        try {
-            const isTrusted = await this.deviceFingerprintService.isDeviceTrusted(data.user_id, data.fingerprint);
-            return camelToSnake<ApiResponse<{ isTrusted: boolean }>>({ success: true, data: { c } });
-        }
-        catch (error: any) {
-            return camelToSnake({ success: false, error })
-        }
-    }
-
     // Anti-Phishing Methods
     @GrpcMethod('SecurityService', 'SetAntiPhishingCode')
-    async setAntiPhishingCode(data: SetAntiPhishingCodeRequest): Promise<ApiResponse<AntiPhishingCode>> {
+    async setAntiPhishingCode(data: SetAntiPhishingCodeRequest): Promise<ApiResponse<SnakedAntiPhishingCode>> {
         try {
             const antiPhishingCode = await this.antiPhishingService.setAntiPhishingCode(data.user_id, data.phishing_code, data.ip_address);
             return camelToSnake<ApiResponse<AntiPhishingCode>>({
@@ -383,16 +458,17 @@ export class SecurityGrpcController {
     }
 
     @GrpcMethod('SecurityService', 'LogLoginAttempt')
-    async logLoginAttempt(data: LogLoginAttemptRequest): Promise<ApiResponse<LoginHistory>> {
+    async logLoginAttempt(data: LogLoginAttemptRequest): Promise<ApiResponse<SnakedLoginHistory>> {
+        const transformedData = snakeToCamel<LogLoginAttemptRequest>(data);
         try {
             const logLoginAttemp = await this.loginSecurityService.logLoginAttempt({
-                userId: data.user_id,
-                ipAddress: data.ip_address,
-                userAgent: data.user_agent,
-                deviceFingerprint: data.device_fingerprint,
+                userId: transformedData.userId,
+                ipAddress: transformedData.ipAddress,
+                userAgent: transformedData.userAgent,
+                deviceFingerprint: transformedData.deviceFingerprint,
                 status: data.success ? LOGIN_STATUS.SUCCESS : LOGIN_STATUS.FAILED,
-                failureReason: data.failure_reason,
-                metadata: data.metadata_json ? JSON.parse(data.metadata_json) : undefined,
+                failureReason: transformedData.failureReason,
+                metadata: transformedData.metadataJson ? JSON.parse(transformedData.metadataJson) : undefined,
             });
 
             return camelToSnake<ApiResponse<LoginHistory>>({ success: true, data: logLoginAttemp });

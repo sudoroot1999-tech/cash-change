@@ -1,0 +1,23 @@
+<div class="account-layout">
+    <div class="account-container">
+        <!-- Sidebar -->
+        <aside class="account-sidebar">
+            <div class="sidebar-header">
+                <h2 class="sidebar-title">Account</h2>
+            </div>
+            <nav class="sidebar-nav">
+                @for (item of navItems; track item.path) {
+                <a [routerLink]="item.path" routerLinkActive="active" class="sidebar-item">
+                    <span class="sidebar-icon">{{ item.icon }}</span>
+                    <span class="sidebar-label">{{ item.label }}</span>
+                </a>
+                }
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="account-main">
+            <router-outlet />
+        </main>
+    </div>
+</div>

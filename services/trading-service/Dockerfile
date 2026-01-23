@@ -22,7 +22,9 @@ WORKDIR /app
 ENV NODE_ENV=production
 RUN corepack enable
 
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml  ./
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/pnpm-workspace.yaml ./
+COPY --from=builder /app/pnpm-lock.yaml ./
 COPY --from=builder /app/libs/common/package.json ./libs/common/package.json
 COPY --from=builder /app/services/trading-service/package.json ./services/trading-service/package.json
 
@@ -35,6 +37,6 @@ COPY --from=builder /app/services/trading-service/dist/ ./services/trading-servi
 RUN addgroup -S app && adduser -S app -G app
 USER app
 EXPOSE 3004
-WORKDIR /app/services/trading-service
+WORKDIR /app/services/trading-service/dist
 
 CMD ["node" , "main.js"]

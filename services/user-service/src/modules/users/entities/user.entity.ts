@@ -7,8 +7,7 @@ import {
   Index,
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
-import {UserStatus,USER_STATUS,UserTier,USER_TIERS} from "@exchange/common"
-
+import { UserStatus, USER_STATUS, UserTier, USER_TIERS } from "@exchange/common"
 
 @Entity('users')
 export class User {
@@ -30,6 +29,7 @@ export class User {
   @Exclude()
   passwordHash!: string;
 
+  @Index()
   @Column({
     type: 'enum',
     enum: USER_STATUS,
@@ -61,24 +61,26 @@ export class User {
   @Exclude()
   twoFactorSecret!: string | null;
 
+  @Index()
   @Column({ name: 'email_verified', type: 'boolean', default: false })
   emailVerified!: boolean;
 
   @Column({ name: 'phone_verified', type: 'boolean', default: false })
   phoneVerified!: boolean;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, name: 'email_verification_token' })
   emailVerificationToken: string;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, name: 'anti_phishing_code' })
   antiPhishingCode: string;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, name: 'last_login_at' })
   lastLoginAt: Date;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, name: 'last_login_ip' })
   lastLoginIp: string;
 
+  @Index()
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;
 

@@ -1,0 +1,73 @@
+<div class="chart-wrapper">
+    <!-- Chart Toolbar -->
+    <div class="chart-toolbar">
+        <div class="timeframe-selector">
+            @for (tf of timeframes; track tf.value) {
+            <button class="timeframe-btn" [class.active]="selectedTimeframe() === tf.value"
+                (click)="onTimeframeChange(tf.value)">
+                {{ tf.label }}
+            </button>
+            }
+        </div>
+
+        <div class="chart-type-selector">
+            <button class="chart-type-btn" [class.active]="chartType() === 'candlestick'"
+                (click)="setChartType('candlestick')" title="Candlestick">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="2" width="6" height="20" rx="1" />
+                    <line x1="12" y1="6" x2="12" y2="18" />
+                </svg>
+            </button>
+            <button class="chart-type-btn" [class.active]="chartType() === 'line'" (click)="setChartType('line')"
+                title="Line">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="4,18 8,12 12,15 16,8 20,12" />
+                </svg>
+            </button>
+            <button class="chart-type-btn" [class.active]="chartType() === 'area'" (click)="setChartType('area')"
+                title="Area">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4,18 L8,12 L12,15 L16,8 L20,12 L20,20 L4,20 Z" fill="currentColor" opacity="0.2" />
+                    <polyline points="4,18 8,12 12,15 16,8 20,12" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="chart-tools">
+            <button class="tool-btn" (click)="toggleIndicators()">
+                📊 Indicators
+            </button>
+            <button class="tool-btn" (click)="resetZoom()">
+                🔍 Reset
+            </button>
+        </div>
+    </div>
+
+    <!-- Chart Container -->
+    <div #chartContainer class="chart-container"></div>
+
+    <!-- Volume Chart -->
+    <div #volumeContainer class="volume-container"></div>
+
+    <!-- Price Crosshair Info -->
+    @if (crosshairData()) {
+    <div class="crosshair-info">
+        <span class="info-label">O:</span>
+        <span class="info-value">{{ crosshairData()!.open | number:'1.2-2' }}</span>
+        <span class="info-label">H:</span>
+        <span class="info-value">{{ crosshairData()!.high | number:'1.2-2' }}</span>
+        <span class="info-label">L:</span>
+        <span class="info-value">{{ crosshairData()!.low | number:'1.2-2' }}</span>
+        <span class="info-label">C:</span>
+        <span class="info-value" [class.positive]="crosshairData()!.close >= crosshairData()!.open"
+            [class.negative]="crosshairData()!.close < crosshairData()!.open">
+            {{ crosshairData()!.close | number:'1.2-2' }}
+        </span>
+    </div>
+    }
+
+    <!-- TradingView Attribution -->
+    <!-- <div class="tv-attribution">
+        Powered by <a href="https://www.tradingview.com/" target="_blank" rel="noopener">TradingView</a>
+    </div> -->
+</div>

@@ -9,9 +9,10 @@ import {
   WithdrawalCompletedEvent,
   WithdrawalRejectedEvent,
   WithdrawalFailedEvent,
+  NOTIFICATION_TYPES,
+  NOTIFICATION_CHANNELS,
 } from '@exchange/common';
 import { NotificationCoreService } from '../modules/notifications/notifications.service';
-import { NotificationChannel, NotificationType } from '../modules/notifications/entities';
 
 
 /**
@@ -91,8 +92,8 @@ export class WalletEventsConsumer implements OnModuleInit {
 
       await this.notificationService.sendNotification({
         userId: event.userId,
-        type: NotificationType.INFO,
-        channels: [NotificationChannel.PUSH],
+        type: NOTIFICATION_TYPES.INFO,
+        channels: [NOTIFICATION_CHANNELS.PUSH],
         subject: 'Deposit Detected',
         content: `We've detected your deposit of ${event.amount} ${event.asset}. Waiting for ${event.requiredConfirmations} confirmations.`,
         data: {
@@ -118,8 +119,8 @@ export class WalletEventsConsumer implements OnModuleInit {
 
       await this.notificationService.sendNotification({
         userId: event.userId,
-        type: NotificationType.TRANSACTIONAL,
-        channels: [NotificationChannel.IN_APP,NotificationChannel.PUSH,NotificationChannel.EMAIL],
+        type: NOTIFICATION_TYPES.TRANSACTIONAL,
+        channels: [NOTIFICATION_CHANNELS.IN_APP,NOTIFICATION_CHANNELS.PUSH,NOTIFICATION_CHANNELS.EMAIL],
         subject: 'Deposit Confirmed',
         content: `Your deposit of ${event.amount} ${event.asset} has been confirmed and credited to your account.`,
         data: {
@@ -144,8 +145,8 @@ export class WalletEventsConsumer implements OnModuleInit {
 
       await this.notificationService.sendNotification({
         userId: event.userId,
-        type: NotificationType.TRANSACTIONAL,
-        channels: [NotificationChannel.IN_APP,NotificationChannel.PUSH,NotificationChannel.EMAIL],
+        type: NOTIFICATION_TYPES.TRANSACTIONAL,
+        channels: [NOTIFICATION_CHANNELS.IN_APP,NOTIFICATION_CHANNELS.PUSH,NOTIFICATION_CHANNELS.EMAIL],
         subject: 'Withdrawal Request Received',
         content: `Your withdrawal request for ${event.amount} ${event.asset} has been received and is being processed.`,
         data: {
@@ -171,8 +172,8 @@ export class WalletEventsConsumer implements OnModuleInit {
 
       await this.notificationService.sendNotification({
         userId: event.userId,
-        type: NotificationType.TRANSACTIONAL,
-        channels: [NotificationChannel.IN_APP],
+        type: NOTIFICATION_TYPES.TRANSACTIONAL,
+        channels: [NOTIFICATION_CHANNELS.IN_APP],
         subject: 'Withdrawal Approved',
         content: `Your withdrawal of ${event.amount} ${event.asset} has been approved and will be processed shortly.`,
         data: {
@@ -198,8 +199,8 @@ export class WalletEventsConsumer implements OnModuleInit {
 
       await this.notificationService.sendNotification({
         userId: event.userId,
-        type: NotificationType.TRANSACTIONAL,
-        channels: [NotificationChannel.IN_APP,NotificationChannel.PUSH,NotificationChannel.EMAIL],
+        type: NOTIFICATION_TYPES.TRANSACTIONAL,
+        channels: [NOTIFICATION_CHANNELS.IN_APP,NOTIFICATION_CHANNELS.PUSH,NOTIFICATION_CHANNELS.EMAIL],
         subject: 'Withdrawal Completed',
         content: `Your withdrawal of ${event.amount} ${event.asset} has been completed successfully.`,
         data: {
@@ -224,8 +225,8 @@ export class WalletEventsConsumer implements OnModuleInit {
 
       await this.notificationService.sendNotification({
         userId: event.userId,
-        type: NotificationType.TRANSACTIONAL,
-        channels: [NotificationChannel.IN_APP,NotificationChannel.PUSH,NotificationChannel.EMAIL],
+        type: NOTIFICATION_TYPES.TRANSACTIONAL,
+        channels: [NOTIFICATION_CHANNELS.IN_APP,NOTIFICATION_CHANNELS.PUSH,NOTIFICATION_CHANNELS.EMAIL],
         subject: 'Withdrawal Rejected',
         content: `Your withdrawal of ${event.amount} ${event.asset} has been rejected. Reason: ${event.reason}`,
         data: {
@@ -250,8 +251,8 @@ export class WalletEventsConsumer implements OnModuleInit {
 
       await this.notificationService.sendNotification({
         userId: event.userId,
-        type: NotificationType.TRANSACTIONAL,
-        channels: [NotificationChannel.IN_APP,NotificationChannel.PUSH,NotificationChannel.EMAIL],
+        type: NOTIFICATION_TYPES.TRANSACTIONAL,
+        channels: [NOTIFICATION_CHANNELS.IN_APP,NOTIFICATION_CHANNELS.PUSH,NOTIFICATION_CHANNELS.EMAIL],
         subject: 'Withdrawal Failed',
         content: `Your withdrawal of ${event.amount} ${event.asset} has failed. Reason: ${event.reason}. Your funds have been refunded.`,
         data: {

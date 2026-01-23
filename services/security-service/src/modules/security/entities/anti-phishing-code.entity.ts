@@ -8,13 +8,12 @@ import {
 } from 'typeorm';
 
 @Entity('anti_phishing_codes')
-@Index(['userId'], { unique: true })
 export class AntiPhishingCode {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column({ name: 'user_id' })
-  @Index()
+  @Index(['user_id'], { unique: true })
   userId: string;
 
   @Column({ name: 'phishing_code', length: 50 })

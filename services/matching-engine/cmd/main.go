@@ -68,7 +68,7 @@ func main() {
 	// Start HTTP API server
 	apiServer := api.NewServer(logger)
 	go func() {
-		if err := apiServer.Start("8080"); err != nil {
+		if err := apiServer.Start(cfg.Port); err != nil {
 			logger.Error("HTTP API server failed", zap.Error(err))
 		}
 	}()
@@ -84,7 +84,7 @@ func main() {
 	logger.Info("Matching engine started successfully",
 		zap.String("grpc_port", cfg.GRPCPort),
 		zap.String("websocket_port", cfg.WebSocketPort),
-		zap.String("http_api_port", "8080"),
+		zap.String("http_api_port", cfg.Port),
 		zap.String("swagger_docs", "http://localhost:8080/swagger/index.html"),
 		zap.Strings("kafka_brokers", cfg.KafkaBrokers),
 	)

@@ -1,13 +1,12 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule, ValidationPipe } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { BullModule } from '@nestjs/bull';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { TemplatesModule } from './modules/templates/templates.module';
 import { PreferencesModule } from './modules/preferences/preferences.module';
 import { AuthModule } from './modules/auth/auth.module';
-import { JwtAuthGuard, KafkaModule, PerformanceModule, RabbitMQModule } from '@exchange/common';
-import { APP_GUARD } from '@nestjs/core';
+import { APMInterceptor, CompressionInterceptor, DeviceContextMiddleware, DeviceFingerprintMiddleware, ETagInterceptor, getOptimizedDatabaseConfig, KafkaModule, PerformanceModule, RabbitMQModule, RequestContextInterceptor, SecurityModule } from '@exchange/common';
+import { APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -19,18 +18,21 @@ import { APP_GUARD } from '@nestjs/core';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
+      useFactory: (configService: ConfigService) => (
+        getOptimizedDatabaseConfig(configService, {
+          schema: 'notifications',
+          // migrations: ["./migrations/*.sql"],
+          // migrationsRun:true,
+        })
+      ),
+    }),
+
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get('POSTGRES_HOST'),
-        port: configService.get('POSTGRES_PORT'),
-        username: configService.get('POSTGRES_USER'),
-        password: configService.get('POSTGRES_PASSWORD'),
-        database: configService.get('POSTGRES_DB'),
-        autoLoadEntities: true,
-        synchronize: configService.get('NODE_ENV') === 'development',
-        schema: 'notifications',
-        // migrations: ["./migrations/*.sql"],
-        // migrationsRun:true,
+        secret: configService.get('JWT_SECRET'),
+        signOptions: { expiresIn: configService.get('JWT_EXPIRES_IN', '15m') },
       }),
     }),
 
@@ -49,14 +51,37 @@ import { APP_GUARD } from '@nestjs/core';
     NotificationsModule,
     TemplatesModule,
     PreferencesModule,
+    SecurityModule,
     AuthModule,
 
   ],
-  providers:[
+  providers: [
     {
-      provide: APP_GUARD,
-      useClass: JwtAuthGuard,
+      provide: APP_PIPE,
+      useValue: new ValidationPipe({ whitelist: true, transform: true })
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: RequestContextInterceptor
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: APMInterceptor
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ETagInterceptor
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: CompressionInterceptor
     }
   ]
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(DeviceFingerprintMiddleware, DeviceContextMiddleware)
+      .forRoutes('*');
+  }
+}

@@ -8,15 +8,15 @@ import {
 } from 'typeorm';
 
 @Entity('security_events')
-@Index(['userId', 'eventType', 'createdAt'])
 export class SecurityEvent {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column({ name: 'user_id' })
-  @Index()
+  @Index(['user_id'])
   userId: string;
 
+  @Index(['event_type'])
   @Column({
     name: 'event_type',
     type: 'enum',

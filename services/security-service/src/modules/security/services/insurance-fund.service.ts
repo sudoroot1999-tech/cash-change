@@ -3,10 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
   InsuranceFundTransaction,
-  InsuranceFundBalance,
-  InsuranceFundTransactionType,
+  InsuranceFundBalance
 } from '../entities/insurance-fund.entity';
 import Decimal from 'decimal.js';
+import { INSURANCE_FUND_TRANSACTION_TYPES } from 'libs/common/dist';
 
 @Injectable()
 export class InsuranceFundService {
@@ -59,7 +59,7 @@ export class InsuranceFundService {
     // Record transaction
     const transaction = this.transactionRepository.create({
       currency,
-      type: InsuranceFundTransactionType.DEPOSIT,
+      type: INSURANCE_FUND_TRANSACTION_TYPES.DEPOSIT,
       amount,
       balanceAfter: newBalance.toString(),
       description: description || 'SAFU fund deposit',
@@ -113,7 +113,7 @@ export class InsuranceFundService {
     // Record transaction
     const transaction = this.transactionRepository.create({
       currency,
-      type: InsuranceFundTransactionType.WITHDRAWAL,
+      type: INSURANCE_FUND_TRANSACTION_TYPES.WITHDRAWAL,
       amount,
       balanceAfter: newBalance.toString(),
       description,
@@ -154,7 +154,7 @@ export class InsuranceFundService {
     // Record transaction
     const transaction = this.transactionRepository.create({
       currency,
-      type: InsuranceFundTransactionType.CLAIM,
+      type: INSURANCE_FUND_TRANSACTION_TYPES.CLAIM,
       amount,
       balanceAfter: newBalance.toString(),
       description,
@@ -202,7 +202,7 @@ export class InsuranceFundService {
     const transactions = await this.transactionRepository.find({
       where: {
         currency,
-        type: InsuranceFundTransactionType.DEPOSIT,
+        type: INSURANCE_FUND_TRANSACTION_TYPES.DEPOSIT,
       },
     });
 
@@ -221,7 +221,7 @@ export class InsuranceFundService {
     const transactions = await this.transactionRepository.find({
       where: {
         currency,
-        type: InsuranceFundTransactionType.CLAIM,
+        type: INSURANCE_FUND_TRANSACTION_TYPES.CLAIM,
       },
     });
 

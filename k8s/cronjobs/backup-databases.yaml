@@ -1,0 +1,117 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup-databases
+  namespace: production
+  labels:
+    app: backup-databases
+spec:
+  # Run daily at 3 AM UTC
+  schedule: "0 3 * * *"
+  successfulJobsHistoryLimit: 7
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 3600
+      template:
+        metadata:
+          labels:
+            app: backup-databases
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: backup-service-account
+          containers:
+          - name: backup
+            image: postgres:16-alpine
+            command:
+            - /bin/sh
+            - -c
+            - |
+              apk add --no-cache curl aws-cli mongodb-tools redis
+              
+              # Download backup script
+              curl -o /backup-databases.sh https://raw.githubusercontent.com/org/crypto-exchange/main/scripts/backup-databases.sh
+              chmod +x /backup-databases.sh
+              
+              # Run backup
+              /backup-databases.sh production
+            env:
+            - name: BACKUP_DIR
+              value: "/backups"
+            - name: S3_BACKUP_BUCKET
+              valueFrom:
+                configMapKeyRef:
+                  name: backup-config
+                  key: s3-bucket
+            - name: SLACK_WEBHOOK
+              valueFrom:
+                secretKeyRef:
+                  name: backup-secrets
+                  key: slack-webhook
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: aws-credentials
+                  key: access-key-id
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: aws-credentials
+                  key: secret-access-key
+            volumeMounts:
+            - name: backup-storage
+              mountPath: /backups
+          volumes:
+          - name: backup-storage
+            emptyDir:
+              sizeLimit: 50Gi
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: backup-service-account
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backup-config
+data:
+  s3-bucket: "crypto-exchange-backups"
+  retention-days: "30"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: backup-secrets
+type: Opaque
+stringData:
+  slack-webhook: "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: backup-role
+rules:
+- apiGroups: [""]
+  resources: ["pods", "pods/log"]
+  verbs: ["get", "list"]
+- apiGroups: [""]
+  resources: ["pods/exec"]
+  verbs: ["create"]
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: backup-rolebinding
+subjects:
+- kind: ServiceAccount
+  name: backup-service-account
+roleRef:
+  kind: Role
+  name: backup-role
+  apiGroup: rbac.authorization.k8s.io

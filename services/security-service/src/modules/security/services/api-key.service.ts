@@ -1,10 +1,11 @@
 import { Injectable, Logger, BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ApiKey, ApiKeyPermission } from '../entities/api-key.entity';
-import { SecurityEvent, SecurityEventType, RiskLevel } from '../entities/security-event.entity';
+import { ApiKey } from '../entities/api-key.entity';
+import { SecurityEvent } from '../entities/security-event.entity';
 import * as crypto from 'crypto';
 import * as bcrypt from 'bcrypt';
+import { ApiKeyPermission, RISK_LEVELS, SECURITY_EVENT_TYPES, SecurityEventType } from '@exchange/common';
 
 export interface CreateApiKeyDto {
   userId: string;
@@ -58,7 +59,7 @@ export class ApiKeyService {
     await this.apiKeyRepository.save(apiKey);
 
     // Log security event
-    await this.logSecurityEvent(userId, SecurityEventType.API_KEY_CREATED, {
+    await this.logSecurityEvent(userId, SECURITY_EVENT_TYPES.API_KEY_CREATED, {
       keyName,
       permissions,
       expiresAt,
@@ -250,7 +251,7 @@ export class ApiKeyService {
     await this.apiKeyRepository.save(apiKey);
 
     // Log security event
-    await this.logSecurityEvent(userId, SecurityEventType.API_KEY_DELETED, {
+    await this.logSecurityEvent(userId, SECURITY_EVENT_TYPES.API_KEY_DELETED, {
       keyName: apiKey.keyName,
     });
 
@@ -272,7 +273,7 @@ export class ApiKeyService {
     await this.apiKeyRepository.delete(apiKeyId);
 
     // Log security event
-    await this.logSecurityEvent(userId, SecurityEventType.API_KEY_DELETED, {
+    await this.logSecurityEvent(userId, SECURITY_EVENT_TYPES.API_KEY_DELETED, {
       keyName: apiKey.keyName,
     });
 
@@ -305,7 +306,7 @@ export class ApiKeyService {
     const event = this.securityEventRepository.create({
       userId,
       eventType,
-      riskLevel: RiskLevel.MEDIUM,
+      riskLevel: RISK_LEVELS.MEDIUM,
       details,
     });
 

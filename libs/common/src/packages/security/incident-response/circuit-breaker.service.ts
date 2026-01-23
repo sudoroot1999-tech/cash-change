@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 
 export enum CircuitState {
@@ -33,8 +34,8 @@ export class CircuitBreakerService {
     resetTimeout: 30000, // 30 seconds
   };
 
-  constructor(redisUrl: string) {
-    this.redis = new Redis(redisUrl);
+  constructor(private configService: ConfigService) {
+    this.redis = new Redis(configService.get('REDIS_URL'));
   }
 
   /**
@@ -78,7 +79,7 @@ export class CircuitBreakerService {
    */
   async getStatus(circuitName: string): Promise<CircuitStatus> {
     const data = await this.redis.get(`circuit:${circuitName}`);
-    
+
     if (!data) {
       return {
         state: CircuitState.CLOSED,

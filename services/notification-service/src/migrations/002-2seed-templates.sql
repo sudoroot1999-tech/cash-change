@@ -7,23 +7,432 @@ VALUES (
     'transactional',
     ARRAY['email'],
     'Welcome to {{companyName}}!',
-    '<html>
-    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h1 style="color: #4CAF50;">Welcome {{userName}}!</h1>
+    '
+    <!DOCTYPE html>
+    <html>
+
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Wellcome</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+            }
+
+            .header {
+                background: #f8f9fa;
+                padding: 20px;
+                text-align: center;
+                border-radius: 8px 8px 0 0;
+            }
+
+            .content {
+                background: white;
+                padding: 30px;
+                border: 1px solid #e9ecef;
+            }
+
+            .code-box {
+                background: #f8f9fa;
+                border: 2px solid #007bff;
+                border-radius: 8px;
+                padding: 20px;
+                text-align: center;
+                margin: 20px 0;
+            }
+
+            .code {
+                font-size: 32px;
+                font-weight: bold;
+                color: #007bff;
+                letter-spacing: 4px;
+                font-family: 'Courier New', monospace;
+            }
+
+            .footer {
+                background: #f8f9fa;
+                padding: 20px;
+                text-align: center;
+                border-radius: 0 0 8px 8px;
+                font-size: 14px;
+                color: #6c757d;
+            }
+
+            .warning {
+                background: #fff3cd;
+                border: 1px solid #ffeaa7;
+                border-radius: 4px;
+                padding: 15px;
+                margin: 20px 0;
+                color: #856404;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="header">
+            <h1>Welcome {{userName}}!</h1>
+        </div>
+        <div class="content">
+            <p>Hello,</p>
+
             <p>Thank you for joining {{companyName}}. We''re excited to have you on board.</p>
             <p>Your account has been successfully created with email: <strong>{{userEmail}}</strong></p>
-            <div style="margin: 30px 0;">
-                <a href="{{dashboardUrl}}" style="background-color: #4CAF50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
-                    Go to Dashboard
-                </a>
-            </div>
             <p>If you have any questions, feel free to contact our support team.</p>
-            <hr style="border: 1px solid #eee; margin: 20px 0;">
-            <p style="color: #999; font-size: 12px;">© {{year}} {{companyName}}. All rights reserved.</p>
+            <hr />
+            <p>© {{year}} {{companyName}}. All rights reserved.</p>
+
+            <p>Best regards,<br>
+                {{companyName}} Team</p>
+        </div>
+
+        <div class="footer">
+            <p>This is an automated message. Please do not reply to this email.</p>
+            <p>© 2026 Crypto Exchange. All rights reserved.</p>
         </div>
     </body>
-    </html>'
+
+    </html>
+    '
+);
+
+-- verification email template
+INSERT INTO notification_templates (name, type, channels, subject, template)
+VALUES (
+    'verification_email',
+    'transactional',
+    ARRAY['email'],
+    'Verification Email',
+    '
+    <!DOCTYPE html>
+    <html>
+
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Verification Email</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+            }
+
+            .header {
+                background: #f8f9fa;
+                padding: 20px;
+                text-align: center;
+                border-radius: 8px 8px 0 0;
+            }
+
+            .content {
+                background: white;
+                padding: 30px;
+                border: 1px solid #e9ecef;
+            }
+
+            .code-box {
+                background: #f8f9fa;
+                border: 2px solid #007bff;
+                border-radius: 8px;
+                padding: 20px;
+                text-align: center;
+                margin: 20px 0;
+            }
+
+            .code {
+                font-size: 32px;
+                font-weight: bold;
+                color: #007bff;
+                letter-spacing: 4px;
+                font-family: 'Courier New', monospace;
+            }
+
+            .footer {
+                background: #f8f9fa;
+                padding: 20px;
+                text-align: center;
+                border-radius: 0 0 8px 8px;
+                font-size: 14px;
+                color: #6c757d;
+            }
+
+            .warning {
+                background: #fff3cd;
+                border: 1px solid #ffeaa7;
+                border-radius: 4px;
+                padding: 15px;
+                margin: 20px 0;
+                color: #856404;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="header">
+            <h1>🔐 Verification Email</h1>
+        </div>
+
+        <div class="content">
+            <p>Hello,</p>
+
+            <p>You requested a verification email for your account. Please use the link below to complete your verification:
+            </p>
+            <strong> 🔐 Your Antiphishing code is : {{AntiphishingCode}} </strong>
+            <div class="code-box">
+                <a class="code" href="#">Verify Email</a>
+            </div>
+        </div>
+
+        <div class="warning">
+            <strong>⚠️ Important:</strong>
+            <ul>
+                <li>This email expires in <strong>{{expiresInMinutes}} minutes</strong></li>
+                <li>Do not share this email with anyone</li>
+                <li>If you didn't request verify your email, please ignore this email</li>
+            </ul>
+        </div>
+
+        <p>If you're having trouble, please contact our support team.</p>
+
+        <p>Best regards,<br>
+            The Security Team</p>
+        </div>
+
+        <div class="footer">
+            <p>This is an automated message. Please do not reply to this email.</p>
+            <p>© 2026 Crypto Exchange. All rights reserved.</p>
+        </div>
+    </body>
+
+    </html>
+    '
+);
+
+-- verification code email template
+INSERT INTO notification_templates (name, type, channels, subject, template)
+VALUES (
+    'verification_code_email',
+    'transactional',
+    ARRAY['email'],
+    'Verification Code',
+    '
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Verification Code</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+            }
+            .header {
+                background: #f8f9fa;
+                padding: 20px;
+                text-align: center;
+                border-radius: 8px 8px 0 0;
+            }
+            .content {
+                background: white;
+                padding: 30px;
+                border: 1px solid #e9ecef;
+            }
+            .code-box {
+                background: #f8f9fa;
+                border: 2px solid #007bff;
+                border-radius: 8px;
+                padding: 20px;
+                text-align: center;
+                margin: 20px 0;
+            }
+            .code {
+                font-size: 32px;
+                font-weight: bold;
+                color: #007bff;
+                letter-spacing: 4px;
+                font-family: 'Courier New', monospace;
+            }
+            .footer {
+                background: #f8f9fa;
+                padding: 20px;
+                text-align: center;
+                border-radius: 0 0 8px 8px;
+                font-size: 14px;
+                color: #6c757d;
+            }
+            .warning {
+                background: #fff3cd;
+                border: 1px solid #ffeaa7;
+                border-radius: 4px;
+                padding: 15px;
+                margin: 20px 0;
+                color: #856404;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>🔐 Verification Code</h1>
+        </div>
+        
+        <div class="content">
+            <p>Hello,</p>
+            
+            <p>You requested a verification code for your account. Please use the code below to complete your verification:</p>
+            
+            <div class="code-box">
+                <div class="code">{{code}}</div>
+            </div>
+            
+            <div class="warning">
+                <strong>⚠️ Important:</strong>
+                <ul>
+                    <li>This code expires in <strong>{{expiresInMinutes}} minutes</strong></li>
+                    <li>Do not share this code with anyone</li>
+                    <li>If you didn't request this code, please ignore this email</li>
+                </ul>
+            </div>
+            
+            <p>If you're having trouble, please contact our support team.</p>
+            
+            <p>Best regards,<br>
+            The Security Team</p>
+        </div>
+        
+        <div class="footer">
+            <p>This is an automated message. Please do not reply to this email.</p>
+            <p>© 2026 Crypto Exchange. All rights reserved.</p>
+        </div>
+    </body>
+    </html>
+    '
+);
+
+-- verification code email template
+INSERT INTO notification_templates (name, type, channels, subject, template)
+VALUES (
+    'reset_password_email',
+    'transactional',
+    ARRAY['email'],
+    'Reset Password',
+    '
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Reset Password</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+            }
+            .header {
+                background: #f8f9fa;
+                padding: 20px;
+                text-align: center;
+                border-radius: 8px 8px 0 0;
+            }
+            .content {
+                background: white;
+                padding: 30px;
+                border: 1px solid #e9ecef;
+            }
+            .code-box {
+                background: #f8f9fa;
+                border: 2px solid #007bff;
+                border-radius: 8px;
+                padding: 20px;
+                text-align: center;
+                margin: 20px 0;
+            }
+            .code {
+                font-size: 32px;
+                font-weight: bold;
+                color: #007bff;
+                letter-spacing: 4px;
+                font-family: 'Courier New', monospace;
+            }
+            .footer {
+                background: #f8f9fa;
+                padding: 20px;
+                text-align: center;
+                border-radius: 0 0 8px 8px;
+                font-size: 14px;
+                color: #6c757d;
+            }
+            .warning {
+                background: #fff3cd;
+                border: 1px solid #ffeaa7;
+                border-radius: 4px;
+                padding: 15px;
+                margin: 20px 0;
+                color: #856404;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>🔐 Reset Password</h1>
+        </div>
+
+        <div class="content">
+            <p>Hello,</p>
+
+            <strong> 🔐 Your Antiphishing code is : {{antiphishingCode}} </strong>
+
+            <p>You requested to reset your password. Click the link below:</p>
+
+            <div class="code-box">
+                <a href="${resetUrl}" class="code">
+                    Reset Password
+                </a>
+            </div>
+
+            <p>Or copy and paste this link: ${resetUrl}</p>
+        </div>
+
+        <div class="warning">
+            <strong>⚠️ Important:</strong>
+            <ul>
+                <li>This link expires in <strong>{{expiresInMinutes}} minutes</strong></li>
+                <li>Do not share this email or link with anyone</li>
+                <li>If you didn't request this, please secure your account immediately.</li>
+            </ul>
+        </div>
+
+        <p>If you're having trouble, please contact our support team.</p>
+
+        <p>Best regards,<br>
+            The Security Team</p>
+        </div>
+
+        <div class="footer">
+            <p>This is an automated message. Please do not reply to this email.</p>
+            <p>© 2026 Crypto Exchange. All rights reserved.</p>
+        </div>
+    </body>
+    </html>
+    '
 );
 
 -- Deposit confirmation

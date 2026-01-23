@@ -8,12 +8,12 @@ import {
 } from 'typeorm';
 
 @Entity('user_preferences')
-@Index(['userId'], { unique: true })
 export class UserPreferences {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'uuid', unique: true })
+  @Index({ unique: true })
+  @Column({ type: 'uuid', unique: true, name: 'user_id' })
   userId: string;
 
   // Localization preferences
@@ -27,37 +27,37 @@ export class UserPreferences {
   timezone: string;
 
   // Notification preferences
-  @Column({ default: true })
+  @Column({ default: true, name: 'notification_email' })
   notificationEmail: boolean;
 
-  @Column({ default: false })
+  @Column({ default: false, name: 'notification_sms' })
   notificationSms: boolean;
 
-  @Column({ default: true })
+  @Column({ default: true, name: 'notification_push' })
   notificationPush: boolean;
 
-  @Column({ default: true })
+  @Column({ default: true, name: 'notification_trading_alerts' })
   notificationTradingAlerts: boolean;
 
-  @Column({ default: true })
+  @Column({ default: true, name: 'notification_price_alerts' })
   notificationPriceAlerts: boolean;
 
-  @Column({ default: false })
+  @Column({ default: false, name: 'notification_newsletters' })
   notificationNewsletters: boolean;
 
   // Trading preferences
-  @Column({ default: true })
+  @Column({ default: true, name: 'trading_confirmations' })
   tradingConfirmations: boolean;
 
-  @Column({ default: false })
+  @Column({ default: false, name: 'trading_auto_compound' })
   tradingAutoCompound: boolean;
 
-  @Column({ default: 'LIMIT' })
+  @Column({ default: 'LIMIT', name: 'trading_default_order_type' })
   tradingDefaultOrderType: string;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 }

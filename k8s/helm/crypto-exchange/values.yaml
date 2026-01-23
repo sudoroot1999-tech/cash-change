@@ -1,0 +1,181 @@
+# Production Environment Values
+imageTag: latest
+
+# Ingress configuration
+# ingress:
+#   enabled: true
+#   className: nginx
+#   annotations:
+#     cert-manager.io/cluster-issuer: "letsencrypt-prod"
+#     nginx.ingress.kubernetes.io/ssl-redirect: "true"
+#     nginx.ingress.kubernetes.io/rate-limit: "1000"
+#     nginx.ingress.kubernetes.io/enable-modsecurity: "true"
+#     nginx.ingress.kubernetes.io/enable-owasp-core-rules: "true"
+#   hosts:
+#     - host: api.crypto-exchange.com
+#       paths:
+#         - path: /auth
+#           pathType: Prefix
+#           service: auth-service
+#         - path: /users
+#           pathType: Prefix
+#           service: user-service
+#         - path: /wallet
+#           pathType: Prefix
+#           service: wallet-service
+#         - path: /trading
+#           pathType: Prefix
+#           service: trading-service
+#         - path: /market-data
+#           pathType: Prefix
+#           service: market-data-service
+#   tls:
+#     - secretName: production-tls
+#       hosts:
+#         - api.crypto-exchange.com
+
+# Services - Full production replicas
+# services:
+
+# PostgreSQL - Production configuration
+postgresql:
+  enabled: true
+  auth:
+    enabled: true
+    existingSecret: postgresql-credentials
+  primary:
+    persistence:
+      enabled: true
+      storageClass: gp3
+  readReplicas:
+    replicaCount: 1
+    persistence:
+      enabled: true
+      storageClass: gp3
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+
+# Redis - Production configuration
+redis:
+  enabled: true
+  architecture: replication
+  auth:
+    enabled: true
+    existingSecret: redis-credentials
+  master:
+    persistence:
+      enabled: true
+      storageClass: gp3
+  replica:
+    replicaCount: 1
+    persistence:
+      enabled: true
+      storageClass: gp3
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+
+# RabbitMQ - Production cluster
+rabbitmq:
+  enabled: true
+  auth:
+    username: rabbit
+    existingSecret: rabbitmq-credentials
+  replicaCount: 1
+  persistence:
+    enabled: true
+    storageClass: gp3
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+
+# MongoDB - Production replica set
+mongodb:
+  enabled: true
+  auth:
+    rootPassword: ""
+    existingSecret: mongodb-credentials
+  architecture: replicaset
+  replicaCount: 1
+  persistence:
+    enabled: true
+    storageClass: gp3
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+
+# Elasticsearch - Production cluster
+elasticsearch:
+  enabled: true
+  replicas: 1
+  minimumMasterNodes: 2
+  persistence:
+    enabled: true
+    storageClass: gp3
+  esJavaOpts: "-Xmx4g -Xms4g"
+
+# Kafka - Production cluster
+kafka:
+  enabled: true
+  replicaCount: 1
+  persistence:
+    enabled: true
+    storageClass: gp3
+  zookeeper:
+    enabled: true
+    replicaCount: 1
+    persistence:
+      enabled: true
+      storageClass: gp3
+
+# Prometheus - Production monitoring
+prometheus:
+  enabled: true
+  server:
+    retention: "90d"
+    persistentVolume:
+      enabled: true
+      storageClass: gp3
+    replicaCount: 1
+  alertmanager:
+    enabled: true
+    persistentVolume:
+      enabled: true
+
+# Grafana - Production
+grafana:
+  enabled: true
+  existingSecret: grafana-credentials
+  persistence:
+    enabled: true
+    storageClass: gp3
+  replicas: 1
+
+# Jaeger - Production
+jaeger:
+  enabled: true
+  storage:
+    type: elasticsearch
+    elasticsearch:
+      host: elasticsearch
+      port: 9200
+    replicaCount: 1
+
+# Network Policies
+networkPolicies:
+  enabled: true
+
+# Security Context
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  fsGroup: 1001
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true

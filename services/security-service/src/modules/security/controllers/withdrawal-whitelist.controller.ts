@@ -1,8 +1,10 @@
 import { Controller, Post, Get, Delete, Body, Param, UseGuards, Req, Query } from '@nestjs/common';
 import { WithdrawalWhitelistService } from '../services/withdrawal-whitelist.service';
 import { AddWhitelistAddressDto } from '../dto/withdrawal-whitelist.dto';
+import { RequireAuth } from '@exchange/common';
 
 @Controller('security/whitelist')
+@RequireAuth()
 export class WithdrawalWhitelistController {
   constructor(
     private readonly whitelistService: WithdrawalWhitelistService,

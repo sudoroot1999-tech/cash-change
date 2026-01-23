@@ -10,25 +10,16 @@ import { UserEventsService } from './services/user-events.service';
 import { UserProfile } from './entities/profile.entity';
 import { UserPreferences } from './entities/user-preferences.entity';
 import { UserLimits } from './entities/user-limits.entity';
-import { PasswordService, PerformanceModule, RateLimiterService } from '@exchange/common';
-import { JWTAuthService } from '@exchange/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { join } from 'path';
 import { SECURITY_PORT } from './tokens/user.tokens';
 import { SecurityGrpcAdapter } from './adapters/security-grpc.adaptor';
-import { StorageModule } from '@exchange/common';
+import { ReferralModule } from '../referral/referral.module';
+import { NotificationEventsService } from './services/notification-events.service';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, UserProfile, UserPreferences, UserLimits]),
-    JwtModule.registerAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.get('JWT_SECRET'),
-        signOptions: { expiresIn: configService.get('JWT_EXPIRES_IN', '15m') },
-      }),
-    }),
     ClientsModule.registerAsync([
       {
         name: 'SECURITY_PACKAGE',
@@ -44,17 +35,14 @@ import { StorageModule } from '@exchange/common';
         }),
       },
     ]),
-    StorageModule,
+    ReferralModule
   ],
   controllers: [UsersController, UsersGrpcController],
   providers: [
     UsersService,
     UserEventsService,
-    PasswordService,
-    JWTAuthService,
-    RateLimiterService,
+    NotificationEventsService,
     SecurityGrpcAdapter,
-    PerformanceModule,
     {
       provide: SECURITY_PORT,
       useExisting: SecurityGrpcAdapter,

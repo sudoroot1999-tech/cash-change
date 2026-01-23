@@ -227,26 +227,26 @@ export class RabbitMQService implements OnModuleDestroy {
               });
 
               await handler(content, msg);
-              
+
               channel.ack(msg);
-              
+
               const processingTime = Date.now() - startTime;
               this.logger.debug(`Message processed successfully from ${queue} in ${processingTime}ms`);
-            } catch (error:any) {
+            } catch (error: any) {
               this.logger.error(`Error processing message from ${queue}`, {
                 error: error.message,
                 stack: error.stack,
                 messageId: msg.properties.messageId,
               });
-              
+
               // Retry logic
               const retryCount = (msg.properties.headers?.['x-retry-count'] || 0) + 1;
               const maxRetries = 3;
-              
+
               if (retryCount <= maxRetries) {
                 // Requeue with exponential backoff
                 const delay = Math.min(1000 * Math.pow(2, retryCount - 1), 30000);
-                
+
                 setTimeout(() => {
                   channel.nack(msg, false, false);
                   channel.sendToQueue(
@@ -335,6 +335,22 @@ export class RabbitMQService implements OnModuleDestroy {
       this.logger.error(`Failed to create queue ${queue}`, error);
       throw error;
     }
+  }
+
+  async getQueueStats(queueName: string): Promise<{ messageCount: number; consumerCount: number }> {
+    return new Promise((resolve, reject) => {
+      this.channelWrapper.addSetup(async (channel: ConfirmChannel) => {
+        try {
+          const info = await channel.checkQueue(queueName);
+          resolve({
+            messageCount: info.messageCount,
+            consumerCount: info.consumerCount,
+          });
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
   }
 
   /**

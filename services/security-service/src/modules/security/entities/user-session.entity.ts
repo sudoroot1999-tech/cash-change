@@ -8,19 +8,19 @@ import {
 } from 'typeorm';
 
 @Entity('user_sessions')
-@Index(['userId', 'isActive'])
 export class UserSession {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column({ name: 'user_id' })
-  @Index()
+  @Index(['user_id'])
   userId: string;
 
   @Column({ name: 'session_token', unique: true })
-  @Index()
+  @Index(['session_token'])
   sessionToken: string;
 
+  @Index(['refresh_token'])
   @Column({ name: 'refresh_token', unique: true, nullable: true })
   refreshToken: string;
 
@@ -41,9 +41,11 @@ export class UserSession {
     location?: string;
   };
 
+  @Index()
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
 
+  @Index()
   @Column({ name: 'expires_at', type: 'timestamp' })
   expiresAt: Date;
 

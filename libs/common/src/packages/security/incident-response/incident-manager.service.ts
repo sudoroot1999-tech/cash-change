@@ -2,7 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import Redis from 'ioredis';
 import * as crypto from 'crypto';
 import { IncidentSeverity, IncidentStatus } from '../../../types';
-import { INCIDENT_SEVERITY, INCIDENT_STATUS } from 'libs/common/src/constants';
+import { INCIDENT_SEVERITY, INCIDENT_STATUS } from '../../../constants';
+import { ConfigService } from '@nestjs/config';
 
 export interface SecurityIncident {
   id: string;
@@ -41,8 +42,8 @@ export class IncidentManagerService {
   private redis: Redis;
   private emergencyActions: Map<string, EmergencyAction> = new Map();
 
-  constructor(redisUrl: string) {
-    this.redis = new Redis(redisUrl);
+  constructor(private configService: ConfigService) {
+    this.redis = new Redis(configService.get('REDIS_URL'));
     this.registerEmergencyActions();
   }
 
@@ -227,7 +228,7 @@ export class IncidentManagerService {
    */
   async executeEmergencyAction(actionName: string): Promise<void> {
     const action = this.emergencyActions.get(actionName);
-    
+
     if (!action) {
       throw new Error(`Emergency action ${actionName} not found`);
     }
@@ -237,7 +238,7 @@ export class IncidentManagerService {
     try {
       await action.execute();
       this.logger.log(`Emergency action ${actionName} completed successfully`);
-    } catch (error:any) {
+    } catch (error: any) {
       this.logger.error(`Emergency action ${actionName} failed: ${error.message}`);
       throw error;
     }
@@ -348,7 +349,7 @@ export class IncidentManagerService {
   private async triggerAlert(incident: SecurityIncident): Promise<void> {
     // In production, integrate with alerting services
     this.logger.error(`ALERT: ${incident.severity} incident - ${incident.type}`);
-    
+
     // Store alert
     await this.redis.lpush('security_alerts', JSON.stringify({
       incidentId: incident.id,
@@ -417,9 +418,9 @@ Description:
 ${incident.description}
 
 Timeline:
-${incident.timeline.map(entry => 
-  `[${entry.timestamp}] ${entry.action} by ${entry.performedBy}\n  ${entry.details}`
-).join('\n')}
+${incident.timeline.map(entry =>
+      `[${entry.timestamp}] ${entry.action} by ${entry.performedBy}\n  ${entry.details}`
+    ).join('\n')}
 
 ${incident.resolvedAt ? `Resolved At: ${incident.resolvedAt}` : 'Status: Ongoing'}
 

@@ -12,7 +12,7 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
-import { CurrentUser, Public, RateLimit, ReqContext, RequestContext } from '@exchange/common';
+import { CurrentUser, Public, RateLimit, ReqContext, RequestContext, RequireAuth } from '@exchange/common';
 import {
   LoginDto,
   RefreshTokenDto,
@@ -21,7 +21,8 @@ import {
   Verify2FADto,
   ChangePasswordDto,
   ForgotPasswordDto,
-  ResetPasswordDto
+  ResetPasswordDto,
+  LogoutDto
 } from './dto/auth.dto';
 
 @ApiTags('Auth')
@@ -57,7 +58,7 @@ export class AuthController {
   }
 
   @Post('refresh')
-  @Public()
+  @RequireAuth()
   @HttpCode(HttpStatus.OK)
   @RateLimit({ windowMs: 60 * 1000, maxRequests: 10 })
   @ApiOperation({ summary: 'Refresh access token' })
@@ -71,15 +72,17 @@ export class AuthController {
     return this.authService.refreshToken(user.id, dto, ctx);
   }
 
-  // @Post('logout')
-  // @HttpCode(HttpStatus.NO_CONTENT)
-  // @ApiBearerAuth()
-  // @ApiOperation({ summary: 'Logout current session' })
-  // async logout(@Body() refreshDto: RefreshTokenDto): Promise<void> {
-  //   await this.authService.logout(refreshDto.refreshToken);
-  // }
+  @Post('logout')
+  @RequireAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Logout current session' })
+  async logout(@CurrentUser() user, @Body() logoutDto: LogoutDto): Promise<void> {
+    await this.authService.logout(user, logoutDto.sessionId);
+  }
 
   @Post('2fa/setup')
+  @RequireAuth()
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Setup 2FA - get secret and QR code' })
@@ -89,12 +92,13 @@ export class AuthController {
   }
 
   @Post('2fa/enable')
+  @RequireAuth()
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Enable 2FA after verification' })
   @ApiResponse({ status: 200, description: '2FA setup initiated' })
   async enable2FA(@CurrentUser() user, @Body() dto: Verify2FADto) {
-    return this.authService.confirm2FA(user.id, dto.token);
+    return this.authService.confirm2FA(user, dto.token);
   }
 
   @Post('verify-2fa')
@@ -116,6 +120,7 @@ export class AuthController {
   }
 
   @Post('2fa/disable')
+  @RequireAuth()
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Disable 2FA' })
@@ -125,6 +130,7 @@ export class AuthController {
   }
 
   @Put('change-password')
+  @RequireAuth()
   @HttpCode(HttpStatus.OK)
   @RateLimit({ windowMs: 60 * 60 * 1000, maxRequests: 3 })
   @ApiOperation({ summary: 'Change password' })
@@ -132,7 +138,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Password changed successfully' })
   @ApiResponse({ status: 401, description: 'Invalid current password' })
   async changePassword(@CurrentUser() user, @Body() dto: ChangePasswordDto) {
-    return this.authService.changePassword(user.id, dto);
+    return this.authService.changePassword(user, dto);
   }
 
   @Post('forgot-password')
@@ -146,24 +152,14 @@ export class AuthController {
   }
 
   @Post('reset-password')
-  @Public()
+  @RequireAuth()
   @HttpCode(HttpStatus.OK)
   @RateLimit({ windowMs: 60 * 60 * 1000, maxRequests: 3 })
   @ApiOperation({ summary: 'Reset password' })
   @ApiResponse({ status: 200, description: 'Password reset successfully' })
   @ApiResponse({ status: 400, description: 'Invalid reset token' })
-  async resetPassword(@Body() dto: ResetPasswordDto) {
-    return this.authService.resetPassword(dto);
+  async resetPassword(@Body() dto: ResetPasswordDto, @CurrentUser() user) {
+    return this.authService.resetPassword(dto, user.id);
   }
-
-  // @Post('verify-email')
-  // @Public()
-  // @HttpCode(HttpStatus.OK)
-  // @ApiOperation({ summary: 'Verify email address' })
-  // @ApiResponse({ status: 200, description: 'Email verified successfully' })
-  // @ApiResponse({ status: 400, description: 'Invalid verification token' })
-  // async verifyEmail(@Body() dto: VerifyEmailDto) {
-  //   return this.authService.verifyEmail(dto);
-  // }
 
 }

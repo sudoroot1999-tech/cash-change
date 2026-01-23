@@ -1,8 +1,10 @@
 import { Controller, Post, Get, Put, Delete, Body, Param, UseGuards, Req } from '@nestjs/common';
 import { ApiKeyService } from '../services/api-key.service';
 import { CreateApiKeyDto, UpdateApiKeyPermissionsDto, UpdateIpWhitelistDto } from '../dto/api-key.dto';
+import { RequireAuth } from '@exchange/common';
 
 @Controller('security/api-keys')
+@RequireAuth()
 export class ApiKeyController {
   constructor(private readonly apiKeyService: ApiKeyService) {}
 

@@ -1,8 +1,10 @@
 import { Controller, Post, Get, Body, Param, Query } from '@nestjs/common';
 import { BugBountyService } from '../services/bug-bounty.service';
 import { SubmitBugBountyDto } from '../dto/bug-bounty.dto';
+import { RequireAuth } from '@exchange/common';
 
 @Controller('security/bug-bounty')
+@RequireAuth()
 export class BugBountyController {
   constructor(private readonly bugBountyService: BugBountyService) {}
 
