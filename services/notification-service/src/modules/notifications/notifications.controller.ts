@@ -39,7 +39,9 @@ export class NotificationController {
 
     return {
       success: true,
-      queueIds,
+      data: {
+        queueIds
+      },
       message: 'Notification(s) queued successfully',
     };
   }
@@ -62,7 +64,9 @@ export class NotificationController {
 
     return {
       success: true,
-      totalQueued: results.flat().length,
+      data: {
+        totalQueued: results.flat().length
+      },
       message: 'Bulk notifications queued successfully',
     };
   }
@@ -108,7 +112,9 @@ export class NotificationController {
     const count = await this.notificationService.getUnreadCount(userId);
     return {
       success: true,
-      count,
+      data: {
+        count
+      },
     };
   }
 
@@ -159,7 +165,9 @@ export class NotificationController {
 
     return {
       success: true,
-      queueIds,
+      data: {
+        queueIds
+      },
       message: 'Test notification sent',
     };
   }

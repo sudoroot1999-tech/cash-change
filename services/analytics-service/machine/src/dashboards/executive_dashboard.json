@@ -1,0 +1,107 @@
+{
+  "dashboard_title": "Executive Dashboard",
+  "description": "High-level overview of key business metrics",
+  "slug": "executive-dashboard",
+  "position_json": "{\"CHART-1\":{\"children\":[],\"id\":\"CHART-1\",\"meta\":{\"chartId\":1,\"height\":50,\"sliceName\":\"Total Users\",\"width\":3},\"parents\":[\"ROOT_ID\",\"GRID_ID\"],\"type\":\"CHART\"},\"CHART-2\":{\"children\":[],\"id\":\"CHART-2\",\"meta\":{\"chartId\":2,\"height\":50,\"sliceName\":\"Active Users\",\"width\":3},\"parents\":[\"ROOT_ID\",\"GRID_ID\"],\"type\":\"CHART\"}}",
+  "charts": [
+    {
+      "slice_name": "Total Users",
+      "viz_type": "big_number_total",
+      "datasource": "analytics_db.users",
+      "params": {
+        "metric": "count",
+        "adhoc_filters": [],
+        "time_range": "Last 30 days"
+      }
+    },
+    {
+      "slice_name": "Daily Active Users",
+      "viz_type": "line",
+      "datasource": "analytics_db.user_events",
+      "params": {
+        "metrics": ["COUNT(DISTINCT user_id)"],
+        "groupby": ["DATE(timestamp)"],
+        "time_range": "Last 30 days",
+        "show_legend": true,
+        "line_interpolation": "linear"
+      }
+    },
+    {
+      "slice_name": "Trading Volume (24h)",
+      "viz_type": "big_number",
+      "datasource": "analytics_db.trading_events",
+      "params": {
+        "metric": "SUM(amount)",
+        "time_range": "Last day",
+        "compare_lag": 1,
+        "compare_suffix": "vs yesterday"
+      }
+    },
+    {
+      "slice_name": "Revenue by Source",
+      "viz_type": "pie",
+      "datasource": "analytics_db.transaction_events",
+      "params": {
+        "metrics": ["SUM(fee_amount)"],
+        "groupby": ["transaction_type"],
+        "time_range": "Last 30 days",
+        "color_scheme": "supersetColors"
+      }
+    },
+    {
+      "slice_name": "Top Trading Pairs",
+      "viz_type": "table",
+      "datasource": "analytics_db.trading_events",
+      "params": {
+        "metrics": ["SUM(amount) AS volume", "COUNT(*) AS trades"],
+        "groupby": ["trading_pair"],
+        "time_range": "Last 7 days",
+        "row_limit": 10,
+        "order_desc": true
+      }
+    },
+    {
+      "slice_name": "User Growth Trend",
+      "viz_type": "area",
+      "datasource": "analytics_db.users",
+      "params": {
+        "metrics": ["COUNT(*)"],
+        "groupby": ["DATE(created_at)"],
+        "time_range": "Last 90 days",
+        "show_legend": true,
+        "stack": false
+      }
+    },
+    {
+      "slice_name": "Geographic Distribution",
+      "viz_type": "country_map",
+      "datasource": "analytics_db.users",
+      "params": {
+        "entity": "country_code",
+        "metric": "COUNT(*)",
+        "linear_color_scheme": "blue_white_yellow"
+      }
+    },
+    {
+      "slice_name": "Assets Under Management",
+      "viz_type": "big_number_total",
+      "datasource": "analytics_db.wallets",
+      "params": {
+        "metric": "SUM(balance * price_usd)",
+        "time_range": "No filter"
+      }
+    }
+  ],
+  "filters": [
+    {
+      "column": "timestamp",
+      "name": "Time Range",
+      "type": "filter_time_range"
+    },
+    {
+      "column": "trading_pair",
+      "name": "Trading Pair",
+      "type": "filter_select"
+    }
+  ]
+}

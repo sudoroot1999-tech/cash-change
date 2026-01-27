@@ -13,12 +13,12 @@ import {
   HttpCode,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody, ApiConsumes } from '@nestjs/swagger';
-import { CurrentUser, BadRequestError, User, Public, HTTP_STATUS, RequireAuth } from '@exchange/common';
-import { AuthenticatedUser } from '@exchange/common';
+import { CurrentUser, BadRequestError, User, Public, HTTP_STATUS, RequireAuth, KycLevel, AuthenticatedUser } from '@exchange/common';
 import { UsersService } from './users.service';
 import { UpdateUserDto, UserResponseDto, PaginationQueryDto, VerifyEmailDto } from './dto/user.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UploadAvatarResponseDto } from './dto/upload-avatar.dto';
+import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 
 @ApiTags('Users')
 @Controller('users')
@@ -31,8 +31,20 @@ export class UsersController {
   @ApiOperation({ summary: 'Get current user from token' })
   @ApiResponse({ status: 200, description: 'Current user data', type: UserResponseDto })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getCurrentUser(@CurrentUser() currentUser): Promise<UserResponseDto> {
-    return this.toResponseDto(currentUser);
+  async getCurrentUser(@CurrentUser() currentUser: AuthenticatedUser) {
+    try {
+      const user = await this.usersService.findById(currentUser.userId);
+      return {
+        success: true,
+        data: this.toResponseDto(user)
+      };
+    }
+    catch (error) {
+      return {
+        success: true,
+        error
+      }
+    }
   }
 
   @Get(':id')
@@ -41,9 +53,12 @@ export class UsersController {
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, type: UserResponseDto })
   @ApiResponse({ status: 404, description: 'User not found' })
-  async findById(@Param('id', ParseUUIDPipe) id: string): Promise<UserResponseDto> {
+  async findById(@Param('id', ParseUUIDPipe) id: string) {
     const user = await this.usersService.findById(id);
-    return this.toResponseDto(user);
+    return {
+      success: true,
+      data: this.toResponseDto(user)
+    };
   }
 
   @Post('verify-email')
@@ -53,7 +68,8 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'Email verified successfully' })
   @ApiResponse({ status: 400, description: 'Invalid verification token' })
   async verifyEmail(@Body() dto: VerifyEmailDto) {
-    return this.usersService.verifyEmail(dto);
+    const result = await this.usersService.verifyEmail(dto);
+    return { ...result, data: result.message }
   }
 
   @Put(':id')
@@ -64,13 +80,16 @@ export class UsersController {
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateUserDto: UpdateUserDto,
-  ): Promise<UserResponseDto> {
+  ) {
     const user = await this.usersService.update(id, updateUserDto);
-    return this.toResponseDto(user);
+    return {
+      success: true,
+      data: this.toResponseDto(user)
+    };
   }
 
 
-  @Get()
+  @Get("profile")
   @ApiOperation({ summary: 'Get user profile' })
   @ApiParam({ name: 'userId', type: 'string', format: 'uuid' })
   async getProfile(@Param('userId', ParseUUIDPipe) userId: string) {
@@ -78,22 +97,22 @@ export class UsersController {
     return { success: true, data: profile }
   }
 
-  @Put()
+  @Put("profile:userId")
   @ApiOperation({ summary: 'Update user profile' })
   @ApiParam({ name: 'userId', type: 'string', format: 'uuid' })
   async updateProfile(
     @Param('userId', ParseUUIDPipe) userId: string,
-    @Body() updateDto: UpdateUserDto,
+    @Body() updateDto: UpdateUserProfileDto,
   ) {
-    const updatedProfile = await this.usersService.update(userId, updateDto)
+    const updatedProfile = await this.usersService.updateUserProfile(userId, updateDto)
     return { success: true, data: updatedProfile }
   }
 
   @Get('preferences')
   @ApiOperation({ summary: 'Get user preferences' })
   @ApiResponse({ status: 200, description: 'Preferences retrieved successfully' })
-  async getPreferences(@CurrentUser() user) {
-    const profile = await this.usersService.getUserProfile(user.userID);
+  async getPreferences(@CurrentUser() user: AuthenticatedUser) {
+    const profile = await this.usersService.getUserProfile(user.userId);
     return {
       success: true,
       data: profile.preferences,
@@ -104,10 +123,10 @@ export class UsersController {
   @ApiOperation({ summary: 'Update user preferences' })
   @ApiParam({ name: 'userId', type: 'string', format: 'uuid' })
   async updatePreferences(
-    @Param('userId', ParseUUIDPipe) userId: string,
+    @CurrentUser() user: AuthenticatedUser,
     @Body() preferences: Record<string, unknown>,
   ) {
-    const updatedPreferences = this.usersService.updateUserPreferences(userId, preferences);
+    const updatedPreferences = this.usersService.updateUserPreferences(user.userId, preferences);
     return { success: true, data: updatedPreferences }
   }
 
@@ -131,9 +150,8 @@ export class UsersController {
   @ApiOperation({ summary: 'Upload avatar' })
   @ApiParam({ name: 'userId', type: 'string', format: 'uuid' })
   async uploadAvatar(
-    @Param('userId', ParseUUIDPipe) userId: string,
     @UploadedFile() file: Express.Multer.File,
-    @CurrentUser() user
+    @CurrentUser() user: AuthenticatedUser
   ) {
 
     if (!file) {
@@ -141,7 +159,7 @@ export class UsersController {
     }
 
     const result = await this.usersService.uploadAvatar(
-      user.userID,
+      user.userId,
       file,
       file.mimetype
     );
@@ -156,7 +174,7 @@ export class UsersController {
   @Get('limits')
   @ApiOperation({ summary: 'Get user limits based on KYC level' })
   @ApiResponse({ status: 200, description: 'Limits retrieved successfully' })
-  async getLimits(@CurrentUser() user) {
+  async getLimits(@CurrentUser() user: AuthenticatedUser) {
     const limits = await this.usersService.getUserLimits(user.userId);
     return {
       success: true,
@@ -182,7 +200,7 @@ export class UsersController {
   })
   @ApiResponse({ status: 200, description: 'Limit check completed' })
   async checkLimit(
-    @CurrentUser() user,
+    @CurrentUser() user: AuthenticatedUser,
     @Body() body: { limitType: 'withdrawal' | 'deposit' | 'trade'; amount: number },
   ) {
     const result = await this.usersService.checkLimit(
@@ -200,7 +218,7 @@ export class UsersController {
   /**
    * Transform User entity to Response DTO
    */
-  private toResponseDto(user: User): UserResponseDto {
+  private toResponseDto(user: User | UserResponseDto): UserResponseDto {
     return {
       id: user.id,
       email: user.email,
@@ -208,7 +226,7 @@ export class UsersController {
       phone: user.phone || undefined,
       status: user.status,
       tier: user.tier,
-      kycLevel: user.kycLevel,
+      kycLevel: user.kycLevel as KycLevel,
       referralCode: user.referralCode,
       twoFactorEnabled: user.twoFactorEnabled,
       emailVerified: user.emailVerified,

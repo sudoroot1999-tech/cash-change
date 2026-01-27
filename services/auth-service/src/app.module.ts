@@ -3,7 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthModule } from './modules/auth/auth.module';
-import { RabbitMQModule, KafkaModule, PerformanceModule, SecurityModule, RequestContextInterceptor, DeviceFingerprintMiddleware, DeviceContextMiddleware, CompressionInterceptor, APMInterceptor, getOptimizedDatabaseConfig, ETagInterceptor } from "@exchange/common"
+import { RabbitMQModule, KafkaModule, PerformanceModule, SecurityModule, RequestContextInterceptor, DeviceFingerprintMiddleware, DeviceContextMiddleware, CompressionInterceptor, APMInterceptor, getOptimizedDatabaseConfig, ETagInterceptor, SecurityMiddleware, CSRFMiddleware, CORSMiddleware } from "@exchange/common"
 import { APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { JwtStrategy } from './modules/auth/sterategies/jwt.strategy';
 
@@ -73,7 +73,13 @@ import { JwtStrategy } from './modules/auth/sterategies/jwt.strategy';
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply(DeviceFingerprintMiddleware, DeviceContextMiddleware)
+      .apply(
+        SecurityMiddleware,
+        CSRFMiddleware,
+        CORSMiddleware,
+        DeviceFingerprintMiddleware,
+        DeviceContextMiddleware
+      )
       .forRoutes('*');
   }
 }

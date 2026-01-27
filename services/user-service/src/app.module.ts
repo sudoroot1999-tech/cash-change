@@ -4,7 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from './modules/users/users.module';
 import { HealthModule } from './modules/health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
-import { APMInterceptor, CompressionInterceptor, DeviceContextMiddleware, DeviceFingerprintMiddleware, ETagInterceptor, getOptimizedDatabaseConfig, JwtAuthGuard, JwtStrategy, KafkaModule, PerformanceModule, RabbitMQModule, RequestContextInterceptor, SecurityModule, StorageModule } from '@exchange/common';
+import { APMInterceptor, CompressionInterceptor, CORSMiddleware, CSRFMiddleware, DeviceContextMiddleware, DeviceFingerprintMiddleware, ETagInterceptor, getOptimizedDatabaseConfig, JwtAuthGuard, JwtStrategy, KafkaModule, PerformanceModule, RabbitMQModule, RequestContextInterceptor, SecurityMiddleware, SecurityModule, StorageModule } from '@exchange/common';
 import { APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
@@ -106,7 +106,13 @@ import { ReferralModule } from './modules/referral/referral.module';
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply(DeviceFingerprintMiddleware, DeviceContextMiddleware)
+      .apply(
+        SecurityMiddleware,
+        CSRFMiddleware,
+        CORSMiddleware,
+        DeviceFingerprintMiddleware,
+        DeviceContextMiddleware
+      )
       .forRoutes('*');
   }
 }

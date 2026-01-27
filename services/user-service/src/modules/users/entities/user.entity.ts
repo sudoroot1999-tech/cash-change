@@ -7,7 +7,7 @@ import {
   Index,
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
-import { UserStatus, USER_STATUS, UserTier, USER_TIERS } from "@exchange/common"
+import { UserStatus, USER_STATUS, UserTier, USER_TIERS, KYC_LEVELS, KycLevel } from "@exchange/common"
 
 @Entity('users')
 export class User {
@@ -44,8 +44,13 @@ export class User {
   })
   tier!: UserTier;
 
-  @Column({ name: 'kyc_level', type: 'int', default: 0 })
-  kycLevel!: number;
+  @Column({
+    name: 'kyc_level', 
+    type: 'enum',
+    enum: KYC_LEVELS,
+    default: KYC_LEVELS.BASIC,
+  })
+  kycLevel!: KycLevel;
 
   @Index()
   @Column({ name: 'referral_code', type: 'varchar', unique: true, length: 20 })

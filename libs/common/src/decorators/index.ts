@@ -2,6 +2,7 @@ import { UseGuards, applyDecorators, SetMetadata, createParamDecorator, Executio
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { RequestContext } from '../types';
+import { GqlExecutionContext } from '@nestjs/graphql';
 
 // Export the CurrentUser decorator
 export { CurrentUser } from './user.decorator';
@@ -10,8 +11,13 @@ export { CurrentUser } from './user.decorator';
  * Create context for request to add aditional information
  */
 export const ReqContext = createParamDecorator(
-  (_, ctx: ExecutionContext): RequestContext =>
-    ctx.switchToHttp().getRequest().context,
+  (_: unknown, ctx: ExecutionContext): RequestContext => {
+    if (ctx.getType<string>() === 'graphql') {
+      const context = GqlExecutionContext.create(ctx);
+      return context.getContext().request?.context;
+    }
+    return ctx.switchToHttp().getRequest().context,
+  },
 );
 
 

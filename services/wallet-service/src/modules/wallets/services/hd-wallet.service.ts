@@ -4,7 +4,7 @@ import * as bip39 from 'bip39';
 import * as bip32 from 'bip32';
 import * as bitcoin from 'bitcoinjs-lib';
 import { ethers } from 'ethers';
-import { EncryptionService } from '@exchange/common';
+import { KMSService } from '@exchange/common';
 
 export interface HDWalletKey {
   address: string;
@@ -17,8 +17,8 @@ export interface HDWalletKey {
 export class HDWalletService {
   constructor(
     private configService: ConfigService,
-    private encryptionService: EncryptionService,
-  ) {}
+    private encryptionService: KMSService,
+  ) { }
 
   /**
    * Generates a new mnemonic phrase for HD wallet
@@ -130,28 +130,28 @@ export class HDWalletService {
    * Encrypts and stores mnemonic securely
    */
   async encryptMnemonic(mnemonic: string): Promise<string> {
-    return this.encryptionService.encryptWithKMS(mnemonic);
+    return this.encryptionService.encrypt(mnemonic);
   }
 
   /**
    * Decrypts stored mnemonic
    */
   async decryptMnemonic(encryptedMnemonic: string): Promise<string> {
-    return this.encryptionService.decryptWithKMS(encryptedMnemonic);
+    return this.encryptionService.decrypt(encryptedMnemonic);
   }
 
   /**
    * Encrypts private key
    */
   async encryptPrivateKey(privateKey: string): Promise<string> {
-    return this.encryptionService.encryptWithKMS(privateKey);
+    return this.encryptionService.encrypt(privateKey);
   }
 
   /**
    * Decrypts private key
    */
   async decryptPrivateKey(encryptedPrivateKey: string): Promise<string> {
-    return this.encryptionService.decryptWithKMS(encryptedPrivateKey);
+    return this.encryptionService.decrypt(encryptedPrivateKey);
   }
 
   /**
@@ -176,7 +176,7 @@ export class HDWalletService {
 
     const root = bip32.BIP32Factory(require('tiny-secp256k1')).fromSeed(seed);
     const masterNode = root.derivePath(path);
-    
+
     return masterNode.neutered().toBase58();
   }
 }

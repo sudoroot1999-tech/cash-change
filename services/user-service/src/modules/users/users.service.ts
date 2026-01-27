@@ -1,18 +1,16 @@
 import {
   Injectable,
-  ConflictException,
-  NotFoundException,
   Inject
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { User } from './entities/user.entity';
-import { CreateUserDto, UpdateUserDto, VerifyEmailDto } from './dto/user.dto';
+import { CreateUserDto, UpdateUserDto, UserResponseDto, VerifyEmailDto } from './dto/user.dto';
 import { UserProfile } from './entities/profile.entity';
 import { UserPreferences } from './entities/user-preferences.entity';
 import { UserLimits } from './entities/user-limits.entity';
-import { BadRequestError, JWTAuthService, KYC_LEVELS, KycLevel, Logger, MultiLayerCacheService, NotFoundError, PasswordService, RateLimiterService, RequestContext, ServiceUnavailableError, StorageService, UnauthorizedError, USER_STATUS } from '@exchange/common';
+import { BadRequestError, ConflictError, JWTAuthService, KYC_LEVELS, KycLevel, Logger, MultiLayerCacheService, NotFoundError, PasswordService, RateLimiterService, RequestContext, ServiceUnavailableError, StorageService, UnauthorizedError, USER_STATUS } from '@exchange/common';
 import { UpdateUserPreferencesDto } from './dto/update-user-preferences.dto';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import { ChangePasswordDto, ForgotPasswordDto, ResetPasswordDto } from './dto/user-password.dto';
@@ -52,14 +50,14 @@ export class UsersService {
   /**
    * Create a new user
    */
-  async create(createUserDto: CreateUserDto): Promise<User> {
+  async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
     try {
       // Check if email already exists
       const existingUser = await this.userRepository.findOne({
         where: { email: createUserDto.email },
       });
       if (existingUser) {
-        throw new ConflictException('Email already registered');
+        throw new ConflictError('Email already registered');
       }
 
       // Check username uniqueness if provided
@@ -68,7 +66,7 @@ export class UsersService {
           where: { username: createUserDto.username },
         });
         if (usernameExists) {
-          throw new ConflictException('Username already taken');
+          throw new ConflictError('Username already taken');
         }
       }
 
@@ -78,7 +76,7 @@ export class UsersService {
           where: { phone: createUserDto.phone },
         });
         if (phoneExists) {
-          throw new ConflictException('Phone number already registered');
+          throw new ConflictError('Phone number already registered');
         }
       }
 
@@ -147,11 +145,11 @@ export class UsersService {
   /**
    * Find user by ID
    */
-  async findById(id: string): Promise<User> {
+  async findById(id: string): Promise<UserResponseDto> {
     try {
       const user = await this.userRepository.findOne({ where: { id } });
       if (!user) {
-        throw new NotFoundException('User not found');
+        throw new NotFoundError('User not found');
       }
       return user;
     }
@@ -163,7 +161,7 @@ export class UsersService {
   /**
    * Find user by email
    */
-  async findByEmail(email: string): Promise<User | null> {
+  async findByEmail(email: string): Promise<UserResponseDto | null> {
     try {
       return await this.userRepository.findOne({ where: { email } });
     }
@@ -175,7 +173,7 @@ export class UsersService {
   /**
    * Update user
    */
-  async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
+  async update(id: string, updateUserDto: UpdateUserDto): Promise<UserResponseDto> {
     try {
       const user = await this.findById(id);
 
@@ -185,7 +183,7 @@ export class UsersService {
           where: { username: updateUserDto.username },
         });
         if (usernameExists) {
-          throw new ConflictException('Username already taken');
+          throw new ConflictError('Username already taken');
         }
       }
 
@@ -195,12 +193,22 @@ export class UsersService {
           where: { phone: updateUserDto.phone },
         });
         if (phoneExists) {
-          throw new ConflictException('Phone number already registered');
+          throw new ConflictError('Phone number already registered');
         }
       }
 
-      Object.assign(user, updateUserDto);
-      return this.userRepository.save(user);
+      // Check username uniqueness if being updated
+      if (updateUserDto.username && updateUserDto.username !== user.username) {
+        const usernameExists = await this.userRepository.findOne({
+          where: { username: updateUserDto.username },
+        });
+        if (usernameExists) {
+          throw new ConflictError('Phone number already registered');
+        }
+      }
+
+      const updatedUser = { phone: updateUserDto.phone, username: updateUserDto.username, ...user }
+      return await this.userRepository.save(updatedUser);
     }
     catch (error) {
       throw new BadRequestError('failed to update user')
@@ -210,7 +218,7 @@ export class UsersService {
   /**
    * Verify user email
    */
-  async verifyEmail(dto: VerifyEmailDto) {
+  async verifyEmail(dto: VerifyEmailDto): Promise<{ success: boolean, message?: string, error?: any }> {
     try {
       const user = await this.userRepository.findOne({
         where: { emailVerificationToken: dto.token },
@@ -250,7 +258,7 @@ export class UsersService {
   /**
    * Verify user phone
    */
-  async verifyPhone(id: string): Promise<User> {
+  async verifyPhone(id: string): Promise<UserResponseDto> {
     try {
       const user = await this.findById(id);
       user.phoneVerified = true;
@@ -264,7 +272,7 @@ export class UsersService {
   /**
    * Update KYC level
    */
-  async updateKycLevel(id: string, kycLevel: number): Promise<User> {
+  async updateKycLevel(id: string, kycLevel: KycLevel): Promise<UserResponseDto> {
     try {
       const user = await this.findById(id);
       user.kycLevel = kycLevel;
@@ -283,7 +291,7 @@ export class UsersService {
   async verifyPassword(userId: string, password: string): Promise<boolean> {
     try {
       const user = await this.userRepository.findOne({ where: { id: userId } })
-      if (!user) throw new NotFoundException('User not found')
+      if (!user) throw new NotFoundError('User not found')
       return await this.passwordService.verifyPassword(user.passwordHash, password);
     }
     catch (error) {
@@ -294,14 +302,14 @@ export class UsersService {
   /**
    * Change password
    */
-  async changePassword(userId: string, dto: ChangePasswordDto) {
+  async changePassword(userId: string, dto: ChangePasswordDto): Promise<{ success: true, message: string }> {
     try {
       const user = await this.userRepository.findOne({
         where: { id: userId },
       });
 
       if (!user) {
-        throw new NotFoundException('User not found');
+        throw new NotFoundError('User not found');
       }
 
       // Verify current password
@@ -343,7 +351,7 @@ export class UsersService {
   /**
    * Forgot password
    */
-  async forgotPassword(dto: ForgotPasswordDto) {
+  async forgotPassword(dto: ForgotPasswordDto): Promise<{ success: true, message: string }> {
     try {
       const user = await this.userRepository.findOne({
         where: { email: dto.email },
@@ -391,7 +399,7 @@ export class UsersService {
   /**
   * Reset password
   */
-  async resetPassword(dto: ResetPasswordDto) {
+  async resetPassword(dto: ResetPasswordDto): Promise<{ success: true, message: string }> {
     try {
       // Get user from reset token
       const tokenData = await this.cacheService.get<{ userId: string }>(
@@ -407,7 +415,7 @@ export class UsersService {
       });
 
       if (!user) {
-        throw new NotFoundException('User not found');
+        throw new NotFoundError('User not found');
       }
 
       // Hash new password
@@ -443,7 +451,7 @@ export class UsersService {
   /**
    * Validate user credentials
    */
-  async validate(email: string, password: string, ctx?: RequestContext): Promise<User | null> {
+  async validate(email: string, password: string, ctx?: RequestContext): Promise<UserResponseDto | null> {
     try {
       const user = await this.userRepository.findOne({
         where: { email },
@@ -514,7 +522,7 @@ export class UsersService {
       });
 
       if (!profile) {
-        throw new NotFoundException('User profile not found');
+        throw new NotFoundError('User profile not found');
       }
 
       // Create preferences and limits if they don't exist
@@ -642,7 +650,7 @@ export class UsersService {
       });
 
       if (!profile) {
-        throw new NotFoundException('User profile not found');
+        throw new NotFoundError('User profile not found');
       }
 
       // Delete old avatar if exists

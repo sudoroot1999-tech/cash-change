@@ -52,7 +52,15 @@ import { JwtModule } from "@nestjs/jwt";
                 digest: 'sha512',
             })
         },
-        // KMSService,
+        {
+            provide: KMSService,
+            useFactory: (configService: ConfigService) => ({
+                region: configService.get('AWS_REGION'),
+                keyId: configService.get('AWS_KMS_KEY_ID'),
+                accessKeyId: configService.get('AWS_ACCESS_KEY_ID'),
+                secretAccessKey: configService.get('AWS_SECRET_ACCESS_KEY')
+            })
+        },
         PasswordService,
         CircuitBreakerService,
         IncidentManagerService,
@@ -86,7 +94,7 @@ import { JwtModule } from "@nestjs/jwt";
         AMLService,
         GDPRService,
         EncryptionService,
-        // KMSService,
+        KMSService,
         PasswordService,
         CircuitBreakerService,
         IncidentManagerService,

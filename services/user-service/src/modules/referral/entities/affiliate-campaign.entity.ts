@@ -25,6 +25,7 @@ export class AffiliateCampaign {
   @Index()
   @Column({ type: 'varchar', length: 20, default: 'draft' })
   status: 'draft' | 'active' | 'paused' | 'completed' | 'rejected';
+  // AFFILIATE_CAMPAIGN_STATUS
 
   @Column({ type: 'decimal', precision: 5, scale: 2 })
   commissionRate: number;

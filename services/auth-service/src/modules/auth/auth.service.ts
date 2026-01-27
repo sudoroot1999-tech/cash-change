@@ -5,7 +5,7 @@ import {
   Inject,
 } from '@nestjs/common';
 import { AuthEventsService } from './services/auth-events.service';
-import { CacheLayer, createServiceLogger, JWTAuthService, Logger, MultiLayerCacheService, NotFoundError, QUEUES, RateLimit, RateLimiterService, RequestContext, ServiceUnavailableError, User, USER_STATUS, UserProfile } from '@exchange/common';
+import { BadRequestError, CacheLayer, createServiceLogger, JWTAuthService, Logger, MultiLayerCacheService, NotFoundError, QUEUES, RateLimit, RateLimiterService, RequestContext, ServiceUnavailableError, User, USER_STATUS, UserProfile } from '@exchange/common';
 import { ChangePasswordDto, ForgotPasswordDto, RefreshTokenDto, RegisterDto, ResetPasswordDto, Verify2FADto } from './dto/auth.dto';
 import { LoginDto } from './dto/auth.dto';
 import { SECURITY_PORT, USER_PORT } from './tokens/auth.tokens';
@@ -31,7 +31,7 @@ export class AuthService {
   /**
    * Register a new user
    */
-  async register(dto: RegisterDto): Promise<any> {
+  async register(dto: RegisterDto): Promise<User> {
     try {
       // Create user via User Service gRPC
       const user = await this.users
@@ -78,21 +78,13 @@ export class AuthService {
         requestedAt: new Date()
       });
 
-      this.logger.logAuth('User registered successfully', user.id, true);
+      this.logger.logAuth('User registered successfully,Activate your account', user.id, true);
 
-      return {
-        success: true,
-        message: 'Registration successful. Please verify your email.',
-        data: {
-          userId: user.id,
-          email: user.email,
-          emailVerificationToken: user.emailVerificationToken
-        }
-      }
+      return user;
     } catch (error: any) {
       if (error?.details?.includes('already registered')) {
         // Check specifically for conflict
-        throw new BadRequestException('Email already registered');
+        throw new BadRequestError('Email already registered');
       }
       throw error;
     }
@@ -101,7 +93,16 @@ export class AuthService {
   /**
  * Login user
  */
-  async login(dto: LoginDto, ctx: Partial<RequestContext>): Promise<any> {
+  async login(dto: LoginDto, ctx: Partial<RequestContext>): Promise<{
+    accessToken: string;
+    refreshToken: string;
+    expiresIn: number;
+    tokenType: string;
+    sessionId: string;
+  } | {
+    requires2FA: boolean,
+    tempToken: string,
+  }> {
     // Check rate limiting
     const isBlocked = await this.rateLimitService.isBlocked(ctx.ipAddress);
     if (isBlocked) {
@@ -133,7 +134,6 @@ export class AuthService {
         );
 
         return {
-          success: true,
           requires2FA: true,
           tempToken,
         };
@@ -176,7 +176,13 @@ export class AuthService {
   private async completeLogin(
     user: User,
     ctx: Partial<RequestContext>
-  ) {
+  ): Promise<{
+    accessToken: string;
+    refreshToken: string;
+    expiresIn: number;
+    tokenType: string;
+    sessionId: string;
+  }> {
 
     // create session
     const session = await this.security.createSession({
@@ -259,7 +265,13 @@ export class AuthService {
     skipSuccessfulRequests: true,
     skipFailedRequests: false,
   })
-  async verify2FA(tempToken: string, dto: Verify2FADto, ctx: Partial<RequestContext>) {
+  async verify2FA(tempToken: string, dto: Verify2FADto, ctx: Partial<RequestContext>): Promise<{
+    accessToken: string;
+    refreshToken: string;
+    expiresIn: number;
+    tokenType: string;
+    sessionId: string;
+  }> {
     try {
       // Get user from temp token
       const tempData = await this.cacheService.get<{ userId: string }>(
@@ -317,7 +329,11 @@ export class AuthService {
   /**
    * Enable 2FA
    */
-  async setup2FA(userId: string) {
+  async setup2FA(userId: string): Promise<{
+    qrCode: string,
+    backupCodes: string[];
+    secret: any;
+  }> {
     try {
       // Check if 2FA already enabled
       const existing = await this.security.findTwoFactorByUserId(userId);
@@ -338,12 +354,9 @@ export class AuthService {
       const qrCode = (await this.security.generateQRCode(otpauthUrl))?.qrCodeDataUrl;
 
       return {
-        success: true,
-        data: {
-          secret,
-          qrCode,
-          backupCodes, // Only show once
-        },
+        secret,
+        qrCode,
+        backupCodes, // Only show once
       };
     }
     catch (error) {
@@ -354,7 +367,7 @@ export class AuthService {
   /**
    * Confirm 2FA setup
    */
-  async confirm2FA(user: User, token: string) {
+  async confirm2FA(user: User, token: string): Promise<{ success: boolean, message: string }> {
     try {
       const twoFactorAuth = await this.security.findTwoFactorByUserId(user.id);
 
@@ -409,7 +422,13 @@ export class AuthService {
   /**
    * Refresh access token
    */
-  async refreshToken(userId: string, dto: RefreshTokenDto, ctx: RequestContext) {
+  async refreshToken(userId: string, dto: RefreshTokenDto, ctx: RequestContext): Promise<{
+    accessToken: string;
+    refreshToken: string;
+    expiresIn: number;
+    tokenType: string;
+    sessionId: string;
+  }> {
     try {
       // Verify refresh token
       const payload = await this.tokenService.verifyRefreshToken(dto.refreshToken);
@@ -468,13 +487,11 @@ export class AuthService {
       )
 
       return {
-        success: true,
-        data: {
-          accessToken: pairTokens.accessToken,
-          refreshToken: pairTokens.refreshToken,
-          expiresIn: this.parseExpiresIn(String(pairTokens.expiresIn)),
-          tokenType: pairTokens.tokenType
-        },
+        accessToken: pairTokens.accessToken,
+        refreshToken: pairTokens.refreshToken,
+        expiresIn: this.parseExpiresIn(String(pairTokens.expiresIn)),
+        tokenType: pairTokens.tokenType,
+        sessionId: currentSession.id
       };
     } catch (error) {
       throw new UnauthorizedException('Invalid or expired refresh token');
@@ -484,7 +501,7 @@ export class AuthService {
   /**
    * Change password
    */
-  async changePassword(user: User, dto: ChangePasswordDto) {
+  async changePassword(user: User, dto: ChangePasswordDto): Promise<string> {
     try {
       const response = await this.users.changePassword({
         userId: user.id,
@@ -510,7 +527,7 @@ export class AuthService {
   /**
    * Forgot password
    */
-  async forgotPassword(dto: ForgotPasswordDto, ip: string) {
+  async forgotPassword(dto: ForgotPasswordDto, ip: string): Promise<string> {
     try {
       return await this.users.forgotPassword(dto.email);
     }
@@ -522,7 +539,7 @@ export class AuthService {
   /**
    * Reset password
    */
-  async resetPassword(dto: ResetPasswordDto, user: User) {
+  async resetPassword(dto: ResetPasswordDto, user: User): Promise<string> {
     try {
       const response = await this.users.resetPassword({
         token: dto.token,
@@ -545,7 +562,9 @@ export class AuthService {
   /**
    * Logout
    */
-  async logout(user: User, sessionId: string) {
+  async logout(user: User, sessionId: string): Promise<{
+    success: boolean, message?: string, error?: any
+  }> {
     try {
       // Mark session as inactive
       await this.security.killSession(user.id, sessionId);

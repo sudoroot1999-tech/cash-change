@@ -1,0 +1,35 @@
+<div class="auth-page">
+    <div class="auth-container">
+        <!-- Logo -->
+        <div class="auth-logo">
+            <div class="logo-icon">CX</div>
+            <span class="logo-text">CryptoX</span>
+        </div>
+
+        <!-- Verify Email Card -->
+        <ui-card variant="elevated">
+            <div class="auth-content">
+                <div class="auth-header">
+                    <h1 class="auth-title">Verify Your Email</h1>
+                    <p class="auth-subtitle">Please use the link below to complete your verification if doesnt run
+                        automaticly</p>
+                </div>
+
+                <ui-button type="button" (click)="verifyEmail" variant="primary" [fullWidth]="true" [loading]="isLoading()">
+                    Verify Email
+                </ui-button>
+
+                @if (error()) {
+                <div class="error-message">{{ error() }}</div>
+                }
+            </div>
+        </ui-card>
+
+        <!-- Footer Links -->
+        <div class="page-footer">
+            <a href="#">Terms of Service</a>
+            <a href="#">Privacy Policy</a>
+            <a href="#">Support</a>
+        </div>
+    </div>
+</div>

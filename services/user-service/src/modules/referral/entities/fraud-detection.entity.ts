@@ -30,11 +30,12 @@ export class FraudDetection {
     | 'suspicious_pattern'
     | 'bot_activity'
     | 'duplicate_account';
+  // FRAUD_TYPE
 
   @Index()
   @Column({ type: 'varchar', length: 20, default: 'flagged' })
   status: 'flagged' | 'investigating' | 'confirmed' | 'false_positive' | 'resolved';
-
+  // FRAUD_STATUS
   @Column({ type: 'decimal', precision: 5, scale: 4, name: 'risk_score' })
   riskScore: number;
 

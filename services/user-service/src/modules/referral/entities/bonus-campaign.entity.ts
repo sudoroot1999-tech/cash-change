@@ -20,14 +20,15 @@ export class BonusCampaign {
 
   @Column({ type: 'varchar', length: 50 })
   type: 'signup' | 'first_trade' | 'volume_based' | 'limited_time' | 'referrer_bonus';
-
+  // BONUS_CAMPAIGN_TYPE
   @Index()
   @Column({ type: 'varchar', length: 20, default: 'active' })
   status: 'draft' | 'active' | 'paused' | 'completed';
+  // BONUS_CAMPAIGN_STATUS
 
   @Column({ type: 'decimal', precision: 10, scale: 2, name: 'bonus_amount' })
   bonusAmount: number;
-
+  // BONUS_CAMPAIGN_BONUS_TYPE
   @Column({ type: 'varchar', length: 20, nullable: true, name: 'bonus_type' })
   bonusType: 'fixed' | 'percentage';
 

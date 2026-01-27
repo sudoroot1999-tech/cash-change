@@ -1,0 +1,19 @@
+{
+  "name": "@exchange/apps",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "web/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:exchange": "npm run dev --workspace=@exchange/exchange-app",
+    "dev:marketing": "npm run dev --workspace=@exchange/marketing",
+    "build": "npm run build --workspaces",
+    "build:all": "npm run build --workspaces",
+    "lint:all": "npm run lint --workspaces"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  }
+}

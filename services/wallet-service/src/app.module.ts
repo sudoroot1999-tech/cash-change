@@ -1,9 +1,10 @@
 import { MiddlewareConsumer, Module, NestModule, ValidationPipe } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { JwtModule } from "@nestjs/jwt";
 import { WalletsModule } from './modules/wallets/wallets.module';
 import { AuthModule } from './modules/auth/auth.module';
-import { APMInterceptor, CompressionInterceptor, DeviceContextMiddleware, DeviceFingerprintMiddleware, ETagInterceptor, PerformanceModule, RequestContextInterceptor, SecurityModule } from '@exchange/common';
+import { APMInterceptor, CompressionInterceptor, CORSMiddleware, CSRFMiddleware, DeviceContextMiddleware, DeviceFingerprintMiddleware, ETagInterceptor, PerformanceModule, RequestContextInterceptor, SecurityMiddleware, SecurityModule } from '@exchange/common';
 import { APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 
 @Module({
@@ -69,7 +70,13 @@ import { APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply(DeviceFingerprintMiddleware, DeviceContextMiddleware)
+      .apply(
+        SecurityMiddleware,
+        CSRFMiddleware,
+        CORSMiddleware,
+        DeviceFingerprintMiddleware,
+        DeviceContextMiddleware
+      )
       .forRoutes('*');
   }
 }

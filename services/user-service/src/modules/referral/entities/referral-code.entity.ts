@@ -24,7 +24,7 @@ export class ReferralCode {
 
   @Column({ type: 'varchar', length: 20, default: 'standard' })
   type: 'standard' | 'affiliate' | 'vip';
-
+  // REFERRAL_TYPE
   @Column({ type: 'decimal', precision: 5, scale: 2, default: 20, name: 'commission_rate' })
   commissionRate: number;
 

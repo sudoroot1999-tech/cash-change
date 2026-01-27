@@ -1,0 +1,161 @@
+{
+  "dashboard_title": "Trading Analytics Dashboard",
+  "description": "Comprehensive trading volume, liquidity, and performance metrics",
+  "slug": "trading-analytics",
+  "charts": [
+    {
+      "slice_name": "Volume by Trading Pair",
+      "viz_type": "bar",
+      "datasource": "clickhouse.trading_volume_hourly",
+      "params": {
+        "metrics": ["SUM(volume) AS total_volume"],
+        "groupby": ["trading_pair"],
+        "time_range": "Last 7 days",
+        "order_desc": true,
+        "row_limit": 20,
+        "color_scheme": "supersetColors"
+      }
+    },
+    {
+      "slice_name": "Hourly Trading Volume",
+      "viz_type": "line",
+      "datasource": "clickhouse.trading_volume_hourly",
+      "params": {
+        "metrics": ["SUM(volume)"],
+        "groupby": ["toDateTime(date || ' ' || hour || ':00:00')"],
+        "time_range": "Last 48 hours",
+        "show_legend": true,
+        "line_interpolation": "linear"
+      }
+    },
+    {
+      "slice_name": "Order Book Depth",
+      "viz_type": "mixed_timeseries",
+      "datasource": "analytics_db.order_book_snapshots",
+      "params": {
+        "metrics": ["SUM(bid_volume) AS Bids", "SUM(ask_volume) AS Asks"],
+        "groupby": ["timestamp"],
+        "time_range": "Last 24 hours"
+      }
+    },
+    {
+      "slice_name": "Maker/Taker Ratio",
+      "viz_type": "pie",
+      "datasource": "clickhouse.trading_events",
+      "params": {
+        "metrics": ["COUNT(*)"],
+        "groupby": ["order_type"],
+        "time_range": "Last 7 days"
+      }
+    },
+    {
+      "slice_name": "Average Trade Size",
+      "viz_type": "big_number",
+      "datasource": "clickhouse.trading_events",
+      "params": {
+        "metric": "AVG(amount)",
+        "time_range": "Last day",
+        "compare_lag": 1
+      }
+    },
+    {
+      "slice_name": "Price Impact Analysis",
+      "viz_type": "scatter",
+      "datasource": "analytics_db.trading_events",
+      "params": {
+        "x": "amount",
+        "y": "(executed_price - price) / price * 100 AS slippage",
+        "time_range": "Last 7 days",
+        "max_bubble_size": 25
+      }
+    },
+    {
+      "slice_name": "Slippage Statistics",
+      "viz_type": "box_plot",
+      "datasource": "analytics_db.trading_events",
+      "params": {
+        "metrics": ["(executed_price - price) / price * 100"],
+        "groupby": ["trading_pair"],
+        "time_range": "Last 7 days",
+        "whisker_options": "Tukey"
+      }
+    },
+    {
+      "slice_name": "Failed Orders Analysis",
+      "viz_type": "table",
+      "datasource": "clickhouse.trading_events",
+      "params": {
+        "metrics": [
+          "COUNT(*) AS total",
+          "SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) AS failed",
+          "SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) / COUNT(*) * 100 AS failure_rate"
+        ],
+        "groupby": ["trading_pair", "order_type"],
+        "time_range": "Last 7 days",
+        "row_limit": 50
+      }
+    },
+    {
+      "slice_name": "Trading Patterns by Time",
+      "viz_type": "heatmap",
+      "datasource": "clickhouse.trading_events",
+      "params": {
+        "x_axis": "toHour(timestamp)",
+        "y_axis": "toDayOfWeek(timestamp)",
+        "metric": "COUNT(*)",
+        "time_range": "Last 30 days",
+        "linear_color_scheme": "blue_white_yellow"
+      }
+    },
+    {
+      "slice_name": "Liquidity Metrics",
+      "viz_type": "line",
+      "datasource": "analytics_db.liquidity_metrics",
+      "params": {
+        "metrics": ["AVG(spread_bps) AS Spread", "AVG(depth_usd) AS Depth"],
+        "groupby": ["timestamp"],
+        "time_range": "Last 7 days",
+        "y_axis_format": ".2f"
+      }
+    },
+    {
+      "slice_name": "VWAP vs Market Price",
+      "viz_type": "mixed_timeseries",
+      "datasource": "analytics_db.trading_pair_metrics",
+      "params": {
+        "metrics": ["AVG(vwap) AS VWAP", "AVG(market_price) AS Market"],
+        "groupby": ["timestamp", "trading_pair"],
+        "time_range": "Last 24 hours"
+      }
+    },
+    {
+      "slice_name": "Price Volatility",
+      "viz_type": "line",
+      "datasource": "analytics_db.price_volatility",
+      "params": {
+        "metrics": ["AVG(volatility)"],
+        "groupby": ["date", "trading_pair"],
+        "time_range": "Last 30 days",
+        "show_legend": true
+      }
+    }
+  ],
+  "filters": [
+    {
+      "column": "trading_pair",
+      "name": "Trading Pair",
+      "type": "filter_select",
+      "default": "BTC/USDT"
+    },
+    {
+      "column": "timestamp",
+      "name": "Time Range",
+      "type": "filter_time_range"
+    },
+    {
+      "column": "order_type",
+      "name": "Order Type",
+      "type": "filter_select"
+    }
+  ]
+}

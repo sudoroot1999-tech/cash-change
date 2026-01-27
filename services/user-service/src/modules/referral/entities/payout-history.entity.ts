@@ -25,6 +25,7 @@ export class PayoutHistory {
   @Index()
   @Column({ type: 'varchar', length: 20, default: 'pending' })
   status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
+  // PAYOUT_HISTORY_STATUS
 
   @Column({ type: 'varchar', length: 50, name: 'payment_method' })
   paymentMethod: string;

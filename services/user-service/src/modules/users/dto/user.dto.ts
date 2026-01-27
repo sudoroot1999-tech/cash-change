@@ -1,5 +1,6 @@
 import { IsEmail, IsString, MinLength, IsOptional, Matches, MaxLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { KYC_LEVELS, KycLevel, USER_STATUS, USER_TIERS, UserStatus, UserTier } from '@exchange/common';
 
 export class CreateUserDto {
   @ApiProperty({ example: 'user@example.com' })
@@ -69,14 +70,14 @@ export class UserResponseDto {
   @ApiPropertyOptional()
   phone?: string;
 
-  @ApiProperty()
-  status!: string;
+  @ApiProperty({ enum: USER_STATUS })
+  status!: UserStatus;
 
-  @ApiProperty()
-  tier!: string;
+  @ApiProperty({ enum: USER_TIERS })
+  tier!: UserTier;
 
-  @ApiProperty()
-  kycLevel!: number;
+  @ApiProperty({ enum: KYC_LEVELS })
+  kycLevel!: KycLevel;
 
   @ApiProperty()
   referralCode!: string;

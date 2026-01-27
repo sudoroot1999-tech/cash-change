@@ -39,7 +39,7 @@ export class ReferralRelationship {
   @Index()
   @Column({ type: 'varchar', length: 20, default: 'active' })
   status: 'active' | 'suspended' | 'terminated';
-
+  // REFERRAL_RELATIONSHIP_STATUS
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0, name: 'total_commission_earned' })
   totalCommissionEarned: number;
 

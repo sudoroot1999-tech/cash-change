@@ -2,7 +2,7 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ProxyModule } from './proxy/proxy.module';
 import { HealthModule } from './health/health.module';
-import { CORSMiddleware, RateLimitGuard, SecurityMiddleware, SecurityModule } from '@exchange/common';
+import { RateLimitGuard, SecurityModule } from '@exchange/common';
 import { APP_GUARD } from '@nestjs/core';
 
 @Module({
@@ -24,10 +24,4 @@ import { APP_GUARD } from '@nestjs/core';
     }
   ],
 })
-export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(SecurityMiddleware, CORSMiddleware)
-      .forRoutes('*');
-  }
-}
+export class AppModule { }

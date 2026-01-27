@@ -1,8 +1,7 @@
 packages:
   - services/*
   - libs/*
-  - frontend/apps/*
-  - frontend/packages/*
+  - apps/*
 
 ignoredBuiltDependencies:
   - argon2

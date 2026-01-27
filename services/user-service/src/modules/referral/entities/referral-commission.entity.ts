@@ -37,7 +37,7 @@ export class ReferralCommission {
 
   @Column({ type: 'varchar', length: 50 })
   type: 'trading_fee' | 'signup_bonus' | 'first_trade_bonus' | 'volume_bonus' | 'campaign_bonus';
-
+  // REFERRAL_COMMISSION_TYPE
   @Column({ type: 'int', default: 1 })
   tier: number;
 
@@ -53,7 +53,7 @@ export class ReferralCommission {
   @Index()
   @Column({ type: 'varchar', length: 20, default: 'pending' })
   status: 'pending' | 'approved' | 'paid' | 'rejected';
-
+  // REFERRAL_COMMISSION_STATUS
   @Index()
   @Column({ type: 'uuid', nullable: true, name: 'payout_id' })
   payoutId: string;

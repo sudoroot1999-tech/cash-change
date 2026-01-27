@@ -35,7 +35,7 @@ export class SecurityMiddleware implements NestMiddleware {
       referrerPolicy: {
         policy: 'strict-origin-when-cross-origin',
       },
-      hidePoweredBy: true,
+      hidePoweredBy: true
     })(req, res, () => { });
 
     // Additional security headers

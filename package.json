@@ -6,8 +6,7 @@
   "workspaces": [
     "libs/*",
     "services/*",
-    "frontend/apps/*",
-    "frontend/packages/*"
+    "apps/*"
   ],
   "scripts": {
     "dev": "docker compose up -d",

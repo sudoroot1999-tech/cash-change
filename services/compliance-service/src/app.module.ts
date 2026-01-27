@@ -1,9 +1,10 @@
 import { MiddlewareConsumer, Module, NestModule, ValidationPipe } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { JwtModule } from "@nestjs/jwt";
 import { KycModule } from './modules/kyc/kyc.module';
 import { AuthModule } from './modules/auth/auth.module';
-import { APMInterceptor, CompressionInterceptor, DeviceContextMiddleware, DeviceFingerprintMiddleware, ETagInterceptor, KafkaModule, PerformanceModule, RabbitMQModule, RequestContextInterceptor, SecurityModule, StorageModule } from '@exchange/common';
+import { APMInterceptor, CompressionInterceptor, CORSMiddleware, CSRFMiddleware, DeviceContextMiddleware, DeviceFingerprintMiddleware, ETagInterceptor, KafkaModule, PerformanceModule, RabbitMQModule, RequestContextInterceptor, SecurityMiddleware, SecurityModule, StorageModule } from '@exchange/common';
 import { ComplianceModule } from './modules/compliance/compliance.module';
 import { APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 
@@ -65,7 +66,7 @@ import { APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
     PerformanceModule,
     SecurityModule
   ],
-  providers:[
+  providers: [
     {
       provide: APP_PIPE,
       useValue: new ValidationPipe({
@@ -98,7 +99,13 @@ import { APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply(DeviceFingerprintMiddleware, DeviceContextMiddleware)
+      .apply(
+        SecurityMiddleware,
+        CSRFMiddleware,
+        CORSMiddleware,
+        DeviceFingerprintMiddleware,
+        DeviceContextMiddleware
+      )
       .forRoutes('*');
   }
- }
+}

@@ -36,11 +36,18 @@ export class AuthController {
   @RateLimit({ windowMs: 15 * 60 * 1000, maxRequests: 5 })
   @ApiOperation({ summary: 'Register new user' })
   @ApiResponse({ status: 201, description: 'User registered successfully' })
-  @ApiResponse({ status: 409, description: 'Email already exists' })
+  @ApiResponse({ status: 409, description: 'Email already exists'})
   async register(
     @Body() dto: RegisterDto,
   ) {
-    return this.authService.register(dto);
+    const user = await this.authService.register(dto);
+    return {
+      success: true,
+      message: 'Registration successful. Please verify your email.',
+      data: {
+        ...user
+      }
+    }
   }
 
   @Post('login')
@@ -54,7 +61,14 @@ export class AuthController {
     @Body() dto: LoginDto,
     @ReqContext() ctx: RequestContext
   ) {
-    return this.authService.login(dto, ctx);
+    const result = await this.authService.login(dto, ctx);
+    return {
+      success: true,
+      message: 'Registration successful. Please verify your email.',
+      data: {
+        ...result
+      }
+    }
   }
 
   @Post('refresh')
@@ -69,7 +83,13 @@ export class AuthController {
     @CurrentUser() user,
     @ReqContext() ctx: RequestContext
   ) {
-    return this.authService.refreshToken(user.id, dto, ctx);
+    const result = await this.authService.refreshToken(user.id, dto, ctx);
+    return {
+      success: true,
+      data: {
+        ...result
+      }
+    }
   }
 
   @Post('logout')
@@ -88,7 +108,13 @@ export class AuthController {
   @ApiOperation({ summary: 'Setup 2FA - get secret and QR code' })
   @ApiResponse({ status: 200, type: Enable2FADto })
   async setup2FA(@CurrentUser() user) {
-    return this.authService.setup2FA(user.id);
+    const result = await this.authService.setup2FA(user.id);
+    return {
+      success: true,
+      data: {
+        ...result
+      }
+    }
   }
 
   @Post('2fa/enable')
@@ -112,11 +138,17 @@ export class AuthController {
     @Body() dto: Verify2FADto & { tempToken: string },
     @ReqContext() ctx: RequestContext,
   ) {
-    return this.authService.verify2FA(
+    const result = await this.authService.verify2FA(
       dto.tempToken,
       dto,
       ctx
     );
+    return {
+      success: true,
+      data: {
+        ...result
+      }
+    }
   }
 
   @Post('2fa/disable')
@@ -138,7 +170,13 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Password changed successfully' })
   @ApiResponse({ status: 401, description: 'Invalid current password' })
   async changePassword(@CurrentUser() user, @Body() dto: ChangePasswordDto) {
-    return this.authService.changePassword(user, dto);
+    const result = await this.authService.changePassword(user, dto);
+    return {
+      success: true,
+      data: {
+        result
+      }
+    }
   }
 
   @Post('forgot-password')
@@ -148,7 +186,13 @@ export class AuthController {
   @ApiOperation({ summary: 'Request password reset' })
   @ApiResponse({ status: 200, description: 'Reset email sent' })
   async forgotPassword(@Body() dto: ForgotPasswordDto, @ReqContext() ctx: RequestContext) {
-    return this.authService.forgotPassword(dto, ctx.ipAddress);
+    const result = await this.authService.forgotPassword(dto, ctx.ipAddress);
+    return {
+      success: true,
+      data: {
+        result
+      }
+    }
   }
 
   @Post('reset-password')
@@ -159,7 +203,13 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Password reset successfully' })
   @ApiResponse({ status: 400, description: 'Invalid reset token' })
   async resetPassword(@Body() dto: ResetPasswordDto, @CurrentUser() user) {
-    return this.authService.resetPassword(dto, user.id);
+    const result = await this.authService.resetPassword(dto, user.id);
+    return {
+      success: true,
+      data: {
+        result
+      }
+    }
   }
 
 }
