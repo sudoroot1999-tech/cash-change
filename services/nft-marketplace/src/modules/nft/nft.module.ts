@@ -1,8 +1,4 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { BullModule } from '@nestjs/bull';
-import { ScheduleModule } from '@nestjs/schedule';
 
 import { CollectionsModule } from './collections/collections.module';
 import { NftsModule } from './nfts/nfts.module';

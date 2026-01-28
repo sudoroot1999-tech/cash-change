@@ -1,9 +1,7 @@
 import { Injectable, NotFoundException, ConflictException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
-import { Badge, UserBadge, UserStats, BadgeCategory } from '../../database/entities';
+import { Badge, UserBadge, UserStats, BadgeCategory } from '../../entities';
 
 @Injectable()
 export class BadgeService {
@@ -11,7 +9,6 @@ export class BadgeService {
     @InjectRepository(Badge) private badgeRepository: Repository<Badge>,
     @InjectRepository(UserBadge) private userBadgeRepository: Repository<UserBadge>,
     @InjectRepository(UserStats) private userStatsRepository: Repository<UserStats>,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   private generateSlug(name: string): string {

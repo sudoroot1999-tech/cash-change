@@ -3,11 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, ILike } from 'typeorm';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
-import { Course } from '../../database/entities/course.entity';
+import { Course } from '../../entities/course.entity';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { CourseFilterDto } from './dto/course-filter.dto';
-import { createPaginatedResponse, IPaginatedResponse } from '../../common/dto/paginated-response.dto';
+import { createPaginatedResponse, IPaginatedResponse } from '../../dto/paginated-response.dto';
 
 @Injectable()
 export class CourseService {

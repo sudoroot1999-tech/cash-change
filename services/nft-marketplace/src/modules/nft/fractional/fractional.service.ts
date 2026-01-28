@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Nft } from '../entities/nft.entity';
+import { Nft } from '../../../entities/nft.entity';
 
 @Injectable()
 export class FractionalService {

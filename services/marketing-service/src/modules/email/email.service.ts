@@ -142,7 +142,7 @@ export class EmailService {
 
         // Update campaign stats
         await this.campaignRepo.increment({ id: campaign.id }, 'sent', 1);
-      } catch (error) {
+      } catch (error:any) {
         console.error(`Failed to send email to ${user.email}:`, error);
         await this.logEmail(
           campaign.id,

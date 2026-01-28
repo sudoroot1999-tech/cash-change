@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Loan, LoanStatus } from '../entities/loan.entity';
 import { CollateralMonitoring } from '../entities/collateral-monitoring.entity';
-import { RabbitMQService, EXCHANGES, ROUTING_KEYS } from '@packages/messaging';
+import { RabbitMQService, EXCHANGES, ROUTING_KEYS } from '@exchange/common';
 import BigNumber from 'bignumber.js';
 
 export interface LiquidationResult {

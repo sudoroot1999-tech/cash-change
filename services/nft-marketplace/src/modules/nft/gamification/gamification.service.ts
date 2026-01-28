@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { NftAchievement, AchievementRarity } from '../entities/nft-achievement.entity';
-import { UserAchievement } from '../entities/user-achievement.entity';
+import { NftAchievement, AchievementRarity } from '../../../entities/nft-achievement.entity';
+import { UserAchievement } from '../../../entities/user-achievement.entity';
 
 @Injectable()
 export class GamificationService {

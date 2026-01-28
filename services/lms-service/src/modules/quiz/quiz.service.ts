@@ -1,9 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
-import { Quiz, QuizAttempt } from '../../database/entities';
+import { Quiz, QuizAttempt } from '../../entities';
 import { CreateQuizDto } from './dto/create-quiz.dto';
 import { UpdateQuizDto } from './dto/update-quiz.dto';
 import { SubmitQuizDto } from './dto/submit-quiz.dto';
@@ -14,9 +12,7 @@ export class QuizService {
     @InjectRepository(Quiz)
     private quizRepository: Repository<Quiz>,
     @InjectRepository(QuizAttempt)
-    private attemptRepository: Repository<QuizAttempt>,
-    @Inject(CACHE_MANAGER)
-    private cacheManager: Cache,
+    private attemptRepository: Repository<QuizAttempt>
   ) {}
 
   async create(createQuizDto: CreateQuizDto): Promise<Quiz> {

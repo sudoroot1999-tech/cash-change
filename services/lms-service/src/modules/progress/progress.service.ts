@@ -1,21 +1,17 @@
 import { Injectable, NotFoundException, ConflictException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
-import { UserProgress, ProgressStatus } from '../../database/entities/user-progress.entity';
+import { UserProgress, ProgressStatus } from '../../entities/user-progress.entity';
 import { EnrollCourseDto } from './dto/enroll-course.dto';
 import { UpdateProgressDto } from './dto/update-progress.dto';
-import { createPaginatedResponse, IPaginatedResponse } from '../../common/dto/paginated-response.dto';
-import { PaginationDto } from '../../common/dto/pagination.dto';
+import { createPaginatedResponse, IPaginatedResponse } from '../../dto/paginated-response.dto';
+import { PaginationDto } from '../../dto/pagination.dto';
 
 @Injectable()
 export class ProgressService {
   constructor(
     @InjectRepository(UserProgress)
-    private progressRepository: Repository<UserProgress>,
-    @Inject(CACHE_MANAGER)
-    private cacheManager: Cache,
+    private progressRepository: Repository<UserProgress>
   ) {}
 
   async enroll(userId: string, enrollDto: EnrollCourseDto): Promise<UserProgress> {

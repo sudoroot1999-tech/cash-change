@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan } from 'typeorm';
-import { NftListing, ListingType, ListingStatus } from '../entities/nft-listing.entity';
-import { Nft } from '../entities/nft.entity';
-import { TransactionType } from '../entities/nft-transaction.entity';
+import { NftListing, ListingType, ListingStatus } from '../../../entities/nft-listing.entity';
+import { Nft } from '../../../entities/nft.entity';
+import { TransactionType } from '../../../entities/nft-transaction.entity';
 import { NftsService } from '../nfts/nfts.service';
 import { BlockchainService } from '../blockchain/blockchain.service';
 

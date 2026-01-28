@@ -1,17 +1,14 @@
 import { Injectable, NotFoundException, ConflictException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
-import { CourseReview, ReviewStatus } from '../../database/entities';
-import { createPaginatedResponse, IPaginatedResponse } from '../../common/dto/paginated-response.dto';
-import { PaginationDto } from '../../common/dto/pagination.dto';
+import { CourseReview, ReviewStatus } from '../../entities';
+import { createPaginatedResponse, IPaginatedResponse } from '../../dto/paginated-response.dto';
+import { PaginationDto } from '../../dto/pagination.dto';
 
 @Injectable()
 export class ReviewService {
   constructor(
     @InjectRepository(CourseReview) private reviewRepository: Repository<CourseReview>,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   async create(userId: string, createDto: any): Promise<CourseReview> {

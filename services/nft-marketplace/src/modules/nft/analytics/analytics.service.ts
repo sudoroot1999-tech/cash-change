@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { NftTransaction, TransactionType } from '../entities/nft-transaction.entity';
+import { NftTransaction, TransactionType } from '../../../entities/nft-transaction.entity';
 
 @Injectable()
 export class AnalyticsService {

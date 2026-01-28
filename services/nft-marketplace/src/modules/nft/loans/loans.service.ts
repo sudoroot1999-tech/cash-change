@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { NftLoan, LoanStatus } from '../entities/nft-loan.entity';
+import { NftLoan, LoanStatus } from '../../../entities/nft-loan.entity';
 
 @Injectable()
 export class LoansService {

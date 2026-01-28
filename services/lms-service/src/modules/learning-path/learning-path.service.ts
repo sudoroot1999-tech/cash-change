@@ -1,12 +1,10 @@
 import { Injectable, NotFoundException, ConflictException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
-import { LearningPath, UserLearningPath, UserLearningPathStatus } from '../../database/entities';
+import { LearningPath, UserLearningPath, UserLearningPathStatus } from '../../entities';
 import { CreateLearningPathDto } from './dto/create-learning-path.dto';
-import { createPaginatedResponse, IPaginatedResponse } from '../../common/dto/paginated-response.dto';
-import { PaginationDto } from '../../common/dto/pagination.dto';
+import { createPaginatedResponse, IPaginatedResponse } from '../../dto/paginated-response.dto';
+import { PaginationDto } from '../../dto/pagination.dto';
 
 @Injectable()
 export class LearningPathService {
@@ -14,9 +12,7 @@ export class LearningPathService {
     @InjectRepository(LearningPath)
     private learningPathRepository: Repository<LearningPath>,
     @InjectRepository(UserLearningPath)
-    private userLearningPathRepository: Repository<UserLearningPath>,
-    @Inject(CACHE_MANAGER)
-    private cacheManager: Cache,
+    private userLearningPathRepository: Repository<UserLearningPath>
   ) {}
 
   private generateSlug(title: string): string {

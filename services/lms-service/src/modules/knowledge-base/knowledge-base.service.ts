@@ -1,17 +1,14 @@
 import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
-import { KnowledgeBaseArticle, ArticleStatus, ArticleType } from '../../database/entities';
-import { createPaginatedResponse, IPaginatedResponse } from '../../common/dto/paginated-response.dto';
-import { PaginationDto } from '../../common/dto/pagination.dto';
+import { KnowledgeBaseArticle, ArticleStatus, ArticleType } from '../../entities';
+import { createPaginatedResponse, IPaginatedResponse } from '../../dto/paginated-response.dto';
+import { PaginationDto } from '../../dto/pagination.dto';
 
 @Injectable()
 export class KnowledgeBaseService {
   constructor(
     @InjectRepository(KnowledgeBaseArticle) private articleRepository: Repository<KnowledgeBaseArticle>,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   private generateSlug(title: string): string {

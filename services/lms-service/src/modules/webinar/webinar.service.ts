@@ -1,18 +1,15 @@
 import { Injectable, NotFoundException, ConflictException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan, LessThan } from 'typeorm';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
-import { Webinar, WebinarStatus, WebinarRegistration } from '../../database/entities';
-import { createPaginatedResponse, IPaginatedResponse } from '../../common/dto/paginated-response.dto';
-import { PaginationDto } from '../../common/dto/pagination.dto';
+import { Webinar, WebinarStatus, WebinarRegistration } from '../../entities';
+import { createPaginatedResponse, IPaginatedResponse } from '../../dto/paginated-response.dto';
+import { PaginationDto } from '../../dto/pagination.dto';
 
 @Injectable()
 export class WebinarService {
   constructor(
     @InjectRepository(Webinar) private webinarRepository: Repository<Webinar>,
     @InjectRepository(WebinarRegistration) private registrationRepository: Repository<WebinarRegistration>,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   private generateSlug(title: string): string {

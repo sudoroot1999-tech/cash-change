@@ -1,21 +1,17 @@
 import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
 import { v4 as uuidv4 } from 'uuid';
-import { Certificate, CertificateType } from '../../database/entities/certificate.entity';
+import { Certificate, CertificateType } from '../../entities/certificate.entity';
 import { IssueCertificateDto } from './dto/issue-certificate.dto';
-import { createPaginatedResponse, IPaginatedResponse } from '../../common/dto/paginated-response.dto';
-import { PaginationDto } from '../../common/dto/pagination.dto';
+import { createPaginatedResponse, IPaginatedResponse } from '../../dto/paginated-response.dto';
+import { PaginationDto } from '../../dto/pagination.dto';
 
 @Injectable()
 export class CertificateService {
   constructor(
     @InjectRepository(Certificate)
-    private certificateRepository: Repository<Certificate>,
-    @Inject(CACHE_MANAGER)
-    private cacheManager: Cache,
+    private certificateRepository: Repository<Certificate>
   ) {}
 
   async issue(issueDto: IssueCertificateDto): Promise<Certificate> {

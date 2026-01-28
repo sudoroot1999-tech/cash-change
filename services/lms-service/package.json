@@ -19,6 +19,7 @@
     "migration:revert": "typeorm migration:revert -d src/database/data-source.ts"
   },
   "dependencies": {
+    "@exchange/common": "workspace:*",
     "@apollo/server": "^4.10.0",
     "@nestjs/apollo": "^12.1.0",
     "@nestjs/common": "^10.3.0",

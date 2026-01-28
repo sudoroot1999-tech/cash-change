@@ -1,8 +1,6 @@
 import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
 import { v4 as uuidv4 } from 'uuid';
 import { Discussion, DiscussionType, DiscussionStatus } from '../../entities';
 import { createPaginatedResponse, IPaginatedResponse } from '../../dto/paginated-response.dto';
@@ -12,7 +10,6 @@ import { PaginationDto } from '../../dto/pagination.dto';
 export class DiscussionService {
   constructor(
     @InjectRepository(Discussion) private discussionRepository: Repository<Discussion>,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   async create(createDto: any): Promise<Discussion> {
