@@ -1,11 +1,12 @@
 # Dependencies
-node_modules/
+node_modules
+.pnpm
 .pnp
 .pnp.js
 
 # Build outputs
-dist/
-build/
+dist
+build
 *.tsbuildinfo
 .next
 .angular
