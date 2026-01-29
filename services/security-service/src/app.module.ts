@@ -6,6 +6,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { SecurityModule } from './modules/security/security.module';
 import { PerformanceModule, SecurityModule as LibSecurityModule, RequestContextInterceptor, DeviceFingerprintMiddleware, DeviceContextMiddleware, APMInterceptor, CompressionInterceptor, getOptimizedDatabaseConfig, ETagInterceptor, SecurityMiddleware, CSRFMiddleware, CORSMiddleware } from '@exchange/common';
 import { APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
+import cookieParser from 'cookie-parser';
 
 @Module({
   imports: [
@@ -59,12 +60,15 @@ import { APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
   ]
 })
 export class AppModule implements NestModule {
+  constructor(private readonly configService: ConfigService) { }
   configure(consumer: MiddlewareConsumer) {
+    const cookieSecret = this.configService.get<string>('COOKIE_SECRET');
     consumer
       .apply(
         SecurityMiddleware,
         CSRFMiddleware,
         CORSMiddleware,
+        cookieParser(cookieSecret),
         DeviceFingerprintMiddleware,
         DeviceContextMiddleware
       )

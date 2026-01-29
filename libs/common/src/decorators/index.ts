@@ -16,7 +16,7 @@ export const ReqContext = createParamDecorator(
       const context = GqlExecutionContext.create(ctx);
       return context.getContext().request?.context;
     }
-    return ctx.switchToHttp().getRequest().context,
+    return ctx.switchToHttp().getRequest().context
   },
 );
 

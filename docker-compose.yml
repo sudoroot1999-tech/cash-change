@@ -5,6 +5,8 @@ x-common-env: &common-env
   JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret}
   JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
   JWT_REFRESH_EXPIRES_IN: 7d
+  # Cookies
+  COOKIE_SECRET: ${COOKIE_SECRET:-dev-cookie-secret}
   # KMS
   AWS_KMS_ENABLED: false
   AWS_REGION: us-east-1
@@ -75,11 +77,11 @@ x-kafka-env: &kafka-env
   KAFKA_BROKERS: kafka:29092
 
 x-timescale-env: &timescale-env
-  TIMESCALE_HOST: timescaledb
-  TIMESCALE_PORT: 5432
-  TIMESCALE_USER: ${POSTGRES_USER:-exchange_user}
-  TIMESCALE_PASSWORD: ${POSTGRES_PASSWORD:-exchange_dev_password}
-  TIMESCALE_DB: market_data
+  POSTGRES_HOST: timescaledb
+  POSTGRES_PORT: 5432
+  POSTGRES_USER: ${POSTGRES_USER:-exchange_user}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-exchange_dev_password}
+  POSTGRES_DB: market_data
   DATABASE_URL: postgres://${POSTGRES_USER:-exchange_user}:${POSTGRES_PASSWORD:-exchange_dev_password}@postgres:5432/${POSTGRES_DB:-exchange}?sslmode=disable
 
 x-minio-env: &minio-env
@@ -352,7 +354,7 @@ services:
       HOT_WALLET_MATIC_ADDRESS: 0x...
       HOT_WALLET_POLYGON_ADDRESS: 0x...
       HOT_WALLET_SOL_ADDRESS: ...
-      HOT_WALLET_SOL_PRIVATE_KEY: [ 1, 2, 3, ... ]
+      HOT_WALLET_SOL_PRIVATE_KEY: 1
       # Security Configuration
       HOT_WALLET_THRESHOLD: 10000
       COLD_WALLET_THRESHOLD: 100000

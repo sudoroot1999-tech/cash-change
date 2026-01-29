@@ -6,7 +6,8 @@
   "workspaces": [
     "libs/*",
     "services/*",
-    "apps/*"
+    "apps/web/*",
+    "apps/packages/*"
   ],
   "scripts": {
     "dev": "docker compose up -d",
@@ -21,7 +22,7 @@
     "test:watch": "jest --watch",
     "test:all": "npm run test --workspaces --if-present",
     "lint:all": "npm run lint --workspaces --if-present",
-    "infra": "docker compose up -d postgres mongodb redis timescaledb rabbitmq kafka kafka-ui minio",
+    "infra": "docker compose up -d postgres mongodb redis timescaledb rabbitmq kafka kafka-ui minio --build",
     "web": "docker compose up -d nginx ",
     "format": "prettier --write \"**/*.{ts,js,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,js,json,md}\""

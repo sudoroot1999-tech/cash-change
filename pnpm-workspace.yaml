@@ -1,21 +1,25 @@
 packages:
   - services/*
   - libs/*
-  - apps/*
+  - apps/web/*
+  - apps/packages/*
 
-ignoredBuiltDependencies:
-  - argon2
 
 onlyBuiltDependencies:
+  - '@apollo/protobufjs'
   - '@firebase/util'
   - '@nestjs/core'
   - '@parcel/watcher'
   - '@scarf/scarf'
   - aws-sdk
   - bcrypt
+  - bufferutil
+  - canvas
   - esbuild
   - keccak
   - lmdb
   - msgpackr-extract
   - protobufjs
+  - secp256k1
   - sharp
+  - utf-8-validate

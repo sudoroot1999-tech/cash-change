@@ -2,7 +2,7 @@ import { Injectable, LoggerService } from '@nestjs/common';
 import * as winston from 'winston';
 import * as path from 'path';
 import { SecurityEventType } from '../../../types';
-import { SECURITY_EVENT_TYPES } from '../../../constants';
+import { SECURITY_EVENT_TYPE } from '../../../constants';
 
 
 
@@ -17,22 +17,22 @@ export interface SecurityEvent {
 }
 
 const SEVERITY_MAP = {
-  [SECURITY_EVENT_TYPES.SQL_INJECTION_ATTEMPT]: 'critical',
-  [SECURITY_EVENT_TYPES.XSS_ATTEMPT]: 'critical',
-  [SECURITY_EVENT_TYPES.CSRF_DETECTED]: 'critical',
+  [SECURITY_EVENT_TYPE.SQL_INJECTION_ATTEMPT]: 'critical',
+  [SECURITY_EVENT_TYPE.XSS_ATTEMPT]: 'critical',
+  [SECURITY_EVENT_TYPE.CSRF_DETECTED]: 'critical',
 
-  [SECURITY_EVENT_TYPES.WITHDRAWAL_INITIATED]: 'high',
-  [SECURITY_EVENT_TYPES.SUSPICIOUS_ACTIVITY]: 'high',
-  [SECURITY_EVENT_TYPES.UNAUTHORIZED_ACCESS]: 'high',
-  [SECURITY_EVENT_TYPES.ACCOUNT_LOCKED]: 'high',
-  [SECURITY_EVENT_TYPES.LARGE_TRANSACTION]: 'high',
-  [SECURITY_EVENT_TYPES.IP_BLACKLISTED]: 'high',
+  [SECURITY_EVENT_TYPE.WITHDRAWAL_INITIATED]: 'high',
+  [SECURITY_EVENT_TYPE.SUSPICIOUS_ACTIVITY]: 'high',
+  [SECURITY_EVENT_TYPE.UNAUTHORIZED_ACCESS]: 'high',
+  [SECURITY_EVENT_TYPE.ACCOUNT_LOCKED]: 'high',
+  [SECURITY_EVENT_TYPE.LARGE_TRANSACTION]: 'high',
+  [SECURITY_EVENT_TYPE.IP_BLACKLISTED]: 'high',
 
-  [SECURITY_EVENT_TYPES.LOGIN_FAILED]: 'medium',
-  [SECURITY_EVENT_TYPES.LOGIN_BLOCKED]: 'medium',
-  [SECURITY_EVENT_TYPES.RATE_LIMIT_EXCEEDED]: 'medium',
-  [SECURITY_EVENT_TYPES.INVALID_TOKEN]: 'medium',
-  [SECURITY_EVENT_TYPES.DEVICE_CHANGED]: 'medium',
+  [SECURITY_EVENT_TYPE.LOGIN_FAILED]: 'medium',
+  [SECURITY_EVENT_TYPE.LOGIN_BLOCKED]: 'medium',
+  [SECURITY_EVENT_TYPE.RATE_LIMIT_EXCEEDED]: 'medium',
+  [SECURITY_EVENT_TYPE.INVALID_TOKEN]: 'medium',
+  [SECURITY_EVENT_TYPE.DEVICE_CHANGED]: 'medium',
 } as const satisfies Partial<Record<SecurityEventType, Severity>>;
 
 type Severity = 'low' | 'medium' | 'high' | 'critical';
@@ -167,7 +167,7 @@ export class SecurityLoggerService implements LoggerService {
     metadata?: Record<string, any>,
   ): void {
     this.logSecurityEvent({
-      type: SECURITY_EVENT_TYPES.SUSPICIOUS_ACTIVITY,
+      type: SECURITY_EVENT_TYPE.SUSPICIOUS_ACTIVITY,
       userId,
       ip,
       metadata: {
@@ -212,7 +212,7 @@ export class SecurityLoggerService implements LoggerService {
     metadata?: Record<string, any>,
   ): void {
     this.logSecurityEvent({
-      type: SECURITY_EVENT_TYPES.RATE_LIMIT_EXCEEDED,
+      type: SECURITY_EVENT_TYPE.RATE_LIMIT_EXCEEDED,
       ip,
       metadata: {
         ...metadata,

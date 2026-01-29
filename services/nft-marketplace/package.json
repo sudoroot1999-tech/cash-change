@@ -43,8 +43,6 @@
     "devDependencies": {
         "@nestjs/cli": "^10.3.0",
         "@types/node": "^20.11.5",
-        "@nomicfoundation/hardhat-toolbox": "^4.0.0",
-        "hardhat": "^2.19.5",
         "typescript": "^5.3.3"
     }
 }

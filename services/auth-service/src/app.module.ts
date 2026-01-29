@@ -6,6 +6,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { RabbitMQModule, KafkaModule, PerformanceModule, SecurityModule, RequestContextInterceptor, DeviceFingerprintMiddleware, DeviceContextMiddleware, CompressionInterceptor, APMInterceptor, getOptimizedDatabaseConfig, ETagInterceptor, SecurityMiddleware, CSRFMiddleware, CORSMiddleware } from "@exchange/common"
 import { APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { JwtStrategy } from './modules/auth/sterategies/jwt.strategy';
+import cookieParser from 'cookie-parser';
 
 @Module({
   imports: [
@@ -71,12 +72,15 @@ import { JwtStrategy } from './modules/auth/sterategies/jwt.strategy';
   ]
 })
 export class AppModule implements NestModule {
+  constructor(private readonly configService: ConfigService) { }
   configure(consumer: MiddlewareConsumer) {
+    const cookieSecret = this.configService.get<string>('COOKIE_SECRET');
     consumer
       .apply(
         SecurityMiddleware,
         CSRFMiddleware,
         CORSMiddleware,
+        cookieParser(cookieSecret),
         DeviceFingerprintMiddleware,
         DeviceContextMiddleware
       )

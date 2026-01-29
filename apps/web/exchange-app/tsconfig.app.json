@@ -3,20 +3,6 @@
   "compilerOptions": {
     "outDir": "./out-tsc/app",
     "types": [],
-    "paths": {
-      "@/*": [
-        "./src/*"
-      ],
-      "@libs/*": [
-        "./src/libs/*"
-      ],
-      "@/components/*": [
-        "./src/app/components/*"
-      ],
-      "@exchange/shared-ui/*": [
-        "../../packages/*"
-      ],
-    }
   },
   "include": [
     "src/**/*.ts"

@@ -47,7 +47,7 @@
     "node-cron": "^3.0.3",
     "uuid": "^9.0.1",
     "chart.js": "^4.4.0",
-    "canvas": "^2.11.2"
+    "canvas": "^3.2.1"
   },
   "devDependencies": {
     "@nestjs/typeorm": "^10.0.1",
@@ -67,5 +67,10 @@
     "ts-jest": "^29.1.1",
     "supertest": "^6.3.3",
     "eslint": "^8.52.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "canvas": "npm:@napi-rs/canvas@0.1.88"
+    }
   }
 }
