@@ -1,11 +1,14 @@
-import { Locale, locales } from '@libs/i18n';
+import { LOCALES } from "../constants";
+import { Locale } from "../types";
+
 
 /**
  * Validate if a string is a supported locale
  */
 export function isValidLocale(locale: string): locale is Locale {
-  return locales.includes(locale as Locale);
+  return (Object.values(LOCALES) as readonly string[]).includes(locale);
 }
+
 
 /**
  * Get locale from string with fallback
@@ -32,7 +35,7 @@ export function getBrowserLocale(): Locale {
  */
 export function storeLocalePreference(locale: Locale): void {
   if (typeof window === 'undefined') return;
-  
+
   localStorage.setItem('preferred-locale', locale);
   document.cookie = `NEXT_LOCALE=${locale}; path=/; max-age=31536000`; // 1 year
 }
@@ -53,7 +56,7 @@ export function getStoredLocalePreference(): Locale | null {
   const cookie = document.cookie
     .split('; ')
     .find(row => row.startsWith('NEXT_LOCALE='));
-  
+
   if (cookie) {
     const value = cookie.split('=')[1];
     if (isValidLocale(value)) {
@@ -70,10 +73,10 @@ export function getStoredLocalePreference(): Locale | null {
 export function buildLocalizedPath(path: string, locale: Locale): string {
   // Remove leading slash if present
   const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-  
+
   // Remove any existing locale prefix
   const pathWithoutLocale = cleanPath.replace(/^(en|fa|ar|zh-CN|zh-TW|ru|es|tr|fr|de)\//, '');
-  
+
   // Add new locale prefix
   return `/${locale}/${pathWithoutLocale}`;
 }
@@ -83,7 +86,7 @@ export function buildLocalizedPath(path: string, locale: Locale): string {
  */
 export function extractLocaleFromPath(path: string): { locale: Locale; pathWithoutLocale: string } {
   const segments = path.split('/').filter(Boolean);
-  
+
   if (segments.length > 0 && isValidLocale(segments[0])) {
     return {
       locale: segments[0] as Locale,
@@ -185,7 +188,7 @@ export function sortByLocale<T>(
  * Generate language selector options
  */
 export function getLanguageOptions(currentLocale: Locale) {
-  return locales.map(locale => ({
+  return Object.values(LOCALES).map(locale => ({
     value: locale,
     label: getLocaleDisplayName(locale, currentLocale),
     nativeLabel: getLocaleDisplayName(locale, locale),

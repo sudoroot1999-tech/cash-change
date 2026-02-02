@@ -16,6 +16,7 @@ import { SECURITY_PORT } from './tokens/user.tokens';
 import { SecurityGrpcAdapter } from './adapters/security-grpc.adaptor';
 import { ReferralModule } from '../referral/referral.module';
 import { NotificationEventsService } from './services/notification-events.service';
+import { AuthEventsService } from './services/auth-events.service';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { NotificationEventsService } from './services/notification-events.servic
     UsersService,
     UserEventsService,
     NotificationEventsService,
+    AuthEventsService,
     SecurityGrpcAdapter,
     {
       provide: SECURITY_PORT,

@@ -10,7 +10,7 @@ import { CreateUserDto, UpdateUserDto, UserResponseDto, VerifyEmailDto } from '.
 import { UserProfile } from './entities/profile.entity';
 import { UserPreferences } from './entities/user-preferences.entity';
 import { UserLimits } from './entities/user-limits.entity';
-import { BadRequestError, ConflictError, JWTAuthService, KYC_LEVELS, KycLevel, Logger, MultiLayerCacheService, NotFoundError, PasswordService, RateLimiterService, RequestContext, ServiceUnavailableError, StorageService, UnauthorizedError, USER_STATUS } from '@exchange/common';
+import { BadRequestError, ConflictError, JWTAuthService, KYC_LEVELS, KycLevel, Logger, MultiLayerCacheService, NotFoundError, PasswordService, QUEUES, RateLimiterService, RequestContext, ServiceUnavailableError, StorageService, UnauthorizedError, USER_STATUS } from '@exchange/common';
 import { UpdateUserPreferencesDto } from './dto/update-user-preferences.dto';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import { ChangePasswordDto, ForgotPasswordDto, ResetPasswordDto } from './dto/user-password.dto';
@@ -19,6 +19,7 @@ import { ReferralService } from '../referral/referral.service';
 import { FraudDetectionService } from '../referral/services';
 import { NotificationEventsService } from './services/notification-events.service';
 import { UserEventsService } from './services/user-events.service'
+import { AuthEventsService } from './services/auth-events.service';
 
 
 @Injectable()
@@ -36,6 +37,7 @@ export class UsersService {
     private limitsRepository: Repository<UserLimits>,
     @Inject('SECURITY_PACKAGE') private readonly security: SecurityPort,
     private readonly notificationEvents: NotificationEventsService,
+    private readonly authEvents: AuthEventsService,
     private readonly referralService: ReferralService,
     private readonly fraudService: FraudDetectionService,
     private readonly storageService: StorageService,
@@ -120,24 +122,63 @@ export class UsersService {
       const referralCode = await this.referralService.getUserReferralCode(user.id);
 
       // Generate or use provided anti-phishing code
-      const phishingCode = await this.security.generateRandomCode();
-      const antiPhishingCode = await this.security.setAntiPhishingCode({
-        userId: user.id,
-        phishingCode: phishingCode.code
-      });
+      if (createUserDto.phishingCode) {
+        user.antiPhishingCode = createUserDto.phishingCode;
+      }
 
-      user.antiPhishingCode = antiPhishingCode.phishingCode;
       user.referralCode = referralCode.code;
 
       const savedUser = await this.userRepository.save(user);
       this.logger.info(`User created: ${savedUser.id}`);
 
       // create Defaults
-      await this.createUserProfile(savedUser.id)
+      await this.createUserProfile(savedUser.id);
+
+      await this.authEvents.publishUserRegistered({
+        name: QUEUES.USER_REGISTERED,
+        eventId: this.tokenService.generateRandomToken(),
+        timestamp: new Date(),
+        email: user.email,
+        userId: user.id,
+        username: user.username,
+        version: "1",
+        registeredAt: user.createdAt,
+        referralCode: user.referralCode
+      });
+
+      await this.notificationEvents.publishEmailNotification({
+        eventId: this.tokenService.generateRandomToken(),
+        timestamp: new Date(),
+        data: {
+          antiphishingCode: user.antiPhishingCode,
+          verificationUrl: `${user.emailVerificationToken}`,
+          expiresInMinutes: 20
+        },
+        subject: 'Email Verification',
+        userId: user.id,
+        template: "1",
+        to: user.email,
+        version: "1",
+      });
+
+      await this.authEvents.publishEmailVerificationRequested({
+        version: "1",
+        eventId: this.tokenService.generateRandomToken(),
+        timestamp: new Date(),
+        email: user.email,
+        userId: user.id,
+        requestedAt: new Date()
+      });
+
+      this.logger.logAuth('User registered successfully,Activate your account', user.id, true);
 
       return savedUser;
     }
     catch (error: any) {
+      if (error?.details?.includes('already registered')) {
+        // Check specifically for conflict
+        throw new BadRequestError('Email already registered');
+      }
       throw new BadRequestError('failed to create user')
     }
   }

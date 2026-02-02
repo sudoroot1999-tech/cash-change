@@ -5,13 +5,13 @@ export interface JwtPayload {
   email: string;
   roles?: string[];
   permissions?: string[];
-  sessionId: string;
+  sessionId?: string;
   username: string;
   status: UserStatus;
   tier: UserTier;
   kycLevel: number;
-  kycStatus?: string;
-  isTwoFactorEnabled?: boolean;
+  kycStatus: string;
+  twoFactorEnabled: boolean;
   emailVerified: boolean;
   phoneVerified: boolean;
   lastLoginAt?: Date | null;
@@ -28,7 +28,7 @@ export interface AuthenticatedUser {
   username: string;
   emailVerified: boolean;
   phoneVerified: boolean;
-  isTwoFactorEnabled?: boolean;
+  twoFactorEnabled?: boolean;
   status: UserStatus;
 }
 

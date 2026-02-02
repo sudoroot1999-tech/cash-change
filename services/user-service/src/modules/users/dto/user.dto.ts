@@ -37,6 +37,12 @@ export class CreateUserDto {
   @IsString()
   @MaxLength(20)
   referralCode?: string;
+
+  @ApiPropertyOptional({ example: 'ABCD1234', description: 'phishing code of existing user' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  phishingCode?: string;
 }
 
 export class UpdateUserDto {

@@ -15,7 +15,7 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody, ApiConsumes } from '@nestjs/swagger';
 import { CurrentUser, BadRequestError, User, Public, HTTP_STATUS, RequireAuth, KycLevel, AuthenticatedUser } from '@exchange/common';
 import { UsersService } from './users.service';
-import { UpdateUserDto, UserResponseDto, PaginationQueryDto, VerifyEmailDto } from './dto/user.dto';
+import { UpdateUserDto, UserResponseDto, PaginationQueryDto, VerifyEmailDto, CreateUserDto } from './dto/user.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UploadAvatarResponseDto } from './dto/upload-avatar.dto';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
@@ -45,6 +45,18 @@ export class UsersController {
         error
       }
     }
+  }
+
+  @Post()
+  @Public()
+  @HttpCode(HTTP_STATUS.OK)
+  @ApiOperation({ summary: 'Create User' })
+  @ApiResponse({ status: 200, description: 'User created successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid data' })
+  @ApiResponse({ status: 409, description: 'User already exist' })
+  async createUser(@Body() dto: CreateUserDto) {
+    const result = await this.usersService.create(dto);
+    return { success: true, data: result }
   }
 
   @Get(':id')

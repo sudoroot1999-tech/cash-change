@@ -8,11 +8,12 @@ import {
   Req,
   Get,
   Put,
+  Res,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-import { Request } from 'express';
+import { Response, Request } from 'express';
 import { AuthService } from './auth.service';
-import { CurrentUser, Public, RateLimit, ReqContext, RequestContext, RequireAuth } from '@exchange/common';
+import { AuthenticatedUser, CurrentUser, Public, RateLimit, ReqContext, RequestContext, RequireAuth } from '@exchange/common';
 import {
   LoginDto,
   RefreshTokenDto,
@@ -22,7 +23,8 @@ import {
   ChangePasswordDto,
   ForgotPasswordDto,
   ResetPasswordDto,
-  LogoutDto
+  LogoutDto,
+  CompleteLoginDto
 } from './dto/auth.dto';
 
 @ApiTags('Auth')
@@ -36,7 +38,7 @@ export class AuthController {
   @RateLimit({ windowMs: 15 * 60 * 1000, maxRequests: 5 })
   @ApiOperation({ summary: 'Register new user' })
   @ApiResponse({ status: 201, description: 'User registered successfully' })
-  @ApiResponse({ status: 409, description: 'Email already exists'})
+  @ApiResponse({ status: 409, description: 'Email already exists' })
   async register(
     @Body() dto: RegisterDto,
   ) {
@@ -59,9 +61,12 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(
     @Body() dto: LoginDto,
-    @ReqContext() ctx: RequestContext
+    @ReqContext() ctx: RequestContext,
+    @Res({ passthrough: true }) res: Response
   ) {
+
     const result = await this.authService.login(dto, ctx);
+
     return {
       success: true,
       message: 'Registration successful. Please verify your email.',
@@ -71,6 +76,44 @@ export class AuthController {
     }
   }
 
+  @Post('complete-login')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @RateLimit({ windowMs: 15 * 60 * 1000, maxRequests: 5, blockDurationMs: 30 * 60 })
+  @ApiOperation({ summary: 'Login user' })
+  @ApiResponse({ status: 200, description: 'Login successful' })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
+  async completeLogin(
+    @Body() dto: CompleteLoginDto,
+    @ReqContext() ctx: RequestContext,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response
+  ) {
+
+    const sessionId = req.signedCookies['session_id'];
+    const result = await this.authService.completeLogin(dto, sessionId, ctx);
+
+    if ('refreshToken' in result) {
+      res.cookie('refresh_token', result.refreshToken, {
+        httpOnly: true,
+        signed: true,
+        secure: false,
+        sameSite: 'lax',
+        maxAge: 1000 * 60 * 60 * 24 * 7,
+        path: '/',
+      });
+    }
+
+    return {
+      success: true,
+      message: 'Registration successful. Please verify your email.',
+      data: {
+        ...result
+      }
+    }
+  }
+
+
   @Post('refresh')
   @RequireAuth()
   @HttpCode(HttpStatus.OK)
@@ -79,11 +122,13 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Token refreshed successfully' })
   @ApiResponse({ status: 401, description: 'Invalid refresh token' })
   async refreshToken(
-    @Body() dto: RefreshTokenDto,
-    @CurrentUser() user,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() req: Request,
     @ReqContext() ctx: RequestContext
   ) {
-    const result = await this.authService.refreshToken(user.id, dto, ctx);
+    const sessionId = req.signedCookies['session_id'];
+    const refreshToken = req.signedCookies['refresh_token'];
+    const result = await this.authService.refreshToken(user.userId, { refreshToken }, ctx, sessionId);
     return {
       success: true,
       data: {
@@ -97,8 +142,28 @@ export class AuthController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Logout current session' })
-  async logout(@CurrentUser() user, @Body() logoutDto: LogoutDto): Promise<void> {
-    await this.authService.logout(user, logoutDto.sessionId);
+  async logout(
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    
+    const sessionId = req.signedCookies['session_id'];
+    const result = await this.authService.logout(user, sessionId);
+
+    res.clearCookie('refresh_token', {
+      httpOnly: true,
+      signed: true,
+      secure: false,
+      sameSite: 'lax',
+      maxAge: 1000 * 60 * 60 * 24 * 7,
+      path: '/',
+    });
+
+    return {
+      ...result,
+      data: result.message
+    }
   }
 
   @Post('2fa/setup')
@@ -107,8 +172,8 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Setup 2FA - get secret and QR code' })
   @ApiResponse({ status: 200, type: Enable2FADto })
-  async setup2FA(@CurrentUser() user) {
-    const result = await this.authService.setup2FA(user.id);
+  async setup2FA(@CurrentUser() user: AuthenticatedUser) {
+    const result = await this.authService.setup2FA(user.userId);
     return {
       success: true,
       data: {
@@ -123,7 +188,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Enable 2FA after verification' })
   @ApiResponse({ status: 200, description: '2FA setup initiated' })
-  async enable2FA(@CurrentUser() user, @Body() dto: Verify2FADto) {
+  async enable2FA(@CurrentUser() user: AuthenticatedUser, @Body() dto: Verify2FADto) {
     return this.authService.confirm2FA(user, dto.token);
   }
 
@@ -169,7 +234,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiResponse({ status: 200, description: 'Password changed successfully' })
   @ApiResponse({ status: 401, description: 'Invalid current password' })
-  async changePassword(@CurrentUser() user, @Body() dto: ChangePasswordDto) {
+  async changePassword(@CurrentUser() user: AuthenticatedUser, @Body() dto: ChangePasswordDto) {
     const result = await this.authService.changePassword(user, dto);
     return {
       success: true,
@@ -196,14 +261,14 @@ export class AuthController {
   }
 
   @Post('reset-password')
-  @RequireAuth()
+  @Public()
   @HttpCode(HttpStatus.OK)
   @RateLimit({ windowMs: 60 * 60 * 1000, maxRequests: 3 })
   @ApiOperation({ summary: 'Reset password' })
   @ApiResponse({ status: 200, description: 'Password reset successfully' })
   @ApiResponse({ status: 400, description: 'Invalid reset token' })
-  async resetPassword(@Body() dto: ResetPasswordDto, @CurrentUser() user) {
-    const result = await this.authService.resetPassword(dto, user.id);
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    const result = await this.authService.resetPassword(dto);
     return {
       success: true,
       data: {

@@ -1,58 +1,119 @@
-import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
+import {
+  Component,
+  ChangeDetectionStrategy,
+  inject,
+  signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import {
+  FormBuilder,
+  ReactiveFormsModule,
+} from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { CardComponent } from '@/components/card/card.component';
-import { ButtonComponent } from '@/components/button/button.component';
-import { InputComponent } from '@/components/input/input.component';
+
+import { CardComponent } from '@components/card/card.component';
+import { ButtonComponent } from '@components/button/button.component';
+import { InputComponent } from '@components/input/input.component';
+
 import { AuthService } from '@/app/core/services/auth.service';
+import { z } from 'zod';
+import { ZodSchemas } from '@/libs/utils/validation.schema';
+import { zodValidator } from '@/libs/utils/validation.factory';
+import { EMPTY, finalize, map, switchMap, tap } from 'rxjs';
+import { SecurityService } from '@/app/core/services/security.service';
+import { UserFacade } from '@/app/core/store/user/user.facade';
+import { USER_STATUS } from '@/libs/constants';
+
+type LoginFormValue = z.infer<typeof ZodSchemas.login>;
+type LoginFormKeys = Extract<keyof LoginFormValue, string>;
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, RouterLink, CardComponent, ButtonComponent, InputComponent, FormsModule],
+  imports: [
+    CommonModule,
+    RouterLink,
+    ReactiveFormsModule,
+    CardComponent,
+    ButtonComponent,
+    InputComponent,
+  ],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LoginComponent {
+  private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
+  private readonly securityService = inject(SecurityService);
+  private readonly userFacade = inject(UserFacade);
   private readonly router = inject(Router);
 
-  email = '';
-  password = '';
-  rememberMe = false;
+  readonly isLoading = signal(false);
+  readonly error = signal('');
 
-  emailError = signal('');
-  passwordError = signal('');
-  error = signal('');
-  isLoading = signal(false);
+  readonly form = this.fb.nonNullable.group(
+    {
+      email: '',
+      password: '',
+      rememberMe: false,
+    },
+    {
+      validators: zodValidator(ZodSchemas.login),
+    }
+  );
 
-  onSubmit(): void {
-    this.emailError.set('');
-    this.passwordError.set('');
+  submit(): void {
     this.error.set('');
 
-    if (!this.email) {
-      this.emailError.set('Email is required');
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
       return;
     }
 
-    if (!this.password) {
-      this.passwordError.set('Password is required');
-      return;
-    }
+    const { email, password } = this.form.getRawValue() as LoginFormValue;
 
     this.isLoading.set(true);
 
-    this.authService.login(this.email, this.password).subscribe({
-      next: (data) => {
-        this.router.navigate(['/trade']);
-      },
-      error: (err) => {
-        this.error.set(err.error?.message || 'Login failed. Please try again.');
-        this.isLoading.set(false);
-      },
-    });
+    this.authService
+      .login(email, password)
+      .pipe(
+        switchMap(loginRes =>
+          this.securityService.createSession(loginRes.antiPhishingCode).pipe(
+            map(sessionRes => ({
+              loginRes,
+              sessionRes,
+            }))
+          )
+        ),
+        tap(({ loginRes, sessionRes }) => {
+          if ("requires2FA" in loginRes) {
+            this.router.navigate(['/verify-2fa']);
+          }
+          this.userFacade.setUser(loginRes);
+          this.authService.storeUser(loginRes);
+        }),
+        switchMap(({ loginRes }) => {
+          if (loginRes.status === USER_STATUS.ACTIVE) {
+            return this.authService.completeLogin(loginRes)
+          }
+          return EMPTY;
+        }),
+        tap((data) => this.userFacade.loadProfile()),
+        finalize(() => {
+          this.isLoading.set(false);
+        })
+      )
+      .subscribe({
+        error: (err) => {
+          this.error.set(err.error?.message ?? 'Login failed');
+        },
+      });
+  }
+
+  /** helper for read error */
+  fieldError(field: LoginFormKeys): string | null {
+    const errors = this.form.errors as Partial<Record<LoginFormKeys, string>> | null;
+    return errors?.[field] ?? null;
   }
 }

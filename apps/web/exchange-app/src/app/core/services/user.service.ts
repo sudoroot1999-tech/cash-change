@@ -3,23 +3,15 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, map, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AuthService } from './auth.service';
-import { ApiResponse, AuthenticatedUser } from '@/libs/types';
+import { ApiResponse, User, UserLimits, UserPreferences, UserProfile } from '@/libs/types';
 
-export interface UserProfile {
-  id: string;
-  userId: string;
-  firstName: string | null;
-  lastName: string | null;
-  dateOfBirth: Date | null;
-  country: string | null;
-  city: string | null;
-  address: string | null;
-  postalCode: string | null;
-  avatarUrl: string | null;
-  bio: string | null;
-  preferences: Record<string, unknown>;
-  createdAt: string;
-  updatedAt: string;
+export interface createUserRequest {
+  email: string;
+  username: string;
+  password: string;
+  referralCode?: string;
+  phone?: string;
+  phishingCode?: string;
 }
 
 export interface UpdateUserRequest {
@@ -38,50 +30,56 @@ export interface UpdateProfileRequest {
   bio?: string;
 }
 
+export interface UserProfileResponse {
+  profile: UserProfile;
+  preferences: UserPreferences;
+  limits: UserLimits;
+}
+
+
 @Injectable({
   providedIn: 'root',
 })
 export class UserService {
   private readonly http = inject(HttpClient);
-  private readonly authService = inject(AuthService);
-  private readonly API_URL = `${environment.apiUrl}/users`;
+  private readonly API_BASE_URL = `${environment.apiUrl}`;
 
   /**
    * Get current user
    */
-  getCurrentUser(): Observable<AuthenticatedUser> {
-    return this.http.get<ApiResponse<AuthenticatedUser>>(this.API_URL).pipe(
+  getUser(): Observable<User> {
+    return this.http.get<ApiResponse<User>>(`${this.API_BASE_URL}/users`).pipe(
       map((response) => response.data),
-      tap((data) => this.authService.updateUser(data))
+    );
+  }
+
+  /**
+ * Create user
+ */
+  createUser(data: createUserRequest): Observable<User> {
+    return this.http.post<ApiResponse<User>>(`${this.API_BASE_URL}/users`, data).pipe(
+      map((response) => response.data)
     );
   }
 
   /**
    * Update user
    */
-  updateUser(updates: UpdateUserRequest): Observable<AuthenticatedUser> {
-    const userId = this.authService.user()?.id;
-    if (!userId) {
-      throw new Error('User not authenticated');
-    }
-
-    return this.http.put<ApiResponse<AuthenticatedUser>>(`${this.API_URL}/${userId}`, updates).pipe(
-      map((response) => response.data),
-      tap((data => {
-        this.authService.updateUser(data);
-      }))
+  updateUser(updates: UpdateUserRequest, userId: string): Observable<User> {
+    return this.http.put<ApiResponse<User>>(`${this.API_BASE_URL}/users/${userId}`, updates).pipe(
+      map((response) => response.data)
     );
   }
 
   /**
- * Update user
- */
+  * Verify User Email
+  */
   verifyEmail(token: string): Observable<string> {
     if (!token) {
       throw new Error('User not authenticated');
     }
 
-    return this.http.post<ApiResponse<string>>(`${this.API_URL}/verify-email`, { token }).pipe(
+    return this.http.post<ApiResponse<string>>(`${this.API_BASE_URL}/users/verify-email`, { token }).pipe(
       map((response) => response.data),
     );
   }
@@ -89,37 +87,37 @@ export class UserService {
   /**
    * Get user profile
    */
-  getProfile(): Observable<UserProfile> {
-    const userId = this.authService.user()?.id;
-    if (!userId) {
-      throw new Error('User not authenticated');
-    }
-
-    return this.http.get<UserProfile>(`${this.API_URL}/${userId}/profile`);
+  getProfile(): Observable<UserProfileResponse> {
+    return this.http.get<ApiResponse<UserProfileResponse>>(`${this.API_BASE_URL}/users/profile`).pipe(
+      map((response) => response.data),
+    );
   }
 
   /**
    * Update user profile
    */
-  updateProfile(updates: UpdateProfileRequest): Observable<UserProfile> {
-    const userId = this.authService.user()?.id;
-    if (!userId) {
-      throw new Error('User not authenticated');
-    }
-
-    return this.http.put<UserProfile>(`${this.API_URL}/${userId}/profile`, updates);
+  updateProfile(updates: UpdateProfileRequest, userId: string): Observable<UserProfile> {
+    return this.http.put<ApiResponse<UserProfile>>(`${this.API_BASE_URL}/users/profile/${userId}`, updates).pipe(
+      map((response) => response.data),
+    );
   }
 
   /**
    * Update user preferences
    */
   updatePreferences(preferences: Record<string, unknown>): Observable<UserProfile> {
-    const userId = this.authService.user()?.id;
-    if (!userId) {
-      throw new Error('User not authenticated');
-    }
+    return this.http.patch<ApiResponse<UserProfile>>(`${this.API_BASE_URL}/users/preferences`, preferences).pipe(
+      map((response) => response.data),
+    );
+  }
 
-    return this.http.patch<UserProfile>(`${this.API_URL}/${userId}/profile/preferences`, preferences);
+  /**
+  * Upload avatar
+  */
+  uploadAvatar(file: File): Observable<string> {
+    return this.http.post<ApiResponse<string>>(`${this.API_BASE_URL}/users/upload-avatar`, file).pipe(
+      map(response => response.data)
+    );
   }
 }
 

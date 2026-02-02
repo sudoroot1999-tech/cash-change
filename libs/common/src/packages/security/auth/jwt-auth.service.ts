@@ -2,10 +2,12 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as crypto from 'crypto';
 import { JwtPayload, TokenPair } from '../../../types';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class JWTAuthService {
-  constructor(private jwtService: JwtService) { }
+  constructor(private jwtService: JwtService, private configService: ConfigService) { }
+
 
   /**
    * Generate access and refresh tokens
@@ -18,20 +20,20 @@ export class JWTAuthService {
     };
 
     const accessToken = this.jwtService.sign(jwtPayload, {
-      expiresIn: '15m',
+      expiresIn: this.configService.get('JWT_EXPIRES_IN'),
     });
 
     const refreshToken = this.jwtService.sign(
       { sub: payload.sub, sessionId },
       {
-        expiresIn: '7d',
+        expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN'),
       },
     );
 
     return {
       accessToken,
       refreshToken,
-      expiresIn: 15 * 60, // 15 minutes in seconds
+      expiresIn: this.configService.get('JWT_EXPIRES_IN') * 60, // 15 minutes in seconds
       tokenType: 'Bearer',
     };
   }
@@ -60,8 +62,7 @@ export class JWTAuthService {
    */
   async verifyRefreshToken(token: string): Promise<JwtPayload> {
     try {
-      const { sessionId, ...others } = this.jwtService.verify(token);
-      return { ...others };
+      return this.jwtService.verify(token);
     } catch (error) {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
@@ -77,12 +78,17 @@ export class JWTAuthService {
     const decoded = await this.verifyRefreshToken(refreshToken);
 
     const jwtPayload: JwtPayload = {
-      ...userPayload,
-      sessionId: decoded.sessionId,
+      ...userPayload
     };
 
+    if ('sessionId' in decoded) {
+      Object.assign(jwtPayload, {
+        sessionId: decoded.sessionId,
+      })
+    }
+
     const accessToken = this.jwtService.sign(jwtPayload, {
-      expiresIn: '15m',
+      expiresIn: this.configService.get('JWT_EXPIRES_IN'),
     });
 
     return {

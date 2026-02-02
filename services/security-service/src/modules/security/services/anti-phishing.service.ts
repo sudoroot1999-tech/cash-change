@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AntiPhishingCode } from '../entities/anti-phishing-code.entity';
 import { SecurityEvent } from '../entities/security-event.entity';
-import { BadRequestError, NotFoundError, RISK_LEVELS, SECURITY_EVENT_TYPES, SecurityEventType } from '@exchange/common';
+import { BadRequestError, NotFoundError, RISK_LEVELS, SECURITY_EVENT_TYPE, SecurityEventType } from '@exchange/common';
 
 @Injectable()
 export class AntiPhishingService {
@@ -49,7 +49,7 @@ export class AntiPhishingService {
       }
 
       // Log security event
-      await this.logSecurityEvent(userId, SECURITY_EVENT_TYPES.PASSWORD_CHANGE, {
+      await this.logSecurityEvent(userId, SECURITY_EVENT_TYPE.PASSWORD_CHANGE, {
         action: 'Anti-phishing code updated',
         ipAddress,
       });

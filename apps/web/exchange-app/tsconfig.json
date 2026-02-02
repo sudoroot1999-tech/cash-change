@@ -19,10 +19,13 @@
       "@/*": [
         "./src/*"
       ],
+      "@services/*": [
+        "./src/app/core/services/*"
+      ],
       "@libs/*": [
         "./src/libs/*"
       ],
-      "@/components/*": [
+      "@components/*": [
         "./src/app/components/*"
       ],
       "@exchange/shared-ui/*": [

@@ -1,4 +1,5 @@
-import { Locale, rtlLocales, localeDirections } from '@libs/i18n';
+import { rtlLocales, localeDirections } from '@libs/i18n';
+import { Locale } from '../types';
 
 /**
  * Check if locale is RTL

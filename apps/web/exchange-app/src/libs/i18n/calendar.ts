@@ -1,4 +1,5 @@
-import { Locale } from '@libs/i18n';
+import { Locale } from "../types";
+
 
 /**
  * Persian (Jalali) Calendar utilities

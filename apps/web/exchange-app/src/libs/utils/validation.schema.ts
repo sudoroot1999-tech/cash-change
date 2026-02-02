@@ -26,17 +26,22 @@ export const ZodSchemas = {
 
     // Registration schema
     register: z.object({
-        email: z.string().email(),
-        password: z.string().min(8).max(128),
+        email: z.string().min(1, 'Email is required').email(),
+        password: z.string().min(1, 'Password is required').min(8, 'Password must be at least 8 characters').max(128),
         username: z.string().min(3).max(50).regex(/^[a-zA-Z0-9_-]+$/),
-        acceptTerms: z.boolean().refine((val: any) => val === true),
+        referralCode: z.string().optional(),
+        phone: z.string().optional(),
+        phishingCode: z.string().optional(),
+        acceptTerms: z.boolean().refine((val: any) => val === true).optional(),
+        rememberMe: z.boolean().optional(),
     }),
 
     // Login schema
     login: z.object({
-        email: z.string().email(),
-        password: z.string(),
+        email: z.string().min(1, 'Email is required').email(),
+        password: z.string().min(1, 'Password is required').min(8, 'Password must be at least 8 characters'),
         twoFactorCode: z.string().length(6).optional(),
+        rememberMe: z.boolean().optional(),
     }),
 
     // Withdrawal schema

@@ -1,4 +1,5 @@
-import { Locale, localeCurrencies, localeNumberSystems } from '@libs/i18n';
+import { localeCurrencies, localeNumberSystems } from '@libs/i18n';
+import { Locale } from '../types';
 
 /**
  * Format number based on locale
@@ -9,7 +10,7 @@ export function formatNumber(
   options?: Intl.NumberFormatOptions
 ): string {
   const numberSystem = localeNumberSystems[locale];
-  
+
   return new Intl.NumberFormat(locale, {
     numberingSystem: numberSystem,
     ...options,
@@ -25,7 +26,7 @@ export function formatCurrency(
   currencyCode?: string
 ): string {
   const currency = currencyCode || localeCurrencies[locale].code;
-  
+
   return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: currency,
@@ -71,8 +72,8 @@ export function formatDate(
   locale: Locale,
   options?: Intl.DateTimeFormatOptions
 ): string {
-  const dateObj = typeof date === 'string' || typeof date === 'number' 
-    ? new Date(date) 
+  const dateObj = typeof date === 'string' || typeof date === 'number'
+    ? new Date(date)
     : date;
 
   return new Intl.DateTimeFormat(locale, {
@@ -87,15 +88,15 @@ export function formatRelativeTime(
   date: Date | string | number,
   locale: Locale
 ): string {
-  const dateObj = typeof date === 'string' || typeof date === 'number' 
-    ? new Date(date) 
+  const dateObj = typeof date === 'string' || typeof date === 'number'
+    ? new Date(date)
     : date;
-  
+
   const now = new Date();
   const diffInSeconds = Math.floor((now.getTime() - dateObj.getTime()) / 1000);
-  
+
   const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
-  
+
   const intervals = [
     { seconds: 31536000, unit: 'year' },
     { seconds: 2592000, unit: 'month' },
@@ -104,14 +105,14 @@ export function formatRelativeTime(
     { seconds: 60, unit: 'minute' },
     { seconds: 1, unit: 'second' },
   ] as const;
-  
+
   for (const interval of intervals) {
     const count = Math.floor(diffInSeconds / interval.seconds);
     if (count !== 0) {
       return rtf.format(-count, interval.unit);
     }
   }
-  
+
   return rtf.format(0, 'second');
 }
 
@@ -126,12 +127,12 @@ export function parseLocalizedNumber(
   const parts = new Intl.NumberFormat(locale).formatToParts(1111.1);
   const thousandsSep = parts.find(p => p.type === 'group')?.value || ',';
   const decimalSep = parts.find(p => p.type === 'decimal')?.value || '.';
-  
+
   // Remove thousands separators and replace decimal separator with '.'
   const normalized = value
     .replace(new RegExp('\\' + thousandsSep, 'g'), '')
     .replace(decimalSep, '.');
-  
+
   return parseFloat(normalized);
 }
 

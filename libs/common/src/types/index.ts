@@ -71,6 +71,8 @@ import {
   DATA_SOURCE,
   COLD_WALLET_TYPE,
   INSURANCE_FUND_TRANSACTION_TYPE,
+  CURRENCY,
+  LOCALES,
 } from '../constants';
 import { AuthenticatedUser } from './auth.types';
 
@@ -261,6 +263,8 @@ export type DataSource =
   (typeof DATA_SOURCE)[keyof typeof DATA_SOURCE];
 
 
+export type Locale = (typeof LOCALES)[keyof typeof LOCALES];
+export type Currency = (typeof CURRENCY)[keyof typeof CURRENCY];
 
 export * from "./auth.types";
 export * from "./user.types";

@@ -36,16 +36,16 @@
                 </div>
 
                 <!-- Email Login Form -->
-                <form class="auth-form" (ngSubmit)="onSubmit()">
-                    <ui-input type="email" label="Email" placeholder="Enter your email" [ngModel]="email"
-                        (ngModelChange)="email = $event" name="email" [error]="emailError()" />
+                <form class="auth-form" [formGroup]="form" (ngSubmit)="submit()">
+                    <ui-input type="email" label="Email" placeholder="Enter your email" formControlName="email"
+                        [error]="fieldError('email')" name="email" />
 
-                    <ui-input type="password" label="Password" placeholder="Enter your password" [ngModel]="password"
-                        (ngModelChange)="password = $event" name="password" [error]="passwordError()" />
+                    <ui-input label="Password" type="password" formControlName="password"
+                        [error]="fieldError('password')" placeholder=" Enter your password" name="password" />
 
                     <div class="form-options">
                         <label class="remember-me">
-                            <input type="checkbox" [(ngModel)]="rememberMe" name="rememberMe" />
+                            <input type="checkbox" formControlName="rememberMe" />
                             <span>Remember me</span>
                         </label>
                         <a href="#" class="forgot-link">Forgot password?</a>

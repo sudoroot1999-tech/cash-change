@@ -2,6 +2,25 @@ import { HttpInterceptorFn, HttpRequest, HttpHandlerFn } from '@angular/common/h
 import { inject } from '@angular/core';
 import { AuthService } from '../services/auth.service';
 
+/**
+ * Routes that DO NOT need Authorization header
+ */
+const PUBLIC_ROUTES: Array<string | RegExp> = [
+  '/auth/login',
+  '/auth/register',
+  '/public/',
+  '/health',
+  /^https:\/\/cdn\./
+];
+
+function isPublicRoute(url: string): boolean {
+  return PUBLIC_ROUTES.some(route =>
+    typeof route === 'string'
+      ? url.includes(route)
+      : route.test(url)
+  );
+}
+
 export const authInterceptor: HttpInterceptorFn = (
   req: HttpRequest<unknown>,
   next: HttpHandlerFn
@@ -9,14 +28,15 @@ export const authInterceptor: HttpInterceptorFn = (
   const authService = inject(AuthService);
   const token = authService.getToken();
 
-  if (token && !req.url.includes('/auth/')) {
-    const cloned = req.clone({
-      setHeaders: {
-        Authorization: `Bearer ${token}`
-      }
-    });
-    return next(cloned);
+  if (!token || isPublicRoute(req.url)) {
+    return next(req);
   }
 
-  return next(req);
+  const cloned = req.clone({
+    setHeaders: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  return next(cloned);
 };

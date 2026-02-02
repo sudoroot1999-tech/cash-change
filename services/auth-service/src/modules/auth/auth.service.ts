@@ -5,8 +5,8 @@ import {
   Inject,
 } from '@nestjs/common';
 import { AuthEventsService } from './services/auth-events.service';
-import { BadRequestError, CacheLayer, createServiceLogger, JWTAuthService, Logger, MultiLayerCacheService, NotFoundError, QUEUES, RateLimit, RateLimiterService, RequestContext, ServiceUnavailableError, User, USER_STATUS, UserProfile } from '@exchange/common';
-import { ChangePasswordDto, ForgotPasswordDto, RefreshTokenDto, RegisterDto, ResetPasswordDto, Verify2FADto } from './dto/auth.dto';
+import { AuthenticatedUser, BadRequestError, CacheLayer, createServiceLogger, JWTAuthService, Logger, MultiLayerCacheService, NotFoundError, QUEUES, RateLimit, RateLimiterService, RequestContext, ServiceUnavailableError, TokenPair, User, USER_STATUS, UserProfile } from '@exchange/common';
+import { ChangePasswordDto, CompleteLoginDto, ForgotPasswordDto, RefreshTokenDto, RegisterDto, ResetPasswordDto, Verify2FADto } from './dto/auth.dto';
 import { LoginDto } from './dto/auth.dto';
 import { SECURITY_PORT, USER_PORT } from './tokens/auth.tokens';
 import { UserPort } from './ports/user.port';
@@ -93,13 +93,7 @@ export class AuthService {
   /**
  * Login user
  */
-  async login(dto: LoginDto, ctx: Partial<RequestContext>): Promise<{
-    accessToken: string;
-    refreshToken: string;
-    expiresIn: number;
-    tokenType: string;
-    sessionId: string;
-  } | {
+  async login(dto: LoginDto, ctx: Partial<RequestContext>): Promise<User | {
     requires2FA: boolean,
     tempToken: string,
   }> {
@@ -139,7 +133,7 @@ export class AuthService {
         };
       }
 
-      return this.completeLogin(user, ctx);
+      return user;
 
     }
     catch (error: any) {
@@ -173,49 +167,29 @@ export class AuthService {
   /**
    * Generate access and refresh tokens
    */
-  private async completeLogin(
-    user: User,
+   async completeLogin(
+    user: CompleteLoginDto,
+    sessionId: string,
     ctx: Partial<RequestContext>
-  ): Promise<{
-    accessToken: string;
-    refreshToken: string;
-    expiresIn: number;
-    tokenType: string;
-    sessionId: string;
-  }> {
-
-    // create session
-    const session = await this.security.createSession({
-      userId: user.id,
-      ipAddress: ctx.ipAddress,
-      deviceFingerprint: ctx.fingerprint,
-      userAgent: ctx.userAgent,
-    });
+  ): Promise<TokenPair> {
 
     // generate tokens
     const tokens = await this.tokenService.generateTokenPair({
       email: user.email,
       sub: user.id,
-      sessionId: session.id,
       username: user.username,
       status: user.status,
       kycLevel: user.kycLevel,
       kycStatus: user.kycStatus,
       tier: user.tier,
-      isTwoFactorEnabled: user.isTwoFactorEnabled,
+      twoFactorEnabled: user.twoFactorEnabled,
       emailVerified: user.emailVerified,
       phoneVerified: user.phoneVerified,
     });
 
-    // update session with refresh token
-    const updateSession = await this.security.updateSession(
-      session.id,
-      tokens.refreshToken
-    );
-
-    await this.cacheService.set(`refresh_token:${user.id}:${session.id}`, {
+    await this.cacheService.set(`refresh_token:${user.id}:${sessionId}`, {
       refreshToken: tokens.refreshToken,
-      sessionId: session.id,
+      sessionId,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // optional, match TTL
     }, {
       layer: CacheLayer.L3_SESSION,
@@ -250,7 +224,6 @@ export class AuthService {
       refreshToken: tokens.refreshToken,
       expiresIn: this.parseExpiresIn(String(tokens.expiresIn)),
       tokenType: 'Bearer',
-      sessionId: updateSession.id,
     };
   }
 
@@ -265,16 +238,10 @@ export class AuthService {
     skipSuccessfulRequests: true,
     skipFailedRequests: false,
   })
-  async verify2FA(tempToken: string, dto: Verify2FADto, ctx: Partial<RequestContext>): Promise<{
-    accessToken: string;
-    refreshToken: string;
-    expiresIn: number;
-    tokenType: string;
-    sessionId: string;
-  }> {
+  async verify2FA(tempToken: string, dto: Verify2FADto, ctx: Partial<RequestContext>): Promise<User> {
     try {
       // Get user from temp token
-      const tempData = await this.cacheService.get<{ userId: string }>(
+      const tempData = await this.cacheService.get<Partial<{ userId: string }>>(
         `2fa:${tempToken}`,
         { layer: CacheLayer.L3_SESSION }
       );
@@ -318,8 +285,7 @@ export class AuthService {
       // Delete temp token
       await this.cacheService.delete(`2fa:${tempToken}`, { layer: CacheLayer.L3_SESSION });
 
-      // Create session
-      return this.completeLogin(user, ctx);
+      return user;
     }
     catch (error) {
       throw new ServiceUnavailableError('failed to verify 2FA')
@@ -367,9 +333,9 @@ export class AuthService {
   /**
    * Confirm 2FA setup
    */
-  async confirm2FA(user: User, token: string): Promise<{ success: boolean, message: string }> {
+  async confirm2FA(user: AuthenticatedUser, token: string): Promise<{ success: boolean, message: string }> {
     try {
-      const twoFactorAuth = await this.security.findTwoFactorByUserId(user.id);
+      const twoFactorAuth = await this.security.findTwoFactorByUserId(user.userId);
 
       if (!twoFactorAuth) {
         throw new BadRequestException('2FA setup not initiated');
@@ -381,7 +347,7 @@ export class AuthService {
 
       // Verify token
       const isValid = (await this.security.verifyToken(
-        user.id,
+        user.userId,
         token,
       ))?.isValid;
 
@@ -392,7 +358,7 @@ export class AuthService {
       // Enable 2FA
       twoFactorAuth.isEnabled = true;
       await this.security.updateTwoFactor(
-        user.id,
+        user.userId,
         twoFactorAuth.isEnabled,
         new Date()
       );
@@ -401,7 +367,7 @@ export class AuthService {
         version: "1",
         eventId: this.tokenService.generateRandomToken(),
         timestamp: new Date(),
-        userId: user.id,
+        userId: user.userId,
         method: "totp",
         enabledAt: new Date(),
         email: user.email
@@ -422,38 +388,13 @@ export class AuthService {
   /**
    * Refresh access token
    */
-  async refreshToken(userId: string, dto: RefreshTokenDto, ctx: RequestContext): Promise<{
-    accessToken: string;
-    refreshToken: string;
-    expiresIn: number;
-    tokenType: string;
-    sessionId: string;
-  }> {
+  async refreshToken(userId: string, dto: RefreshTokenDto, ctx: RequestContext, sessionId: string): Promise<TokenPair> {
     try {
       // Verify refresh token
       const payload = await this.tokenService.verifyRefreshToken(dto.refreshToken);
 
-      // Find session
-      const sessions = await this.security.getActiveSessions(userId);
-
-      if (!sessions) {
-        throw new UnauthorizedException('Invalid refresh token');
-      }
-
-      let currentSession = null;
-      for (const session of sessions) {
-        if (session.refreshToken === dto.refreshToken) {
-          currentSession = session;
-          break;
-        }
-      }
-
-      if (!currentSession) {
-        throw new UnauthorizedException('Invalid refresh token');
-      }
-
       // Verify in Redis
-      const isValid = await this.cacheService.get(`refresh_token:${userId}:${currentSession.id}`, {
+      const isValid = await this.cacheService.get(`refresh_token:${userId}:${sessionId}`, {
         layer: CacheLayer.L3_SESSION
       });
 
@@ -472,7 +413,7 @@ export class AuthService {
           kycLevel: payload.kycLevel,
           kycStatus: payload.kycStatus,
           tier: payload.tier,
-          isTwoFactorEnabled: payload.isTwoFactorEnabled,
+          twoFactorEnabled: payload.twoFactorEnabled,
           emailVerified: payload.emailVerified,
           phoneVerified: payload.phoneVerified,
           lastLoginAt: new Date(),
@@ -480,18 +421,11 @@ export class AuthService {
         }
       );
 
-      // update session with refresh token
-      await this.security.updateSession(
-        currentSession.id,
-        pairTokens.refreshToken
-      )
-
       return {
         accessToken: pairTokens.accessToken,
         refreshToken: pairTokens.refreshToken,
         expiresIn: this.parseExpiresIn(String(pairTokens.expiresIn)),
-        tokenType: pairTokens.tokenType,
-        sessionId: currentSession.id
+        tokenType: pairTokens.tokenType
       };
     } catch (error) {
       throw new UnauthorizedException('Invalid or expired refresh token');
@@ -501,10 +435,10 @@ export class AuthService {
   /**
    * Change password
    */
-  async changePassword(user: User, dto: ChangePasswordDto): Promise<string> {
+  async changePassword(user: AuthenticatedUser, dto: ChangePasswordDto): Promise<string> {
     try {
       const response = await this.users.changePassword({
-        userId: user.id,
+        userId: user.userId,
         currentPassword: dto.currentPassword,
         newPassword: dto.newPassword,
       });
@@ -514,7 +448,7 @@ export class AuthService {
         timestamp: new Date(),
         changedAt: new Date(),
         changedBy: 'user',
-        userId: user.id,
+        userId: user.userId,
         email: user.email
       });
       return response;
@@ -539,7 +473,9 @@ export class AuthService {
   /**
    * Reset password
    */
-  async resetPassword(dto: ResetPasswordDto, user: User): Promise<string> {
+  async resetPassword(dto: ResetPasswordDto
+
+  ): Promise<string> {
     try {
       const response = await this.users.resetPassword({
         token: dto.token,
@@ -549,8 +485,8 @@ export class AuthService {
         version: "1",
         eventId: this.tokenService.generateRandomToken(),
         timestamp: new Date(),
-        userId: user.id,
-        email: user.email
+        userId: "",
+        email: ""
       });
       return response;
     }
@@ -562,15 +498,12 @@ export class AuthService {
   /**
    * Logout
    */
-  async logout(user: User, sessionId: string): Promise<{
+  async logout(user: AuthenticatedUser, sessionId: string): Promise<{
     success: boolean, message?: string, error?: any
   }> {
     try {
-      // Mark session as inactive
-      await this.security.killSession(user.id, sessionId);
-
       // Delete from Redis
-      await this.cacheService.delete(`refresh_token:${user.id}:${sessionId}`, {
+      await this.cacheService.delete(`refresh_token:${user.userId}:${sessionId}`, {
         layer: CacheLayer.L3_SESSION
       });
 
@@ -578,9 +511,9 @@ export class AuthService {
         version: "1",
         eventId: this.tokenService.generateRandomToken(),
         timestamp: new Date(),
-        userId: user.id,
+        userId: user.userId,
         email: user.email
-      })
+      });
 
       return {
         success: true,

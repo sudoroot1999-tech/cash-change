@@ -1,3 +1,4 @@
+import { Currency, CURRENCY, Locale, LOCALES, ORDER_TYPE, OrderType } from '@exchange/common';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -17,11 +18,11 @@ export class UserPreferences {
   userId: string;
 
   // Localization preferences
-  @Column({ default: 'en' })
-  language: string;
+  @Column({ enum: LOCALES, default: LOCALES.EN })
+  language: Locale;
 
-  @Column({ default: 'USD' })
-  currency: string;
+  @Column({ enum: CURRENCY, default: CURRENCY.USD })
+  currency: Currency;
 
   @Column({ default: 'UTC' })
   timezone: string;
@@ -52,8 +53,8 @@ export class UserPreferences {
   @Column({ default: false, name: 'trading_auto_compound' })
   tradingAutoCompound: boolean;
 
-  @Column({ default: 'LIMIT', name: 'trading_default_order_type' })
-  tradingDefaultOrderType: string;
+  @Column({ enum: ORDER_TYPE, default: ORDER_TYPE.LIMIT, name: 'trading_default_order_type' })
+  tradingDefaultOrderType: OrderType;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

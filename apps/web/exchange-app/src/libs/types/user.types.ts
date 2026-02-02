@@ -1,4 +1,4 @@
-import { UserStatus, UserTier } from ".";
+import { Currency, KycLevel, Locale, OrderType, UserStatus, UserTier } from ".";
 
 // User Types
 
@@ -20,7 +20,7 @@ export interface User {
   emailVerified: boolean;
   phoneVerified: boolean;
   emailVerificationToken?: string | null;
-  antiPhishingCode?: string | null;
+  antiPhishingCode: string;
   lastLoginAt?: Date | null;
   lastLoginIp?: string | null;
   createdAt: Date;
@@ -41,4 +41,62 @@ export interface UserProfile {
   bio?: string;
   createdAt?: Date,
   updatedAt?: Date
+}
+
+export interface UserPreferences {
+  id: string;
+  userId: string;
+
+  // Localization
+  language: Locale;
+  currency: Currency;
+  timezone: string;
+
+  // Notifications
+  notificationEmail: boolean;
+  notificationSms: boolean;
+  notificationPush: boolean;
+  notificationTradingAlerts: boolean;
+  notificationPriceAlerts: boolean;
+  notificationNewsletters: boolean;
+
+  // Trading
+  tradingConfirmations: boolean;
+  tradingAutoCompound: boolean;
+  tradingDefaultOrderType: OrderType;
+
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface UserLimits {
+  id: string;
+  userId: string;
+
+  kycLevel: KycLevel;
+
+  // Withdrawals
+  dailyWithdrawalLimit: number;
+  monthlyWithdrawalLimit: number;
+  currentDailyWithdrawal: number;
+  currentMonthlyWithdrawal: number;
+
+  // Deposits
+  dailyDepositLimit: number;
+  monthlyDepositLimit: number;
+  currentDailyDeposit: number;
+  currentMonthlyDeposit: number;
+
+  // Trading
+  dailyTradeLimit: number;
+  monthlyTradeLimit: number;
+  currentDailyTrade: number;
+  currentMonthlyTrade: number;
+
+  // Reset tracking
+  lastResetDaily: Date;
+  lastResetMonthly: Date;
+
+  createdAt: Date;
+  updatedAt: Date;
 }

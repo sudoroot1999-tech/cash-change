@@ -1,5 +1,6 @@
-import { IsEmail, IsString, MinLength, IsOptional, Matches, IsBoolean } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsEmail, IsString, MinLength, IsOptional, Matches, IsBoolean, IsUUID, IsDate, IsEnum } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { KYC_LEVELS, KYC_STATUS, KycLevel, KycStatus, USER_STATUS, USER_TIERS, UserStatus, UserTier } from '@exchange/common';
 
 export class RegisterDto {
   @ApiProperty({ example: 'user@example.com' })
@@ -49,6 +50,58 @@ export class LoginDto {
   @IsOptional()
   @IsBoolean()
   trustDevice?: boolean;
+}
+
+export class CompleteLoginDto {
+  @ApiProperty({ example: '123fd' })
+  @IsString()
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  @IsEmail()
+  email!: string;
+
+  @IsString()
+  @ApiProperty()
+  username?: string;
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional()
+  phone?: string;
+
+  @ApiProperty({ enum: USER_STATUS })
+  @IsEnum(USER_STATUS)
+  status!: UserStatus;
+
+  @IsEnum(USER_TIERS)
+  @ApiProperty({ enum: USER_TIERS })
+  tier!: UserTier;
+
+  @IsEnum(KYC_LEVELS)
+  @ApiProperty({ enum: KYC_LEVELS })
+  kycLevel!: KycLevel;
+
+  @IsEnum(KYC_STATUS)
+  @ApiProperty({ enum: KYC_STATUS })
+  kycStatus!:KycStatus;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  referralCode?: string;
+
+  @ApiProperty()
+  @IsBoolean()
+  twoFactorEnabled!: boolean;
+
+  @ApiProperty()
+  @IsBoolean()
+  emailVerified!: boolean;
+
+  @ApiProperty()
+  @IsBoolean()
+  phoneVerified!: boolean;
 }
 
 export class LogoutDto {

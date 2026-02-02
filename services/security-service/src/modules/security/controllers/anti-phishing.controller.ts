@@ -6,13 +6,13 @@ import { RequireAuth } from '@exchange/common';
 @Controller('security/anti-phishing')
 @RequireAuth()
 export class AntiPhishingController {
-  constructor(private readonly antiPhishingService: AntiPhishingService) {}
+  constructor(private readonly antiPhishingService: AntiPhishingService) { }
 
   @Post('set')
   async setCode(@Req() req: any, @Body() dto: SetAntiPhishingCodeDto) {
     const userId = req.user.id;
     const ipAddress = req.ip;
-    
+
     const result = await this.antiPhishingService.setAntiPhishingCode(
       userId,
       dto.phishingCode,
@@ -22,7 +22,7 @@ export class AntiPhishingController {
     return {
       success: true,
       message: 'Anti-phishing code set successfully',
-      data: { isActive: result.isActive },
+      data: { isActive: result.isActive, phishingCode: result.phishingCode },
     };
   }
 
@@ -30,7 +30,7 @@ export class AntiPhishingController {
   async getCode(@Req() req: any) {
     const userId = req.user.id;
     const code = await this.antiPhishingService.getAntiPhishingCode(userId);
-    
+
     return {
       success: true,
       data: code ? { phishingCode: code.phishingCode } : null,

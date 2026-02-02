@@ -1791,6 +1791,26 @@ export const DEVICE_PLATFORM = {
   WEB: 'web',
 } as const;
 
+// Locales
+export const LOCALES = {
+  EN: 'en',
+  FA: 'fa',
+  AR: 'ar',
+  ZHCN: 'zh-CN',
+  ZHTW: 'zh-TW',
+  RU: 'ru',
+  ES: 'es',
+  TR: 'tr',
+  FR: 'fr',
+  DE: 'de',
+} as const;
+
+export const CURRENCY = {
+  USD: 'USD',
+  EUR: 'EUR',
+  IRR: 'IRR',
+}
+
 // HTTP Status Codes
 export const HTTP_STATUS = {
   OK: 200,
