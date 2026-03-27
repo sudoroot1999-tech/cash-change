@@ -40,7 +40,7 @@
         "kafkajs": "^2.2.4",
         "lru-cache": "^10.1.0",
         "minio": "^8.0.6",
-        "nodemailer": "7.0.12",
+        "nodemailer": "8.0.4",
         "pako": "^2.1.0",
         "passport": "^0.7.0",
         "passport-jwt": "^4.0.1",
