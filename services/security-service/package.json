@@ -29,7 +29,7 @@
     "cookie-parser": "^1.4.7",
     "decimal.js": "^10.6.0",
     "geoip-lite": "^1.4.9",
-    "nodemailer": "7.0.12",
+    "nodemailer": "8.0.4",
     "pg": "^8.11.3",
     "qrcode": "^1.5.4",
     "reflect-metadata": "^0.2.2",
